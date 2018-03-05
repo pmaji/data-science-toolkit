@@ -1,9 +1,10 @@
 Paul's ISLR Notebook
 ================
 Paul Jeffries
+
 2018-03-05
 
-Beginning of Paul's notebook.
+
 
 Simple Linear Regression
 ========================

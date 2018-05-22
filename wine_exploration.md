@@ -1,7 +1,8 @@
----
-title: "Low Incidence Binary Classification"
-output: html_notebook
----
+Low Incidence Binary Classification
+================
+Paul Jeffries
+
+2018-05-21
 
 Data taken from: https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/
 

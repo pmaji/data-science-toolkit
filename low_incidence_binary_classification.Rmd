@@ -1,0 +1,292 @@
+---
+title: "Low Incidence Binary Classification"
+output: html_notebook
+---
+
+Data taken from: https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/
+
+# Importing, Exploring, and Cleaning the Data
+
+## Importing the Data
+```{r}
+setwd("~/Desktop/Personal/personal_code/classification/")
+
+# setting scientific notation options to kill all scipen
+options(scipen = 999)
+
+# basic packages
+library(dplyr) # for piping
+library(ggplot2) # for visualization 
+```
+
+## Exploring the Data
+
+A description of the various variables can be found here: https://archive.ics.uci.edu/ml/datasets/automobile
+
+```{r}
+base_red <- read.csv("winequality-red.csv",sep=";")
+base_white <- read.csv("winequality-white.csv",sep=";")
+
+# check to see if we have missing values
+library(Amelia) # allows for creation of missmap--missings values map
+# luckily it doesn't look like we have an missing values, but we'll use janitor to be sure
+Amelia::missmap(base_red, main = "Missing values vs observed")
+
+# lots of useful information about the dataset
+glimpse(base_red) 
+glimpse(base_white) 
+
+# prints the first 5 rows
+head(base_red) 
+head(base_white)
+```
+
+The red and white wines have identical features, but they might have intrinsic differences to them. As such, we will fit one model for red and one for white. The red wine poses the bigger data paucity problem, so let's start there.
+
+```{r}
+# let's look at the crosstab of our outcome variable of interest
+base_red %>% janitor::tabyl(quality)
+# take a look at the distribution of our target variable
+hist(base_red$quality, breaks=unique(base_red$quality), col="red") 
+```
+
+It looks from this like a wine quality rating of 8 is the rarest--what we might deem exceptional. Lets use this as our definition of an "excellent" wine.
+
+## Cleaning the Data
+
+```{r}
+library(janitor) #for data cleaning and tabular exploration
+# Janitor also has a great tabular function (tabyl) that we'll use later https://github.com/sfirke/janitor
+
+cleaned_red <- base_red %>%
+  janitor::clean_names() %>% #converts to underscore case and cleans; already is in this instance %>%
+  janitor::remove_empty(which = c("rows","cols")) %>% # drops all rows and columns that are entirely empty
+  mutate(
+    high_qual_flag = factor(ifelse(quality >= 8,1,0)) # creates flag for binary outcome
+    )
+
+head(cleaned_red)
+```
+
+## Prepping Data
+```{r}
+# split the data into training and testing sets
+library(caret) # needed to createDataPartitions
+
+# Partition data: 80% of the data to train the model
+set.seed(777)
+in_train <- createDataPartition(y=cleaned_red$high_qual_flag, p=0.80, list=FALSE)
+
+# splits the data into training and testing sets
+training <- cleaned_red[in_train,]
+testing<-cleaned_red[-in_train,]
+# shows the row count and column count of the training set
+dim(training)
+```
+
+# Correlation Checks
+
+https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html
+
+```{r}
+library(corrplot)
+# should probably trim some size here
+pairs(cleaned_red,col=cleaned_red$high_qual_flag)
+```
+
+
+# Logistic Regression
+
+https://www.datacamp.com/community/tutorials/logistic-regression-R
+
+```{r}
+
+# simple logistic regression
+logit_fit <- glm(high_qual_flag ~ . -quality, 
+                 data = training, 
+                 family = binomial)
+
+summary(logit_fit)
+```
+
+```{r}
+# building a vector of probabilties that a certain wine is high quality 
+logit_fit_probs <- predict(logit_fit,
+                           newdata = testing,
+                           type = "response")
+
+head(logit_fit_probs)
+
+# building a vector of labels for high quality vs. not high quality 
+logit_fit_predictions <- factor(ifelse(logit_fit_probs > 0.5, 1, 0),levels=c('0','1'))
+head(logit_fit_predictions)
+
+confusionMatrix(logit_fit_predictions,testing$high_qual_flag, positive='1')
+```
+
+The problem is that we have a high success right but no successful positive predictions. We should be able to fix that with some fancier sampling methods.
+
+```{r}
+up_train <- caret::upSample(select(training, -high_qual_flag), training$high_qual_flag)
+up_train %>% janitor::tabyl(Class)
+```
+
+```{r}
+# upsampled logistic regression
+up_logit_fit <- glm(Class ~ . -quality, 
+                 data = up_train, 
+                 family = binomial)
+
+summary(up_logit_fit)
+```
+
+```{r}
+# building a vector of probabilties that a certain wine is high quality 
+up_logit_fit_probs <- predict(up_logit_fit,
+                           newdata = testing,
+                           type = "response")
+
+head(up_logit_fit_probs)
+
+# building a vector of labels for high quality vs. not high quality 
+up_logit_fit_predictions <- factor(ifelse(up_logit_fit_probs > 0.5, 1, 0),levels=c('0','1'))
+head(up_logit_fit_predictions)
+
+confusionMatrix(up_logit_fit_predictions,testing$high_qual_flag, positive='1')
+```
+
+## Trying SMOTE
+
+```{r}
+library(DMwR)
+
+# both upsampling and downsampling via SMOTE
+smote_train <- DMwR::SMOTE(high_qual_flag ~ ., data=as.data.frame(training))
+table(smote_train$high_qual_flag)
+
+# logistic regression built using smote data
+smote_logit_fit <- glm(high_qual_flag ~ . -quality, 
+                 data = smote_train, 
+                 family = binomial)
+
+summary(smote_logit_fit)
+
+# testing the smote fit logit
+# building a vector of probabilties that a certain wine is high quality 
+smote_logit_fit_probs <- predict(smote_logit_fit,
+                           newdata = testing,
+                           type = "response")
+
+head(smote_logit_fit_probs)
+
+# building a vector of labels for high quality vs. not high quality 
+smote_logit_fit_predictions <- factor(ifelse(smote_logit_fit_probs > 0.5, 1, 0),levels=c('0','1'))
+head(smote_logit_fit_predictions)
+
+confusionMatrix(smote_logit_fit_predictions,testing$high_qual_flag, positive='1')
+```
+
+## Now trying ROSE
+
+```{r}
+library(ROSE)
+
+# using ROSE to generate training set 
+rose_train <- ROSE::ROSE(high_qual_flag~., data=training)$data
+table(rose_train$high_qual_flag)
+
+# logistic regression built using ROSE data
+rose_logit_fit <- glm(high_qual_flag ~ . -quality, 
+                 data = rose_train, 
+                 family = binomial)
+
+summary(rose_logit_fit)
+
+# testing the rose fit logit
+# building a vector of probabilties that a certain wine is high quality 
+rose_logit_fit_probs <- predict(rose_logit_fit,
+                           newdata = testing,
+                           type = "response")
+
+head(rose_logit_fit_probs)
+
+# building a vector of labels for high quality vs. not high quality 
+rose_logit_fit_predictions <- factor(ifelse(rose_logit_fit_probs > 0.5, 1, 0),levels=c('0','1'))
+head(rose_logit_fit_predictions)
+
+confusionMatrix(rose_logit_fit_predictions,testing$high_qual_flag, positive='1')
+```
+
+
+# Penalized Logistic Regression
+
+http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/
+
+```{r}
+library(glmnet)
+
+# Dumy code categorical predictor variables
+x <- model.matrix(high_qual_flag~.-quality, smote_train)
+# Convert the outcome (class) to a numerical variable
+y <- smote_train$high_qual_flag
+
+# Find the best lambda using cross-validation
+set.seed(123) 
+cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
+# Fit the final model on the training data
+model <- glmnet(x, y, alpha = 1, family = "binomial",
+                lambda = cv.lasso$lambda.min)
+
+# Display regression coefficients
+coef(model)
+# Make predictions on the test data
+x.test <- model.matrix(high_qual_flag ~.-quality, testing)
+probabilities <- model %>% predict(newx = x.test)
+predicted.classes <- ifelse(probabilities > 0.5, 1, 0)
+# Model accuracy
+observed.classes <- testing$high_qual_flag
+mean(predicted.classes == observed.classes)
+```
+
+```{r}
+# Find the optimal value of lambda that minimizes the cross-validation error:
+library(glmnet)
+set.seed(123)
+cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
+plot(cv.lasso)
+
+# we have two common choices for lambda here, lambda min and lambda lse
+# lambda min is the value that minimizes the prediction error
+cv.lasso$lambda.min
+# showing coefficients using lambda min
+coef(cv.lasso, cv.lasso$lambda.min)
+
+# lambda lse gives the simplest model but also lies within one SE of the optimal value of lambda
+cv.lasso$lambda.1se
+# showing coefficients using lambda min
+coef(cv.lasso, cv.lasso$lambda.1se)
+```
+
+```{r}
+# compute model using lambda min
+# Final model with lambda.min
+lasso.model <- glmnet(x, y, alpha = 1, family = "binomial",
+                      lambda = cv.lasso$lambda.min)
+# Make prediction on test data
+x.test <- model.matrix(high_qual_flag ~.-quality, testing)
+probabilities <- model %>% predict(newx = x.test)
+predicted.classes <- ifelse(probabilities > 0.5, 1, 0)
+# Model accuracy
+observed.classes <- testing$high_qual_flag
+mean(predicted.classes == observed.classes)
+
+confusionMatrix(predicted.classes,observed.classes, positive='1')
+```
+
+```{r}
+
+```
+
+
+
+

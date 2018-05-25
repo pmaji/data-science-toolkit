@@ -379,7 +379,7 @@ Other Methods for Examining Model Fit and Accuracy
 --------------------------------------------------
 
 ``` r
-# some extra notes and techniques inspired by analytic day
+# some extra notes and techniques inspired by analytics day
 # info from  http://ethen8181.github.io/machine-learning/unbalanced/unbalanced.html
 library(InformationValue)
 ```
@@ -423,15 +423,24 @@ library(pscl) # for pR2 function
     ## hurdle and zeroinfl functions by Achim Zeileis
 
 ``` r
+pR2(logit_fit) # McFadden Pseudo R Squared
+```
+
+    ##          llh      llhNull           G2     McFadden         r2ML 
+    ## -57.73066784 -81.61024136  47.75914704   0.29260511   0.03662432 
+    ##         r2CU 
+    ##   0.30591480
+
+``` r
 # prediction testing 
 prediction_train <- predict(logit_fit, newdata = training, type = "response" )
-predictions_train_full <- data.frame(prediction_train, training$high_qual_flag)
+predictions_train_full <- data.frame(prediction = prediction_train, high_qual_flag = training$high_qual_flag)
 
 prediction_test <- predict(logit_fit, newdata = testing, type = "response" )
-predictions_test_full <- data.frame(prediction_test, testing$high_qual_flag)
+predictions_test_full <- data.frame(prediction = prediction_test, high_qual_flag = testing$high_qual_flag)
 
 # distribution of the prediction score grouped by known outcome
-ggplot(predictions_train_full, aes(prediction_train, color = as.factor(training.high_qual_flag) ) ) + 
+ggplot(predictions_train_full, aes(prediction_train, color = as.factor(training$high_qual_flag) ) ) + 
 geom_density( size = 1 ) +
 ggtitle( "Training Set's Predicted Score" ) + 
 scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) + 
@@ -442,7 +451,7 @@ theme_economist()
 
 ``` r
 # distribution of the prediction score grouped by known outcome
-ggplot(predictions_test_full, aes(prediction_test, color = as.factor(testing.high_qual_flag) ) ) + 
+ggplot(predictions_test_full, aes(prediction_test, color = as.factor(testing$high_qual_flag) ) ) + 
 geom_density( size = 1 ) +
 ggtitle( "Testing Set's Predicted Score" ) + 
 scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) + 
@@ -452,13 +461,107 @@ theme_economist()
 ![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-9-2.png)
 
 ``` r
-pR2(logit_fit) # McFadden Pseudo R Squared
+# code to find the optimal cutoff  
+# functions are sourced in, to reduce document's length
+source("useful_logit_functions.R")
 ```
 
-    ##          llh      llhNull           G2     McFadden         r2ML 
-    ## -57.73066784 -81.61024136  47.75914704   0.29260511   0.03662432 
-    ##         r2CU 
-    ##   0.30591480
+    ## Loading required package: gplots
+
+    ## 
+    ## Attaching package: 'gplots'
+
+    ## The following object is masked from 'package:stats':
+    ## 
+    ##     lowess
+
+    ## 
+    ## Attaching package: 'gridExtra'
+
+    ## The following object is masked from 'package:dplyr':
+    ## 
+    ##     combine
+
+    ## 
+    ## Attaching package: 'data.table'
+
+    ## The following objects are masked from 'package:dplyr':
+    ## 
+    ##     between, first, last
+
+``` r
+# prediction testing setup
+prediction_train <- predict(logit_fit, newdata = training, type = "response" )
+predictions_train_full <- data.frame(prediction = prediction_train, high_qual_flag = training$high_qual_flag)
+
+prediction_test <- predict(logit_fit, newdata = testing, type = "response" )
+predictions_test_full <- data.frame(prediction = prediction_test, high_qual_flag = testing$high_qual_flag)
+
+# using function AccuracyCutoffInfo to test for optimal cutoff visually
+accuracy_info <- AccuracyCutoffInfo(train = predictions_train_full, 
+                                    test = predictions_test_full, 
+                                    predict = "prediction", 
+                                    actual = "high_qual_flag",
+                                    cut_val_start = 0.01,
+                                    cut_val_end = 0.9,
+                                    by_step_size = 0.001)
+
+accuracy_info$plot
+```
+
+![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-9-3.png)
+
+``` r
+# Moving on To Using ROC Curves to pintpoint optimal cutoffs
+
+# user-defined different cost for false negative and false positive
+# here the assumption is that a false positive is 1/10th as costly as a false negative
+cost_fp <- 10
+cost_fn <- 100
+
+roc_info <- ROCInfo(data = predictions_test_full, 
+                    predict = "prediction", 
+                    actual = "high_qual_flag", 
+                    cost.fp = cost_fp, 
+                    cost.fn = cost_fn )
+```
+
+``` r
+grid.draw(roc_info$plot)
+```
+
+<img src="low_incidence_binary_classification_files/figure-markdown_github/fig2-1.png" style="display: block; margin: auto;" />
+
+``` r
+# visualize a particular cutoff (lowest point of the previous plot)
+cm_info <- ConfusionMatrixInfo(data = predictions_test_full, 
+                               predict = "prediction", 
+                               actual = "high_qual_flag", 
+                               cutoff = .12)
+
+# shows what this information looks like
+print(cm_info$data)
+```
+
+    ##      actual      predict type
+    ##   1:      0 0.0002191739   TN
+    ##   2:      0 0.0001463603   TN
+    ##   3:      0 0.0002275093   TN
+    ##   4:      0 0.0001680044   TN
+    ##   5:      0 0.0005842347   TN
+    ##  ---                         
+    ## 315:      0 0.0017289133   TN
+    ## 316:      0 0.0634788605   TN
+    ## 317:      0 0.0066934610   TN
+    ## 318:      0 0.0008828383   TN
+    ## 319:      0 0.0012374098   TN
+
+``` r
+# prints the chart
+cm_info$plot
+```
+
+![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-10-1.png)
 
 ``` r
 up_train <- caret::upSample(select(training, -high_qual_flag), training$high_qual_flag)
@@ -488,22 +591,22 @@ summary(up_logit_fit)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -4.1633  -0.0669   0.0446   0.5141   0.8951  
+    ## -4.1545  -0.0670   0.0440   0.5348   0.8910  
     ## 
     ## Coefficients:
-    ##                        Estimate Std. Error z value             Pr(>|z|)
-    ## (Intercept)           302.61294  112.46413   2.691             0.007129
-    ## fixed_acidity           0.06989    0.11286   0.619             0.535726
-    ## volatile_acidity        4.54732    0.95397   4.767 0.000001872203740035
-    ## citric_acid             7.32607    1.12471   6.514 0.000000000073303070
-    ## residual_sugar         -0.32572    0.11956  -2.724             0.006442
-    ## chlorides            -104.00769    9.13120 -11.390 < 0.0000000000000002
-    ## free_sulfur_dioxide     0.04664    0.01207   3.865             0.000111
-    ## total_sulfur_dioxide   -0.05328    0.00659  -8.085 0.000000000000000624
-    ## density              -300.46596  114.45853  -2.625             0.008662
-    ## p_h                    -9.08072    1.07848  -8.420 < 0.0000000000000002
-    ## sulphates               8.62106    0.71074  12.130 < 0.0000000000000002
-    ## alcohol                 2.11314    0.17785  11.882 < 0.0000000000000002
+    ##                         Estimate  Std. Error z value             Pr(>|z|)
+    ## (Intercept)           319.617436  113.231674   2.823              0.00476
+    ## fixed_acidity           0.091119    0.113350   0.804              0.42147
+    ## volatile_acidity        4.418386    0.948858   4.657      0.0000032158255
+    ## citric_acid             7.200072    1.108968   6.493      0.0000000000844
+    ## residual_sugar         -0.349289    0.120386  -2.901              0.00371
+    ## chlorides            -102.438157    9.061559 -11.305 < 0.0000000000000002
+    ## free_sulfur_dioxide     0.055903    0.012028   4.648      0.0000033529405
+    ## total_sulfur_dioxide   -0.058091    0.006627  -8.766 < 0.0000000000000002
+    ## density              -317.526234  115.233567  -2.756              0.00586
+    ## p_h                    -9.051516    1.077381  -8.401 < 0.0000000000000002
+    ## sulphates               8.661758    0.712028  12.165 < 0.0000000000000002
+    ## alcohol                 2.091997    0.177925  11.758 < 0.0000000000000002
     ##                         
     ## (Intercept)          ** 
     ## fixed_acidity           
@@ -523,8 +626,8 @@ summary(up_logit_fit)
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
     ##     Null deviance: 3507.3  on 2529  degrees of freedom
-    ## Residual deviance: 1301.3  on 2518  degrees of freedom
-    ## AIC: 1325.3
+    ## Residual deviance: 1302.4  on 2518  degrees of freedom
+    ## AIC: 1326.4
     ## 
     ## Number of Fisher Scoring iterations: 8
 
@@ -538,9 +641,9 @@ head(up_logit_fit_probs)
 ```
 
     ##            21            22            24            29            30 
-    ## 0.00019495944 0.00002523492 0.00003527563 0.00003221242 0.00038952816 
+    ## 0.00021098779 0.00002322363 0.00003055076 0.00003280269 0.00042289757 
     ##            46 
-    ## 0.01236818097
+    ## 0.00942055585
 
 ``` r
 # building a vector of labels for high quality vs. not high quality 
@@ -583,6 +686,119 @@ caret::confusionMatrix(up_logit_fit_predictions,testing$high_qual_flag, positive
     ##        'Positive' Class : 1               
     ## 
 
+``` r
+# condensed verison of model performance metrics for up-sampled model
+
+pR2(up_logit_fit) # McFadden Pseudo R Squared
+```
+
+    ##           llh       llhNull            G2      McFadden          r2ML 
+    ##  -651.1850774 -1753.6623668  2204.9545788     0.6286714     0.5816863 
+    ##          r2CU 
+    ##     0.7755817
+
+``` r
+# prediction testing for up-sampled logit
+prediction_train <- predict(up_logit_fit, newdata = training, type = "response" )
+predictions_train_full <- data.frame(prediction = prediction_train, high_qual_flag = training$high_qual_flag)
+
+prediction_test <- predict(up_logit_fit, newdata = testing, type = "response" )
+predictions_test_full <- data.frame(prediction = prediction_test, high_qual_flag = testing$high_qual_flag)
+
+# distribution of the prediction score grouped by known outcome
+ggplot(predictions_train_full, aes(prediction_train, color = as.factor(training$high_qual_flag) ) ) + 
+geom_density( size = 1 ) +
+ggtitle( "Training Set's Predicted Score" ) + 
+scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) + 
+theme_economist()
+```
+
+![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-14-1.png)
+
+``` r
+# distribution of the prediction score grouped by known outcome
+ggplot(predictions_test_full, aes(prediction_test, color = as.factor(testing$high_qual_flag) ) ) + 
+geom_density( size = 1 ) +
+ggtitle( "Testing Set's Predicted Score" ) + 
+scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) + 
+theme_economist()
+```
+
+![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-14-2.png)
+
+``` r
+# code to find the optimal cutoff  
+# functions are sourced in, to reduce document's length
+source("useful_logit_functions.R")
+
+# using function AccuracyCutoffInfo to test for optimal cutoff visually
+accuracy_info <- AccuracyCutoffInfo(train = predictions_train_full, 
+                                    test = predictions_test_full, 
+                                    predict = "prediction", 
+                                    actual = "high_qual_flag",
+                                    cut_val_start = 0.01,
+                                    cut_val_end = 0.9,
+                                    by_step_size = 0.001)
+
+accuracy_info$plot
+```
+
+![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-14-3.png)
+
+``` r
+# Moving on To Using ROC Curves to pintpoint optimal cutoffs
+
+# user-defined different cost for false negative and false positive
+# here the assumption is that a false positive is 1/10th as costly as a false negative
+cost_fp <- 10
+cost_fn <- 100
+
+roc_info <- ROCInfo(data = predictions_test_full, 
+                    predict = "prediction", 
+                    actual = "high_qual_flag", 
+                    cost.fp = cost_fp, 
+                    cost.fn = cost_fn )
+```
+
+``` r
+grid.draw(roc_info$plot)
+```
+
+<img src="low_incidence_binary_classification_files/figure-markdown_github/fig3-1.png" style="display: block; margin: auto;" />
+
+``` r
+# visualize a particular cutoff (lowest point of the previous plot)
+cm_info <- ConfusionMatrixInfo(data = predictions_test_full, 
+                               predict = "prediction", 
+                               actual = "high_qual_flag", 
+                               cutoff = .99)
+
+# shows what this information looks like
+print(cm_info$data)
+```
+
+    ##      actual       predict type
+    ##   1:      0 0.00021098779   TN
+    ##   2:      0 0.00002322363   TN
+    ##   3:      0 0.00003055076   TN
+    ##   4:      0 0.00003280269   TN
+    ##   5:      0 0.00042289757   TN
+    ##  ---                          
+    ## 315:      0 0.00002917165   TN
+    ## 316:      0 0.94968506801   TN
+    ## 317:      0 0.11217428898   TN
+    ## 318:      0 0.00059851273   TN
+    ## 319:      0 0.00203923375   TN
+
+``` r
+# prints the chart
+cm_info$plot
+```
+
+    ## Warning: Removed 3 rows containing missing values (geom_point).
+
+![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-15-1.png)
+
 Trying SMOTE
 ------------
 
@@ -617,33 +833,33 @@ summary(smote_logit_fit)
     ##     data = smote_train)
     ## 
     ## Deviance Residuals: 
-    ##      Min        1Q    Median        3Q       Max  
-    ## -2.39740  -0.02865  -0.00003   0.17492   1.43687  
+    ##     Min       1Q   Median       3Q      Max  
+    ## -3.3563  -0.0126  -0.0001   0.1711   1.0430  
     ## 
     ## Coefficients:
-    ##                         Estimate  Std. Error z value Pr(>|z|)  
-    ## (Intercept)           1525.47208   853.03244   1.788   0.0737 .
-    ## fixed_acidity            0.85407     0.75460   1.132   0.2577  
-    ## volatile_acidity        15.38786     8.72275   1.764   0.0777 .
-    ## citric_acid             19.48623    11.41973   1.706   0.0879 .
-    ## residual_sugar          -1.10464     0.73705  -1.499   0.1339  
-    ## chlorides             -140.42880    71.39596  -1.967   0.0492 *
-    ## free_sulfur_dioxide      0.04070     0.10615   0.383   0.7014  
-    ## total_sulfur_dioxide    -0.10457     0.08192  -1.276   0.2018  
-    ## density              -1560.65903   873.67598  -1.786   0.0740 .
-    ## p_h                    -11.65035     6.17850  -1.886   0.0593 .
-    ## sulphates               21.81782     8.80736   2.477   0.0132 *
-    ## alcohol                  3.82380     1.50986   2.533   0.0113 *
+    ##                        Estimate Std. Error z value Pr(>|z|)   
+    ## (Intercept)           142.23205  898.80796   0.158  0.87426   
+    ## fixed_acidity           0.27273    0.95797   0.285  0.77587   
+    ## volatile_acidity       24.89468   10.34238   2.407  0.01608 * 
+    ## citric_acid            20.43269   12.21933   1.672  0.09449 . 
+    ## residual_sugar         -0.01172    1.15235  -0.010  0.99188   
+    ## chlorides            -191.33430   80.56404  -2.375  0.01755 * 
+    ## free_sulfur_dioxide     0.18115    0.15432   1.174  0.24045   
+    ## total_sulfur_dioxide   -0.12159    0.08620  -1.411  0.15834   
+    ## density              -163.08522  921.56859  -0.177  0.85954   
+    ## p_h                   -15.47885    9.49470  -1.630  0.10305   
+    ## sulphates              20.91159    7.76320   2.694  0.00707 **
+    ## alcohol                 4.35363    1.80336   2.414  0.01577 * 
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
     ##     Null deviance: 143.411  on 104  degrees of freedom
-    ## Residual deviance:  35.802  on  93  degrees of freedom
-    ## AIC: 59.802
+    ## Residual deviance:  30.008  on  93  degrees of freedom
+    ## AIC: 54.008
     ## 
-    ## Number of Fisher Scoring iterations: 10
+    ## Number of Fisher Scoring iterations: 9
 
 ``` r
 # testing the smote fit logit
@@ -656,9 +872,9 @@ head(smote_logit_fit_probs)
 ```
 
     ##                  21                  22                  24 
-    ## 0.00000000268516400 0.00000000003329466 0.00000000005354336 
+    ## 0.00000000232017746 0.00000000056754222 0.00000000008045897 
     ##                  29                  30                  46 
-    ## 0.00000000013386663 0.00000003798847945 0.00007234466969143
+    ## 0.00000000497064529 0.00000016689215600 0.00001759883396297
 
 ``` r
 # building a vector of labels for high quality vs. not high quality 
@@ -678,25 +894,25 @@ caret::confusionMatrix(smote_logit_fit_predictions,testing$high_qual_flag, posit
     ## 
     ##           Reference
     ## Prediction   0   1
-    ##          0 278   1
-    ##          1  38   2
+    ##          0 272   1
+    ##          1  44   2
     ##                                           
-    ##                Accuracy : 0.8777          
-    ##                  95% CI : (0.8367, 0.9116)
+    ##                Accuracy : 0.8589          
+    ##                  95% CI : (0.8158, 0.8952)
     ##     No Information Rate : 0.9906          
     ##     P-Value [Acc > NIR] : 1               
     ##                                           
-    ##                   Kappa : 0.0769          
-    ##  Mcnemar's Test P-Value : 0.000000008185  
+    ##                   Kappa : 0.0651          
+    ##  Mcnemar's Test P-Value : 0.0000000003825 
     ##                                           
     ##             Sensitivity : 0.666667        
-    ##             Specificity : 0.879747        
-    ##          Pos Pred Value : 0.050000        
-    ##          Neg Pred Value : 0.996416        
+    ##             Specificity : 0.860759        
+    ##          Pos Pred Value : 0.043478        
+    ##          Neg Pred Value : 0.996337        
     ##              Prevalence : 0.009404        
     ##          Detection Rate : 0.006270        
-    ##    Detection Prevalence : 0.125392        
-    ##       Balanced Accuracy : 0.773207        
+    ##    Detection Prevalence : 0.144201        
+    ##       Balanced Accuracy : 0.763713        
     ##                                           
     ##        'Positive' Class : 1               
     ## 
@@ -718,7 +934,7 @@ table(rose_train$high_qual_flag)
 
     ## 
     ##   0   1 
-    ## 622 658
+    ## 652 628
 
 ``` r
 # logistic regression built using ROSE data
@@ -735,34 +951,34 @@ summary(rose_logit_fit)
     ##     data = rose_train)
     ## 
     ## Deviance Residuals: 
-    ##     Min       1Q   Median       3Q      Max  
-    ## -2.9583  -0.5416   0.1976   0.7074   2.1687  
+    ##      Min        1Q    Median        3Q       Max  
+    ## -2.92736  -0.52501  -0.05077   0.69409   2.39780  
     ## 
     ## Coefficients:
     ##                         Estimate  Std. Error z value             Pr(>|z|)
-    ## (Intercept)           190.436753   36.750638   5.182      0.0000002196811
-    ## fixed_acidity           0.060847    0.040240   1.512             0.130503
-    ## volatile_acidity       -1.687415    0.475481  -3.549             0.000387
-    ## citric_acid             2.406792    0.434549   5.539      0.0000000304903
-    ## residual_sugar         -0.082461    0.053571  -1.539             0.123732
-    ## chlorides             -22.152611    3.222259  -6.875      0.0000000000062
-    ## free_sulfur_dioxide    -0.004963    0.006284  -0.790             0.429650
-    ## total_sulfur_dioxide   -0.008990    0.002660  -3.379             0.000726
-    ## density              -197.480770   36.771372  -5.371      0.0000000785172
-    ## p_h                    -0.908751    0.414945  -2.190             0.028520
-    ## sulphates               4.097056    0.492344   8.322 < 0.0000000000000002
-    ## alcohol                 0.715567    0.064353  11.119 < 0.0000000000000002
+    ## (Intercept)           189.337500   36.057810   5.251     0.00000015132258
+    ## fixed_acidity           0.098917    0.041072   2.408             0.016023
+    ## volatile_acidity       -0.830833    0.462738  -1.795             0.072578
+    ## citric_acid             1.636052    0.429999   3.805             0.000142
+    ## residual_sugar         -0.110790    0.054979  -2.015             0.043891
+    ## chlorides             -22.912215    3.270208  -7.006     0.00000000000245
+    ## free_sulfur_dioxide    -0.004279    0.006380  -0.671             0.502493
+    ## total_sulfur_dioxide   -0.007338    0.002501  -2.934             0.003341
+    ## density              -193.876192   36.200695  -5.356     0.00000008527623
+    ## p_h                    -2.151562    0.423826  -5.077     0.00000038440990
+    ## sulphates               4.793784    0.507828   9.440 < 0.0000000000000002
+    ## alcohol                 0.765862    0.063563  12.049 < 0.0000000000000002
     ##                         
     ## (Intercept)          ***
-    ## fixed_acidity           
-    ## volatile_acidity     ***
+    ## fixed_acidity        *  
+    ## volatile_acidity     .  
     ## citric_acid          ***
-    ## residual_sugar          
+    ## residual_sugar       *  
     ## chlorides            ***
     ## free_sulfur_dioxide     
-    ## total_sulfur_dioxide ***
+    ## total_sulfur_dioxide ** 
     ## density              ***
-    ## p_h                  *  
+    ## p_h                  ***
     ## sulphates            ***
     ## alcohol              ***
     ## ---
@@ -770,11 +986,11 @@ summary(rose_logit_fit)
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
-    ##     Null deviance: 1773.4  on 1279  degrees of freedom
-    ## Residual deviance: 1092.3  on 1268  degrees of freedom
-    ## AIC: 1116.3
+    ##     Null deviance: 1774.0  on 1279  degrees of freedom
+    ## Residual deviance: 1069.9  on 1268  degrees of freedom
+    ## AIC: 1093.9
     ## 
-    ## Number of Fisher Scoring iterations: 5
+    ## Number of Fisher Scoring iterations: 6
 
 ``` r
 # testing the rose fit logit
@@ -787,7 +1003,7 @@ head(rose_logit_fit_probs)
 ```
 
     ##         21         22         24         29         30         46 
-    ## 0.14101059 0.07646048 0.04158978 0.02311704 0.05988361 0.53829858
+    ## 0.07464638 0.04580409 0.04331907 0.02035496 0.05756279 0.34397864
 
 ``` r
 # building a vector of labels for high quality vs. not high quality 
@@ -796,7 +1012,7 @@ head(rose_logit_fit_predictions)
 ```
 
     ## 21 22 24 29 30 46 
-    ##  0  0  0  0  0  1 
+    ##  0  0  0  0  0  0 
     ## Levels: 0 1
 
 ``` r
@@ -807,27 +1023,27 @@ caret::confusionMatrix(rose_logit_fit_predictions,testing$high_qual_flag, positi
     ## 
     ##           Reference
     ## Prediction   0   1
-    ##          0 253   0
-    ##          1  63   3
-    ##                                               
-    ##                Accuracy : 0.8025              
-    ##                  95% CI : (0.7545, 0.8448)    
-    ##     No Information Rate : 0.9906              
-    ##     P-Value [Acc > NIR] : 1                   
-    ##                                               
-    ##                   Kappa : 0.0702              
-    ##  Mcnemar's Test P-Value : 0.000000000000005662
-    ##                                               
-    ##             Sensitivity : 1.000000            
-    ##             Specificity : 0.800633            
-    ##          Pos Pred Value : 0.045455            
-    ##          Neg Pred Value : 1.000000            
-    ##              Prevalence : 0.009404            
-    ##          Detection Rate : 0.009404            
-    ##    Detection Prevalence : 0.206897            
-    ##       Balanced Accuracy : 0.900316            
-    ##                                               
-    ##        'Positive' Class : 1                   
+    ##          0 263   0
+    ##          1  53   3
+    ##                                             
+    ##                Accuracy : 0.8339            
+    ##                  95% CI : (0.7884, 0.873)   
+    ##     No Information Rate : 0.9906            
+    ##     P-Value [Acc > NIR] : 1                 
+    ##                                             
+    ##                   Kappa : 0.0854            
+    ##  Mcnemar's Test P-Value : 0.0000000000009148
+    ##                                             
+    ##             Sensitivity : 1.000000          
+    ##             Specificity : 0.832278          
+    ##          Pos Pred Value : 0.053571          
+    ##          Neg Pred Value : 1.000000          
+    ##              Prevalence : 0.009404          
+    ##          Detection Rate : 0.009404          
+    ##    Detection Prevalence : 0.175549          
+    ##       Balanced Accuracy : 0.916139          
+    ##                                             
+    ##        'Positive' Class : 1                 
     ## 
 
 Penalized Logistic Regression
@@ -870,20 +1086,20 @@ coef(model)
 ```
 
     ## 13 x 1 sparse Matrix of class "dgCMatrix"
-    ##                                 s0
-    ## (Intercept)           211.43941063
-    ## (Intercept)             .         
-    ## fixed_acidity           .         
-    ## volatile_acidity        .         
-    ## citric_acid             0.55444734
-    ## residual_sugar         -0.09045859
-    ## chlorides             -44.21037381
-    ## free_sulfur_dioxide    -0.02507029
-    ## total_sulfur_dioxide    .         
-    ## density              -210.88863473
-    ## p_h                    -5.72341224
-    ## sulphates               9.56676238
-    ## alcohol                 1.19118973
+    ##                                  s0
+    ## (Intercept)            0.8426539919
+    ## (Intercept)            .           
+    ## fixed_acidity          .           
+    ## volatile_acidity       .           
+    ## citric_acid            1.6081249994
+    ## residual_sugar         .           
+    ## chlorides            -44.3754188879
+    ## free_sulfur_dioxide   -0.0047555214
+    ## total_sulfur_dioxide  -0.0008643697
+    ## density                .           
+    ## p_h                   -6.7922205609
+    ## sulphates              7.9016906426
+    ## alcohol                1.6153204770
 
 ``` r
 # Make predictions on the test data
@@ -895,7 +1111,7 @@ observed.classes <- testing$high_qual_flag
 mean(predicted.classes == observed.classes)
 ```
 
-    ## [1] 0.8840125
+    ## [1] 0.8683386
 
 ``` r
 # Find the optimal value of lambda that minimizes the cross-validation error:
@@ -905,7 +1121,7 @@ cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
 plot(cv.lasso)
 ```
 
-![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-16-1.png)
+![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-19-1.png)
 
 ``` r
 # we have two common choices for lambda here, lambda min and lambda lse
@@ -913,7 +1129,7 @@ plot(cv.lasso)
 cv.lasso$lambda.min
 ```
 
-    ## [1] 0.01584114
+    ## [1] 0.01483883
 
 ``` r
 # showing coefficients using lambda min
@@ -921,27 +1137,27 @@ coef(cv.lasso, cv.lasso$lambda.min)
 ```
 
     ## 13 x 1 sparse Matrix of class "dgCMatrix"
-    ##                                  1
-    ## (Intercept)           212.19166532
-    ## (Intercept)             .         
-    ## fixed_acidity           .         
-    ## volatile_acidity        .         
-    ## citric_acid             0.54028635
-    ## residual_sugar         -0.08955781
-    ## chlorides             -44.12274667
-    ## free_sulfur_dioxide    -0.02510283
-    ## total_sulfur_dioxide    .         
-    ## density              -211.60709740
-    ## p_h                    -5.73482662
-    ## sulphates               9.57262301
-    ## alcohol                 1.19063466
+    ##                                   1
+    ## (Intercept)            0.8402788337
+    ## (Intercept)            .           
+    ## fixed_acidity          .           
+    ## volatile_acidity       .           
+    ## citric_acid            1.6087309313
+    ## residual_sugar         .           
+    ## chlorides            -44.3801292910
+    ## free_sulfur_dioxide   -0.0047310675
+    ## total_sulfur_dioxide  -0.0008720952
+    ## density                .           
+    ## p_h                   -6.7912284687
+    ## sulphates              7.9021629412
+    ## alcohol                1.6152212919
 
 ``` r
 # lambda lse gives the simplest model but also lies within one SE of the optimal value of lambda
 cv.lasso$lambda.1se
 ```
 
-    ## [1] 0.05826974
+    ## [1] 0.04128993
 
 ``` r
 # showing coefficients using lambda min
@@ -950,19 +1166,19 @@ coef(cv.lasso, cv.lasso$lambda.1se)
 
     ## 13 x 1 sparse Matrix of class "dgCMatrix"
     ##                                1
-    ## (Intercept)           28.4948815
+    ## (Intercept)           -3.0877571
     ## (Intercept)            .        
     ## fixed_acidity          .        
     ## volatile_acidity       .        
-    ## citric_acid            .        
+    ## citric_acid            0.8741794
     ## residual_sugar         .        
-    ## chlorides            -18.8514211
+    ## chlorides            -15.9767685
     ## free_sulfur_dioxide    .        
     ## total_sulfur_dioxide   .        
-    ## density              -36.4789665
-    ## p_h                   -1.0734750
-    ## sulphates              7.0984640
-    ## alcohol                0.6484565
+    ## density                .        
+    ## p_h                   -3.7926291
+    ## sulphates              5.5814540
+    ## alcohol                1.0894311
 
 ``` r
 library(broom)
@@ -984,16 +1200,15 @@ lasso.model <- glmnet(x, y, alpha = 1, family = "binomial",
 broom::tidy(lasso.model)
 ```
 
-    ##                  term step      estimate     lambda dev.ratio
-    ## 1         (Intercept)    1  211.43941063 0.01584114 0.6408444
-    ## 2         citric_acid    1    0.55444734 0.01584114 0.6408444
-    ## 3      residual_sugar    1   -0.09045859 0.01584114 0.6408444
-    ## 4           chlorides    1  -44.21037381 0.01584114 0.6408444
-    ## 5 free_sulfur_dioxide    1   -0.02507029 0.01584114 0.6408444
-    ## 6             density    1 -210.88863473 0.01584114 0.6408444
-    ## 7                 p_h    1   -5.72341224 0.01584114 0.6408444
-    ## 8           sulphates    1    9.56676238 0.01584114 0.6408444
-    ## 9             alcohol    1    1.19118973 0.01584114 0.6408444
+    ##                   term step       estimate     lambda dev.ratio
+    ## 1          (Intercept)    1   0.8426539919 0.01483883 0.6810093
+    ## 2          citric_acid    1   1.6081249994 0.01483883 0.6810093
+    ## 3            chlorides    1 -44.3754188879 0.01483883 0.6810093
+    ## 4  free_sulfur_dioxide    1  -0.0047555214 0.01483883 0.6810093
+    ## 5 total_sulfur_dioxide    1  -0.0008643697 0.01483883 0.6810093
+    ## 6                  p_h    1  -6.7922205609 0.01483883 0.6810093
+    ## 7            sulphates    1   7.9016906426 0.01483883 0.6810093
+    ## 8              alcohol    1   1.6153204770 0.01483883 0.6810093
 
 ``` r
 # Make prediction on test data
@@ -1005,7 +1220,7 @@ observed.classes <- testing$high_qual_flag
 mean(predicted.classes == observed.classes)
 ```
 
-    ## [1] 0.8840125
+    ## [1] 0.8683386
 
 ``` r
 caret::confusionMatrix(predicted.classes, observed.classes, positive='1')
@@ -1015,25 +1230,25 @@ caret::confusionMatrix(predicted.classes, observed.classes, positive='1')
     ## 
     ##           Reference
     ## Prediction   0   1
-    ##          0 280   1
-    ##          1  36   2
-    ##                                          
-    ##                Accuracy : 0.884          
-    ##                  95% CI : (0.8437, 0.917)
-    ##     No Information Rate : 0.9906         
-    ##     P-Value [Acc > NIR] : 1              
-    ##                                          
-    ##                   Kappa : 0.0816         
-    ##  Mcnemar's Test P-Value : 0.00000002276  
-    ##                                          
-    ##             Sensitivity : 0.666667       
-    ##             Specificity : 0.886076       
-    ##          Pos Pred Value : 0.052632       
-    ##          Neg Pred Value : 0.996441       
-    ##              Prevalence : 0.009404       
-    ##          Detection Rate : 0.006270       
-    ##    Detection Prevalence : 0.119122       
-    ##       Balanced Accuracy : 0.776371       
-    ##                                          
-    ##        'Positive' Class : 1              
+    ##          0 275   1
+    ##          1  41   2
+    ##                                           
+    ##                Accuracy : 0.8683          
+    ##                  95% CI : (0.8262, 0.9034)
+    ##     No Information Rate : 0.9906          
+    ##     P-Value [Acc > NIR] : 1               
+    ##                                           
+    ##                   Kappa : 0.0706          
+    ##  Mcnemar's Test P-Value : 0.000000001768  
+    ##                                           
+    ##             Sensitivity : 0.666667        
+    ##             Specificity : 0.870253        
+    ##          Pos Pred Value : 0.046512        
+    ##          Neg Pred Value : 0.996377        
+    ##              Prevalence : 0.009404        
+    ##          Detection Rate : 0.006270        
+    ##    Detection Prevalence : 0.134796        
+    ##       Balanced Accuracy : 0.768460        
+    ##                                           
+    ##        'Positive' Class : 1               
     ##

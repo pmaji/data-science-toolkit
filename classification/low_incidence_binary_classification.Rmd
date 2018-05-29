@@ -170,7 +170,7 @@ theme_economist()
 
 # code to find the optimal cutoff  
 # functions are sourced in, to reduce document's length
-source("useful_logit_functions.R")
+source("useful_classification_functions.R")
   
 # prediction testing setup
 prediction_train <- predict(logit_fit, newdata = training, type = "response" )
@@ -286,7 +286,7 @@ theme_economist()
 
 # code to find the optimal cutoff  
 # functions are sourced in, to reduce document's length
-source("useful_logit_functions.R")
+source("useful_classification_functions.R")
 
 # using function AccuracyCutoffInfo to test for optimal cutoff visually
 accuracy_info <- AccuracyCutoffInfo(train = predictions_train_full, 
@@ -424,7 +424,7 @@ theme_economist()
 
 # code to find the optimal cutoff  
 # functions are sourced in, to reduce document's length
-source("useful_logit_functions.R")
+source("useful_classification_functions.R")
 
 # using function AccuracyCutoffInfo to test for optimal cutoff visually
 accuracy_info <- AccuracyCutoffInfo(train = predictions_train_full, 
@@ -500,12 +500,93 @@ dbsmote_logit_fit_probs <- predict(dbsmote_logit_fit,
 head(dbsmote_logit_fit_probs)
 
 # building a vector of labels for high quality vs. not high quality 
-dbsmote_logit_fit_predictions <- factor(ifelse(dbsmote_logit_fit_probs > 0.5, 1, 0),levels=c('0','1'))
+# this 0.6 threshold was chosen based on the auc colored curves to follow below
+dbsmote_logit_fit_predictions <- factor(ifelse(dbsmote_logit_fit_probs > 0.6, 1, 0),levels=c('0','1'))
 head(dbsmote_logit_fit_predictions)
 
 caret::confusionMatrix(dbsmote_logit_fit_predictions,testing$high_qual_flag, positive='1')
 
 ```
+
+
+```{r}
+# condensed verison of model performance metrics for up-sampled model
+
+pR2(dbsmote_logit_fit) # McFadden Pseudo R Squared
+
+# prediction testing for up-sampled logit
+prediction_train <- predict(dbsmote_logit_fit, newdata = smote2_train$data, type = "response" )
+predictions_train_full <- data.frame(prediction = prediction_train, high_qual_flag = smote2_train$data$class)
+
+prediction_test <- predict(dbsmote_logit_fit, newdata = testing, type = "response" )
+predictions_test_full <- data.frame(prediction = prediction_test, high_qual_flag = testing$high_qual_flag)
+
+# distribution of the prediction score grouped by known outcome
+ggplot(predictions_train_full, aes(prediction_train, color = as.factor(smote2_train$data$class) ) ) + 
+geom_density( size = 1 ) +
+ggtitle( "Training Set's Predicted Score" ) + 
+scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) + 
+theme_economist()
+
+# distribution of the prediction score grouped by known outcome
+ggplot(predictions_test_full, aes(prediction_test, color = as.factor(testing$high_qual_flag) ) ) + 
+geom_density( size = 1 ) +
+ggtitle( "Testing Set's Predicted Score" ) + 
+scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) + 
+theme_economist()
+
+# code to find the optimal cutoff  
+# functions are sourced in, to reduce document's length
+source("useful_classification_functions.R")
+
+# using function AccuracyCutoffInfo to test for optimal cutoff visually
+accuracy_info <- AccuracyCutoffInfo(train = predictions_train_full, 
+                                    test = predictions_test_full, 
+                                    predict = "prediction", 
+                                    actual = "high_qual_flag",
+                                    cut_val_start = 0.01,
+                                    cut_val_end = 0.9,
+                                    by_step_size = 0.001)
+
+accuracy_info$plot
+
+
+# Moving on To Using ROC Curves to pintpoint optimal cutoffs
+
+# user-defined different cost for false negative and false positive
+# here the assumption is that a false positive is 1/10th as costly as a false negative
+cost_fp <- 10
+cost_fn <- 100
+
+roc_info <- ROCInfo(data = predictions_test_full, 
+                    predict = "prediction", 
+                    actual = "high_qual_flag", 
+                    cost.fp = cost_fp, 
+                    cost.fn = cost_fn )
+
+```
+
+
+```{r fig5, fig.height = 4, fig.width = 6, fig.align = "center"}
+grid.draw(roc_info$plot)
+```
+
+```{r}
+# visualize a particular cutoff (lowest point of the previous plot)
+cm_info <- ConfusionMatrixInfo(data = predictions_test_full, 
+                               predict = "prediction", 
+                               actual = "high_qual_flag", 
+                               cutoff = .60)
+
+# shows what this information looks like
+print(cm_info$data)
+
+# prints the chart
+cm_info$plot
+
+```
+
+
 
 ## Now trying ROSE
 

@@ -47,8 +47,8 @@ Exploring the Data
 A description of the various variables can be found here: <https://archive.ics.uci.edu/ml/datasets/automobile>
 
 ``` r
-base_red <- read.csv("winequality-red.csv",sep=";")
-base_white <- read.csv("winequality-white.csv",sep=";")
+base_red <- read.csv("data/winequality-red.csv",sep=";")
+base_white <- read.csv("data/winequality-white.csv",sep=";")
 
 # check to see if we have missing values
 library(Amelia) # allows for creation of missmap--missings values map
@@ -463,7 +463,7 @@ theme_economist()
 ``` r
 # code to find the optimal cutoff  
 # functions are sourced in, to reduce document's length
-source("useful_logit_functions.R")
+source("useful_classification_functions.R")
 ```
 
     ## Loading required package: gplots
@@ -732,7 +732,7 @@ theme_economist()
 ``` r
 # code to find the optimal cutoff  
 # functions are sourced in, to reduce document's length
-source("useful_logit_functions.R")
+source("useful_classification_functions.R")
 
 # using function AccuracyCutoffInfo to test for optimal cutoff visually
 accuracy_info <- AccuracyCutoffInfo(train = predictions_train_full, 
@@ -1061,7 +1061,7 @@ theme_economist()
 ``` r
 # code to find the optimal cutoff  
 # functions are sourced in, to reduce document's length
-source("useful_logit_functions.R")
+source("useful_classification_functions.R")
 
 # using function AccuracyCutoffInfo to test for optimal cutoff visually
 accuracy_info <- AccuracyCutoffInfo(train = predictions_train_full, 
@@ -1260,7 +1260,8 @@ head(dbsmote_logit_fit_probs)
 
 ``` r
 # building a vector of labels for high quality vs. not high quality 
-dbsmote_logit_fit_predictions <- factor(ifelse(dbsmote_logit_fit_probs > 0.5, 1, 0),levels=c('0','1'))
+# this 0.6 threshold was chosen based on the auc colored curves to follow below
+dbsmote_logit_fit_predictions <- factor(ifelse(dbsmote_logit_fit_probs > 0.6, 1, 0),levels=c('0','1'))
 head(dbsmote_logit_fit_predictions)
 ```
 
@@ -1276,28 +1277,141 @@ caret::confusionMatrix(dbsmote_logit_fit_predictions,testing$high_qual_flag, pos
     ## 
     ##           Reference
     ## Prediction   0   1
-    ##          0 280   0
-    ##          1  36   3
+    ##          0 284   0
+    ##          1  32   3
     ##                                           
-    ##                Accuracy : 0.8871          
-    ##                  95% CI : (0.8472, 0.9197)
+    ##                Accuracy : 0.8997          
+    ##                  95% CI : (0.8613, 0.9304)
     ##     No Information Rate : 0.9906          
     ##     P-Value [Acc > NIR] : 1               
     ##                                           
-    ##                   Kappa : 0.1276          
-    ##  Mcnemar's Test P-Value : 0.000000005433  
+    ##                   Kappa : 0.143           
+    ##  Mcnemar's Test P-Value : 0.00000004251   
     ##                                           
     ##             Sensitivity : 1.000000        
-    ##             Specificity : 0.886076        
-    ##          Pos Pred Value : 0.076923        
+    ##             Specificity : 0.898734        
+    ##          Pos Pred Value : 0.085714        
     ##          Neg Pred Value : 1.000000        
     ##              Prevalence : 0.009404        
     ##          Detection Rate : 0.009404        
-    ##    Detection Prevalence : 0.122257        
-    ##       Balanced Accuracy : 0.943038        
+    ##    Detection Prevalence : 0.109718        
+    ##       Balanced Accuracy : 0.949367        
     ##                                           
     ##        'Positive' Class : 1               
     ## 
+
+``` r
+# condensed verison of model performance metrics for up-sampled model
+
+pR2(dbsmote_logit_fit) # McFadden Pseudo R Squared
+```
+
+    ##           llh       llhNull            G2      McFadden          r2ML 
+    ##  -516.2718739 -1628.9310065  2225.3182651     0.6830609     0.6106713 
+    ##          r2CU 
+    ##     0.8156620
+
+``` r
+# prediction testing for up-sampled logit
+prediction_train <- predict(dbsmote_logit_fit, newdata = smote2_train$data, type = "response" )
+predictions_train_full <- data.frame(prediction = prediction_train, high_qual_flag = smote2_train$data$class)
+
+prediction_test <- predict(dbsmote_logit_fit, newdata = testing, type = "response" )
+predictions_test_full <- data.frame(prediction = prediction_test, high_qual_flag = testing$high_qual_flag)
+
+# distribution of the prediction score grouped by known outcome
+ggplot(predictions_train_full, aes(prediction_train, color = as.factor(smote2_train$data$class) ) ) + 
+geom_density( size = 1 ) +
+ggtitle( "Training Set's Predicted Score" ) + 
+scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) + 
+theme_economist()
+```
+
+![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-22-1.png)
+
+``` r
+# distribution of the prediction score grouped by known outcome
+ggplot(predictions_test_full, aes(prediction_test, color = as.factor(testing$high_qual_flag) ) ) + 
+geom_density( size = 1 ) +
+ggtitle( "Testing Set's Predicted Score" ) + 
+scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) + 
+theme_economist()
+```
+
+![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-22-2.png)
+
+``` r
+# code to find the optimal cutoff  
+# functions are sourced in, to reduce document's length
+source("useful_classification_functions.R")
+
+# using function AccuracyCutoffInfo to test for optimal cutoff visually
+accuracy_info <- AccuracyCutoffInfo(train = predictions_train_full, 
+                                    test = predictions_test_full, 
+                                    predict = "prediction", 
+                                    actual = "high_qual_flag",
+                                    cut_val_start = 0.01,
+                                    cut_val_end = 0.9,
+                                    by_step_size = 0.001)
+
+accuracy_info$plot
+```
+
+![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-22-3.png)
+
+``` r
+# Moving on To Using ROC Curves to pintpoint optimal cutoffs
+
+# user-defined different cost for false negative and false positive
+# here the assumption is that a false positive is 1/10th as costly as a false negative
+cost_fp <- 10
+cost_fn <- 100
+
+roc_info <- ROCInfo(data = predictions_test_full, 
+                    predict = "prediction", 
+                    actual = "high_qual_flag", 
+                    cost.fp = cost_fp, 
+                    cost.fn = cost_fn )
+```
+
+``` r
+grid.draw(roc_info$plot)
+```
+
+<img src="low_incidence_binary_classification_files/figure-markdown_github/fig5-1.png" style="display: block; margin: auto;" />
+
+``` r
+# visualize a particular cutoff (lowest point of the previous plot)
+cm_info <- ConfusionMatrixInfo(data = predictions_test_full, 
+                               predict = "prediction", 
+                               actual = "high_qual_flag", 
+                               cutoff = .60)
+
+# shows what this information looks like
+print(cm_info$data)
+```
+
+    ##      actual        predict type
+    ##   1:      0 0.000031830972   TN
+    ##   2:      0 0.000009503822   TN
+    ##   3:      0 0.000035120432   TN
+    ##   4:      0 0.000032302269   TN
+    ##   5:      0 0.000275339828   TN
+    ##  ---                           
+    ## 315:      0 0.000029348953   TN
+    ## 316:      0 0.972316726792   FP
+    ## 317:      0 0.112783793999   TN
+    ## 318:      0 0.000555013989   TN
+    ## 319:      0 0.001630104454   TN
+
+``` r
+# prints the chart
+cm_info$plot
+```
+
+    ## Warning: Removed 1 rows containing missing values (geom_point).
+
+![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-23-1.png)
 
 Now trying ROSE
 ---------------
@@ -1316,7 +1430,7 @@ table(rose_train$high_qual_flag)
 
     ## 
     ##   0   1 
-    ## 607 673
+    ## 634 646
 
 ``` r
 # logistic regression built using ROSE data
@@ -1334,33 +1448,33 @@ summary(rose_logit_fit)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -3.1199  -0.4715   0.1853   0.6122   2.1286  
+    ## -3.6377  -0.5038   0.1273   0.6405   2.3503  
     ## 
     ## Coefficients:
     ##                         Estimate  Std. Error z value             Pr(>|z|)
-    ## (Intercept)           278.320372   41.590751   6.692      0.0000000000220
-    ## fixed_acidity           0.109454    0.044647   2.452              0.01422
-    ## volatile_acidity       -1.391375    0.494791  -2.812              0.00492
-    ## citric_acid             3.005172    0.448592   6.699      0.0000000000210
-    ## residual_sugar         -0.034781    0.061415  -0.566              0.57118
-    ## chlorides             -27.453078    3.327283  -8.251 < 0.0000000000000002
-    ## free_sulfur_dioxide    -0.007348    0.006545  -1.123              0.26157
-    ## total_sulfur_dioxide   -0.005195    0.002982  -1.742              0.08145
-    ## density              -286.096078   41.654670  -6.868      0.0000000000065
-    ## p_h                    -1.382447    0.443973  -3.114              0.00185
-    ## sulphates               4.875801    0.515812   9.453 < 0.0000000000000002
-    ## alcohol                 0.790061    0.070481  11.210 < 0.0000000000000002
+    ## (Intercept)           256.656859   38.457239   6.674     0.00000000002492
+    ## fixed_acidity           0.066991    0.042174   1.588               0.1122
+    ## volatile_acidity       -0.753583    0.481987  -1.563               0.1179
+    ## citric_acid             2.205537    0.442187   4.988     0.00000061073175
+    ## residual_sugar         -0.119008    0.057757  -2.061               0.0393
+    ## chlorides             -21.207820    3.054641  -6.943     0.00000000000384
+    ## free_sulfur_dioxide    -0.002894    0.006791  -0.426               0.6700
+    ## total_sulfur_dioxide   -0.010717    0.002700  -3.970     0.00007197308747
+    ## density              -262.014229   38.557278  -6.795     0.00000000001080
+    ## p_h                    -2.198894    0.426668  -5.154     0.00000025547135
+    ## sulphates               5.581498    0.540779  10.321 < 0.0000000000000002
+    ## alcohol                 0.796788    0.068103  11.700 < 0.0000000000000002
     ##                         
     ## (Intercept)          ***
-    ## fixed_acidity        *  
-    ## volatile_acidity     ** 
+    ## fixed_acidity           
+    ## volatile_acidity        
     ## citric_acid          ***
-    ## residual_sugar          
+    ## residual_sugar       *  
     ## chlorides            ***
     ## free_sulfur_dioxide     
-    ## total_sulfur_dioxide .  
+    ## total_sulfur_dioxide ***
     ## density              ***
-    ## p_h                  ** 
+    ## p_h                  ***
     ## sulphates            ***
     ## alcohol              ***
     ## ---
@@ -1368,9 +1482,9 @@ summary(rose_logit_fit)
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
-    ##     Null deviance: 1771.05  on 1279  degrees of freedom
-    ## Residual deviance:  978.01  on 1268  degrees of freedom
-    ## AIC: 1002
+    ##     Null deviance: 1774.3  on 1279  degrees of freedom
+    ## Residual deviance: 1008.2  on 1268  degrees of freedom
+    ## AIC: 1032.2
     ## 
     ## Number of Fisher Scoring iterations: 6
 
@@ -1385,7 +1499,7 @@ head(rose_logit_fit_probs)
 ```
 
     ##         21         22         24         29         30         46 
-    ## 0.10652683 0.05010283 0.03068198 0.01187647 0.03538556 0.51999093
+    ## 0.06848022 0.03877846 0.03236043 0.01643075 0.05315163 0.37566443
 
 ``` r
 # building a vector of labels for high quality vs. not high quality 
@@ -1394,7 +1508,7 @@ head(rose_logit_fit_predictions)
 ```
 
     ## 21 22 24 29 30 46 
-    ##  0  0  0  0  0  1 
+    ##  0  0  0  0  0  0 
     ## Levels: 0 1
 
 ``` r
@@ -1405,27 +1519,27 @@ caret::confusionMatrix(rose_logit_fit_predictions,testing$high_qual_flag, positi
     ## 
     ##           Reference
     ## Prediction   0   1
-    ##          0 253   0
-    ##          1  63   3
-    ##                                               
-    ##                Accuracy : 0.8025              
-    ##                  95% CI : (0.7545, 0.8448)    
-    ##     No Information Rate : 0.9906              
-    ##     P-Value [Acc > NIR] : 1                   
-    ##                                               
-    ##                   Kappa : 0.0702              
-    ##  Mcnemar's Test P-Value : 0.000000000000005662
-    ##                                               
-    ##             Sensitivity : 1.000000            
-    ##             Specificity : 0.800633            
-    ##          Pos Pred Value : 0.045455            
-    ##          Neg Pred Value : 1.000000            
-    ##              Prevalence : 0.009404            
-    ##          Detection Rate : 0.009404            
-    ##    Detection Prevalence : 0.206897            
-    ##       Balanced Accuracy : 0.900316            
-    ##                                               
-    ##        'Positive' Class : 1                   
+    ##          0 255   0
+    ##          1  61   3
+    ##                                              
+    ##                Accuracy : 0.8088             
+    ##                  95% CI : (0.7613, 0.8505)   
+    ##     No Information Rate : 0.9906             
+    ##     P-Value [Acc > NIR] : 1                  
+    ##                                              
+    ##                   Kappa : 0.0729             
+    ##  Mcnemar's Test P-Value : 0.00000000000001564
+    ##                                              
+    ##             Sensitivity : 1.000000           
+    ##             Specificity : 0.806962           
+    ##          Pos Pred Value : 0.046875           
+    ##          Neg Pred Value : 1.000000           
+    ##              Prevalence : 0.009404           
+    ##          Detection Rate : 0.009404           
+    ##    Detection Prevalence : 0.200627           
+    ##       Balanced Accuracy : 0.903481           
+    ##                                              
+    ##        'Positive' Class : 1                  
     ## 
 
 Penalized Logistic Regression
@@ -1503,7 +1617,7 @@ cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
 plot(cv.lasso)
 ```
 
-![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-24-1.png)
+![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-26-1.png)
 
 ``` r
 # we have two common choices for lambda here, lambda min and lambda lse

@@ -25,8 +25,8 @@ library(ggplot2) # for visualization
 A description of the various variables can be found here: https://archive.ics.uci.edu/ml/datasets/automobile
 
 ```{r}
-base_red <- read.csv("winequality-red.csv",sep=";")
-base_white <- read.csv("winequality-white.csv",sep=";")
+base_red <- read.csv("data/winequality-red.csv",sep=";")
+base_white <- read.csv("data/winequality-white.csv",sep=";")
 
 # check to see if we have missing values
 library(Amelia) # allows for creation of missmap--missings values map
@@ -340,7 +340,8 @@ cm_info$plot
 ## Trying SMOTE
 
 ```{r}
-library(DMwR)
+library(DMwR) # main package for SMOTE
+# also might want to explore the wider family of SMOTE functions: https://cran.r-project.org/web/packages/smotefamily/smotefamily.pdf
 
 # both upsampling and downsampling via SMOTE
 smote_train <- DMwR::SMOTE(high_qual_flag ~ ., data=as.data.frame(training))
@@ -473,6 +474,38 @@ cm_info$plot
 ```
 
 
+## Now Trying DBSMOTE (dbscan-based SMOTE)
+
+```{r}
+# for all varieties of smote, see https://cran.r-project.org/web/packages/smotefamily/smotefamily.pdf
+library(smotefamily)
+library(dbscan) #needed for dbsmote
+
+smote2_train <- smotefamily::DBSMOTE(training[,-c(12:13)], as.numeric(as.character(training$high_qual_flag)))
+janitor::tabyl(smote2_train$data$class)
+
+# logit built using dbsmote data
+dbsmote_logit_fit <- glm(as.numeric(class) ~. , 
+                 data = smote2_train$data, 
+                 family = binomial)
+
+summary(dbsmote_logit_fit)
+
+# testing the dbsmote fit logit
+# building a vector of probabilties that a certain wine is high quality 
+dbsmote_logit_fit_probs <- predict(dbsmote_logit_fit,
+                           newdata = testing,
+                           type = "response")
+
+head(dbsmote_logit_fit_probs)
+
+# building a vector of labels for high quality vs. not high quality 
+dbsmote_logit_fit_predictions <- factor(ifelse(dbsmote_logit_fit_probs > 0.5, 1, 0),levels=c('0','1'))
+head(dbsmote_logit_fit_predictions)
+
+caret::confusionMatrix(dbsmote_logit_fit_predictions,testing$high_qual_flag, positive='1')
+
+```
 
 ## Now trying ROSE
 

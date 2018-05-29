@@ -806,7 +806,8 @@ Trying SMOTE
 ------------
 
 ``` r
-library(DMwR)
+library(DMwR) # main package for SMOTE
+# also might want to explore the wider family of SMOTE functions: https://cran.r-project.org/web/packages/smotefamily/smotefamily.pdf
 
 # both upsampling and downsampling via SMOTE
 smote_train <- DMwR::SMOTE(high_qual_flag ~ ., data=as.data.frame(training))
@@ -1130,6 +1131,174 @@ cm_info$plot
 
 ![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-20-1.png)
 
+Now Trying DBSMOTE (dbscan-based SMOTE)
+---------------------------------------
+
+``` r
+# for all varieties of smote, see https://cran.r-project.org/web/packages/smotefamily/smotefamily.pdf
+library(smotefamily)
+```
+
+    ## 
+    ## Attaching package: 'smotefamily'
+
+    ## The following object is masked from 'package:DMwR':
+    ## 
+    ##     SMOTE
+
+``` r
+library(dbscan) #needed for dbsmote
+```
+
+    ## 
+    ## Attaching package: 'dbscan'
+
+    ## The following object is masked from 'package:DMwR':
+    ## 
+    ##     kNN
+
+``` r
+smote2_train <- smotefamily::DBSMOTE(training[,-c(12:13)], as.numeric(as.character(training$high_qual_flag)))
+```
+
+    ## [1] 2
+    ## [1] 2
+    ## [1] 2
+    ## [1] 2
+    ## [1] 2
+    ## [1] 2
+    ## [1] 2
+    ## [1] 2
+    ## [1] 2
+    ## [1] 2
+    ## [1] 2
+    ## [1] 2
+    ## [1] 2
+    ## [1] "DBSMOTE is Done"
+
+``` r
+janitor::tabyl(smote2_train$data$class)
+```
+
+    ##  smote2_train$data$class    n   percent
+    ##                        0 1265 0.5362442
+    ##                        1 1094 0.4637558
+
+``` r
+# logit built using dbsmote data
+dbsmote_logit_fit <- glm(as.numeric(class) ~. , 
+                 data = smote2_train$data, 
+                 family = binomial)
+```
+
+    ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+``` r
+summary(dbsmote_logit_fit)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = as.numeric(class) ~ ., family = binomial, data = smote2_train$data)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -3.9281  -0.0675  -0.0015   0.3719   1.4444  
+    ## 
+    ## Coefficients:
+    ##                         Estimate  Std. Error z value             Pr(>|z|)
+    ## (Intercept)          -251.182830  156.975456  -1.600              0.10957
+    ## fixed_acidity          -1.019899    0.149843  -6.806        0.00000000001
+    ## volatile_acidity        3.870696    1.082677   3.575              0.00035
+    ## citric_acid             5.680825    1.195028   4.754        0.00000199710
+    ## residual_sugar         -0.464315    0.144356  -3.216              0.00130
+    ## chlorides            -132.552404   11.004139 -12.046 < 0.0000000000000002
+    ## free_sulfur_dioxide     0.071966    0.014608   4.927        0.00000083658
+    ## total_sulfur_dioxide   -0.065743    0.007669  -8.572 < 0.0000000000000002
+    ## density               291.968661  159.187933   1.834              0.06664
+    ## p_h                   -17.303405    1.324831 -13.061 < 0.0000000000000002
+    ## sulphates               7.825844    0.840582   9.310 < 0.0000000000000002
+    ## alcohol                 2.415203    0.223480  10.807 < 0.0000000000000002
+    ##                         
+    ## (Intercept)             
+    ## fixed_acidity        ***
+    ## volatile_acidity     ***
+    ## citric_acid          ***
+    ## residual_sugar       ** 
+    ## chlorides            ***
+    ## free_sulfur_dioxide  ***
+    ## total_sulfur_dioxide ***
+    ## density              .  
+    ## p_h                  ***
+    ## sulphates            ***
+    ## alcohol              ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 3257.9  on 2358  degrees of freedom
+    ## Residual deviance: 1032.5  on 2347  degrees of freedom
+    ## AIC: 1056.5
+    ## 
+    ## Number of Fisher Scoring iterations: 8
+
+``` r
+# testing the dbsmote fit logit
+# building a vector of probabilties that a certain wine is high quality 
+dbsmote_logit_fit_probs <- predict(dbsmote_logit_fit,
+                           newdata = testing,
+                           type = "response")
+
+head(dbsmote_logit_fit_probs)
+```
+
+    ##             21             22             24             29             30 
+    ## 0.000031830972 0.000009503822 0.000035120432 0.000032302269 0.000275339828 
+    ##             46 
+    ## 0.001907734369
+
+``` r
+# building a vector of labels for high quality vs. not high quality 
+dbsmote_logit_fit_predictions <- factor(ifelse(dbsmote_logit_fit_probs > 0.5, 1, 0),levels=c('0','1'))
+head(dbsmote_logit_fit_predictions)
+```
+
+    ## 21 22 24 29 30 46 
+    ##  0  0  0  0  0  0 
+    ## Levels: 0 1
+
+``` r
+caret::confusionMatrix(dbsmote_logit_fit_predictions,testing$high_qual_flag, positive='1')
+```
+
+    ## Confusion Matrix and Statistics
+    ## 
+    ##           Reference
+    ## Prediction   0   1
+    ##          0 280   0
+    ##          1  36   3
+    ##                                           
+    ##                Accuracy : 0.8871          
+    ##                  95% CI : (0.8472, 0.9197)
+    ##     No Information Rate : 0.9906          
+    ##     P-Value [Acc > NIR] : 1               
+    ##                                           
+    ##                   Kappa : 0.1276          
+    ##  Mcnemar's Test P-Value : 0.000000005433  
+    ##                                           
+    ##             Sensitivity : 1.000000        
+    ##             Specificity : 0.886076        
+    ##          Pos Pred Value : 0.076923        
+    ##          Neg Pred Value : 1.000000        
+    ##              Prevalence : 0.009404        
+    ##          Detection Rate : 0.009404        
+    ##    Detection Prevalence : 0.122257        
+    ##       Balanced Accuracy : 0.943038        
+    ##                                           
+    ##        'Positive' Class : 1               
+    ## 
+
 Now trying ROSE
 ---------------
 
@@ -1147,7 +1316,7 @@ table(rose_train$high_qual_flag)
 
     ## 
     ##   0   1 
-    ## 651 629
+    ## 607 673
 
 ``` r
 # logistic regression built using ROSE data
@@ -1164,34 +1333,34 @@ summary(rose_logit_fit)
     ##     data = rose_train)
     ## 
     ## Deviance Residuals: 
-    ##      Min        1Q    Median        3Q       Max  
-    ## -2.97434  -0.53602  -0.04272   0.65981   2.35558  
+    ##     Min       1Q   Median       3Q      Max  
+    ## -3.1199  -0.4715   0.1853   0.6122   2.1286  
     ## 
     ## Coefficients:
     ##                         Estimate  Std. Error z value             Pr(>|z|)
-    ## (Intercept)           168.144064   38.626019   4.353      0.0000134207820
-    ## fixed_acidity           0.166791    0.044604   3.739             0.000184
-    ## volatile_acidity       -1.230110    0.484742  -2.538             0.011160
-    ## citric_acid             1.765355    0.426633   4.138      0.0000350533775
-    ## residual_sugar         -0.065855    0.062451  -1.055             0.291652
-    ## chlorides             -23.834074    3.527561  -6.757      0.0000000000141
-    ## free_sulfur_dioxide    -0.001213    0.006442  -0.188             0.850610
-    ## total_sulfur_dioxide   -0.006365    0.002647  -2.405             0.016191
-    ## density              -175.232790   38.758223  -4.521      0.0000061496704
-    ## p_h                    -1.742901    0.419925  -4.151      0.0000331747737
-    ## sulphates               4.402247    0.486416   9.050 < 0.0000000000000002
-    ## alcohol                 0.855341    0.067135  12.741 < 0.0000000000000002
+    ## (Intercept)           278.320372   41.590751   6.692      0.0000000000220
+    ## fixed_acidity           0.109454    0.044647   2.452              0.01422
+    ## volatile_acidity       -1.391375    0.494791  -2.812              0.00492
+    ## citric_acid             3.005172    0.448592   6.699      0.0000000000210
+    ## residual_sugar         -0.034781    0.061415  -0.566              0.57118
+    ## chlorides             -27.453078    3.327283  -8.251 < 0.0000000000000002
+    ## free_sulfur_dioxide    -0.007348    0.006545  -1.123              0.26157
+    ## total_sulfur_dioxide   -0.005195    0.002982  -1.742              0.08145
+    ## density              -286.096078   41.654670  -6.868      0.0000000000065
+    ## p_h                    -1.382447    0.443973  -3.114              0.00185
+    ## sulphates               4.875801    0.515812   9.453 < 0.0000000000000002
+    ## alcohol                 0.790061    0.070481  11.210 < 0.0000000000000002
     ##                         
     ## (Intercept)          ***
-    ## fixed_acidity        ***
-    ## volatile_acidity     *  
+    ## fixed_acidity        *  
+    ## volatile_acidity     ** 
     ## citric_acid          ***
     ## residual_sugar          
     ## chlorides            ***
     ## free_sulfur_dioxide     
-    ## total_sulfur_dioxide *  
+    ## total_sulfur_dioxide .  
     ## density              ***
-    ## p_h                  ***
+    ## p_h                  ** 
     ## sulphates            ***
     ## alcohol              ***
     ## ---
@@ -1199,9 +1368,9 @@ summary(rose_logit_fit)
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
-    ##     Null deviance: 1774.1  on 1279  degrees of freedom
-    ## Residual deviance: 1039.1  on 1268  degrees of freedom
-    ## AIC: 1063.1
+    ##     Null deviance: 1771.05  on 1279  degrees of freedom
+    ## Residual deviance:  978.01  on 1268  degrees of freedom
+    ## AIC: 1002
     ## 
     ## Number of Fisher Scoring iterations: 6
 
@@ -1216,7 +1385,7 @@ head(rose_logit_fit_probs)
 ```
 
     ##         21         22         24         29         30         46 
-    ## 0.08527859 0.04739785 0.03692142 0.01559201 0.04481631 0.37386419
+    ## 0.10652683 0.05010283 0.03068198 0.01187647 0.03538556 0.51999093
 
 ``` r
 # building a vector of labels for high quality vs. not high quality 
@@ -1225,7 +1394,7 @@ head(rose_logit_fit_predictions)
 ```
 
     ## 21 22 24 29 30 46 
-    ##  0  0  0  0  0  0 
+    ##  0  0  0  0  0  1 
     ## Levels: 0 1
 
 ``` r
@@ -1236,27 +1405,27 @@ caret::confusionMatrix(rose_logit_fit_predictions,testing$high_qual_flag, positi
     ## 
     ##           Reference
     ## Prediction   0   1
-    ##          0 260   0
-    ##          1  56   3
-    ##                                             
-    ##                Accuracy : 0.8245            
-    ##                  95% CI : (0.7782, 0.8646)  
-    ##     No Information Rate : 0.9906            
-    ##     P-Value [Acc > NIR] : 1                 
-    ##                                             
-    ##                   Kappa : 0.0803            
-    ##  Mcnemar's Test P-Value : 0.0000000000001987
-    ##                                             
-    ##             Sensitivity : 1.000000          
-    ##             Specificity : 0.822785          
-    ##          Pos Pred Value : 0.050847          
-    ##          Neg Pred Value : 1.000000          
-    ##              Prevalence : 0.009404          
-    ##          Detection Rate : 0.009404          
-    ##    Detection Prevalence : 0.184953          
-    ##       Balanced Accuracy : 0.911392          
-    ##                                             
-    ##        'Positive' Class : 1                 
+    ##          0 253   0
+    ##          1  63   3
+    ##                                               
+    ##                Accuracy : 0.8025              
+    ##                  95% CI : (0.7545, 0.8448)    
+    ##     No Information Rate : 0.9906              
+    ##     P-Value [Acc > NIR] : 1                   
+    ##                                               
+    ##                   Kappa : 0.0702              
+    ##  Mcnemar's Test P-Value : 0.000000000000005662
+    ##                                               
+    ##             Sensitivity : 1.000000            
+    ##             Specificity : 0.800633            
+    ##          Pos Pred Value : 0.045455            
+    ##          Neg Pred Value : 1.000000            
+    ##              Prevalence : 0.009404            
+    ##          Detection Rate : 0.009404            
+    ##    Detection Prevalence : 0.206897            
+    ##       Balanced Accuracy : 0.900316            
+    ##                                               
+    ##        'Positive' Class : 1                   
     ## 
 
 Penalized Logistic Regression
@@ -1334,7 +1503,7 @@ cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
 plot(cv.lasso)
 ```
 
-![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-23-1.png)
+![](low_incidence_binary_classification_files/figure-markdown_github/unnamed-chunk-24-1.png)
 
 ``` r
 # we have two common choices for lambda here, lambda min and lambda lse

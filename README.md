@@ -1,13 +1,6 @@
 # r-stats-playground
 
-Welcome! This is a new repository dedicated to all things related to statistical modeling in R. 
-
-Presently, I am working through the ISLR; hence, I'll keep my rough notes here as I progress. My goal is to build this into a compilation of reference material--from basic notes on various techniques, to more complicated, longer form examples--on a variety of modeling techniques in R. 
-
-As I work through the ISLR, my plan is to take notes via the "islr notebook", picking out occasional methods and doing a deeper dive on them separately via broken-out R files. 
-
-
-
+Welcome! This is the repository that I will use to build out my stockpile of statistical methods and modeling techniques in R. I will cover some portions of the ISLR, and will build out deeper-dives into methods of particular interest to me, the first being low-incidence binary classification methods. 
 
 
 

@@ -171,7 +171,7 @@ ROCInfo <- function( data, predict, actual, cost.fp, cost.fn )
     geom_vline( xintercept = best_cutoff, alpha = 0.8, linetype = "dashed", color = "steelblue4" )	
   
   # the main title for the two arranged plot
-  sub_title <- sprintf( "Cutoff at %.2f - Total Cost = %d, AUC = %.3f", 
+  sub_title <- sprintf( "Cutoff at %.2f - Total Cost = %f, AUC = %.3f", 
                         best_cutoff, best_cost, auc )
   
   # arranged into a side by side plot

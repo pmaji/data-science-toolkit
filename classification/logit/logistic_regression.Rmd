@@ -293,7 +293,7 @@ caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1'
 
 ## Tuning the Hyperparameter for the Lasso Model (Optmizing Lamda)
 
-```{r}
+```{r echo=T, results='hide', warning=FALSE}
 library(glmnet) # package needed for ridge methods 
 
 # we need two packages for an advanced samplign technique called SMOTE
@@ -314,14 +314,16 @@ x <- model.matrix(class~.^2, smote2_train$data)
 # calling out what the outcome variable should be explicitly for this method
 y <- smote2_train$data$class
 
-# Find the best lambda using cross-validation
-# Cross-validation is for tuning hyperparameters; not normally needed if model requires no hyperparameters
 
+# Next we move on to find the best lambda using cross-validation
+# Cross-validation is for tuning hyperparameters; not normally needed if model requires no hyperparameters
 set.seed(777) # set seed for reproduciblity
 # alpha = 1 just means lasso ; alpha = 0 is ridge
 # this step below can take a long time, as the range of possible lambdas is simulated
 cv.lasso <- cv.glmnet(x^2, y, alpha = 1, family = "binomial")
+```
 
+```{r}
 # plots the various possible lambdas 
 plot(cv.lasso)
 # Two common choices for lambda: lambda min and lambda lse (both are shown with dotted lines, in turn)

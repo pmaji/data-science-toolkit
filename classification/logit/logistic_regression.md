@@ -44,7 +44,8 @@ Importing, Exploring, Cleaning, Normalizing / Centering, and Prepping the Data
 Importing the Data
 ------------------
 
-Data taken from: <https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/>
+-   Data taken from: <https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/>
+-   Explanation of the meaning / origin of the data can be found in this academic paper here: <http://www3.dsi.uminho.pt/pcortez/wine5.pdf>
 
 ``` r
 # we have both red and white wine datasets with the same variables 
@@ -90,7 +91,7 @@ glimpse(base_white)
     ## $ quality              <int> 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5, 5, 7,...
 
 ``` r
-# the datasets both have teh same variables, but the red dataset has notably fewer observations
+# the datasets both have the same variables, but the red dataset has notably fewer observations
 ```
 
 ``` r
@@ -145,9 +146,10 @@ red_main_df <- main_wine_df %>%
   # dropping the now-useless variable
   select(-color) %>%
   # ensuring quality is a factor; this will be useful later
-  # as a rule of thumb, it's good to factor any non-numeric variables
+  # as a rule of thumb, it's good to factor any non-numeric variables when glm modeling
   mutate(quality = factor(quality))
 
+# examining the newly created dataset
 glimpse(red_main_df)
 ```
 
@@ -173,13 +175,13 @@ Exploring the Data
 # Even though we dropped any rows / cols that are entirely null, we need to check for NA problems
 library(DataExplorer) # allows for creation of missings values map
 # documentation for DataExplorer: https://towardsdatascience.com/simple-fast-exploratory-data-analysis-in-r-with-dataexplorer-package-e055348d9619
-DataExplorer::plot_missing(red_main_df)
+DataExplorer::plot_missing(red_main_df) # shows % of NAs within each variable
 ```
 
 ![](logistic_regression_files/figure-markdown_github/unnamed-chunk-6-1.png)
 
 ``` r
-# good news is this datset looks perfectly clean of nulls!
+# good news is this dataset looks perfectly clean of nulls!
 # If there were any problems with nulls, we would solve it using complete.cases() or something similar
 ```
 
@@ -187,12 +189,14 @@ DataExplorer::plot_missing(red_main_df)
 
 ``` r
 # high-level univariate variable-exploration
+# first a histogram of all continuous variables in the dataset
 DataExplorer::plot_histogram(data = red_main_df, title = "Continuous Variables Explored (Histograms)")
 ```
 
 ![](logistic_regression_files/figure-markdown_github/unnamed-chunk-7-1.png)
 
 ``` r
+# then a density chart of all continous variables in the dataset
 DataExplorer::plot_density(data = red_main_df, title = "Continuous Variables Explored (Density Plots)")
 ```
 
@@ -210,7 +214,7 @@ plot_bar(data = red_main_df, order_bar = FALSE, title = "Categorical Variables E
 ![](logistic_regression_files/figure-markdown_github/unnamed-chunk-8-1.png)
 
 ``` r
-# and we can use janitor to see the exact cross-tab of our quality variable
+# and then we can use janitor to see the exact cross-tab of our quality variable
 janitor::tabyl(red_main_df$quality)
 ```
 
@@ -224,7 +228,7 @@ janitor::tabyl(red_main_df$quality)
 
 ``` r
 # it looks like wines with a rating < 5 are exceptionally bad, so we'll use that as our benchmark
-# all together wines with a rating below 5 represent just over 3% of the population
+# all together wines with a rating below 5 represent just under 4% of the population
 ```
 
 ### Outcome Variable Creation
@@ -233,10 +237,11 @@ janitor::tabyl(red_main_df$quality)
 # given the above analysis, we'll flag anything with a quality rating < 5 as low-quality 
 red_final_df <- red_main_df %>%
   # type conversion here can be tricky because to de-factor requires multiple steps
+  # we have to de-factor, perform the logical test on the numeric, and then re-factor
   mutate(low_qual_flag = factor(ifelse(as.numeric(as.character(quality)) < 5,1,0))) %>%
   select(-quality)
 
-glimpse(red_final_df)
+glimpse(red_final_df) # taking another look at the new dataset
 ```
 
     ## Observations: 1,599
@@ -269,9 +274,10 @@ tabyl(red_final_df$low_qual_flag)
 Centering and Normalizing the Data
 ----------------------------------
 
-For more information on when to center / normalize data, see below: - <https://stats.stackexchange.com/questions/29781/when-conducting-multiple-regression-when-should-you-center-your-predictor-varia>
+For more information on when to center / normalize data, see below: - <https://stats.stackexchange.com/questions/29781/when-conducting-multiple-regression-when-should-you-center-your-predictor-varia> - tl;dr --&gt; center the data when you want your intercept term to represent your expectation when the model is fed the average for each variable in the model, as opposed to the model expectation when all variables == 0; normalize the data when the variable ranges differ markedly
 
 ``` r
+# we're going to scale and center all variables (except our left-hand side)
 red_final_df[,-12] <- scale(red_final_df[,-12], center = TRUE, scale = TRUE)
 glimpse(red_final_df)
 ```
@@ -291,8 +297,8 @@ glimpse(red_final_df)
     ## $ alcohol              <dbl> -0.95994580, -0.58459423, -0.58459423, -0...
     ## $ low_qual_flag        <fct> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,...
 
-Prepping Data for Modeling Process
-----------------------------------
+Prepping Data for the Modeling Process
+--------------------------------------
 
 ``` r
 # split the data into training and testing sets
@@ -335,6 +341,7 @@ Estimating the Model
 
 ``` r
 # simple logistic regression
+# models using all variables in the training dataset (hence ~ .)
 logit_fit <- glm(low_qual_flag ~ .,
                  data = training,
                  family = binomial)
@@ -379,6 +386,10 @@ First Look at Model Predictions
 -------------------------------
 
 ``` r
+# first we'll examine what sort of predictions the model would make when fed the training set
+# then we'll repeat this with the testing set (which we should care a bit more about)
+# then we'll observe the distribution of modelled probabilities to look for interesting trends
+
 # run predictions on training set
 prediction_train <- predict(logit_fit, newdata = training, type = "response" )
 predictions_train_full <- data.frame(prediction = prediction_train, low_qual_flag = training$low_qual_flag)
@@ -412,7 +423,21 @@ Determining What Classification Cutoff is Appropriate
 -----------------------------------------------------
 
 ``` r
-source("useful_classification_functions.R") 
+# some custom functions are sourced in, to reduce document's length
+# the majority of these functions are from ethen8181's GitHub, with edits / improvements I added
+# more info on these custom functions here: http://ethen8181.github.io/machine-learning/unbalanced/unbalanced.html
+
+# sourcing my adopted version of the aforementioned functions directly from my GitHub
+library(RCurl) # Provides functions to allow one to compose general HTTP requests, etc. in R
+```
+
+    ## Loading required package: bitops
+
+``` r
+# grabbing the raw info from my GitHub to turn into a text object
+script <- getURL("https://raw.githubusercontent.com/pmaji/r-stats-and-modeling/master/classification/useful_classification_functions.R", ssl.verifypeer = FALSE)
+# sourcing that code just like you might source an R Script locally
+eval(parse(text = script))
 ```
 
     ## Loading required package: gplots
@@ -439,16 +464,15 @@ source("useful_classification_functions.R")
     ##     between, first, last
 
 ``` r
-# some custom functions are sourced in, to reduce document's length
-# more info on these custom functions here: http://ethen8181.github.io/machine-learning/unbalanced/unbalanced.html
-
-# using function AccuracyCutoffInfo to test for optimal cutoff visually
+# using newly-sourced function AccuracyCutoffInfo to test for optimal cutoff visually
 accuracy_info <- AccuracyCutoffInfo(train = predictions_train_full, 
                                     test = predictions_test_full, 
                                     predict = "prediction", 
                                     actual = "low_qual_flag",
+                                    # iterates over every cutoff value from 1% to 99% 
+                                    # steps in units of 10 bps
                                     cut_val_start = 0.01,
-                                    cut_val_end = 0.9,
+                                    cut_val_end = 0.99,
                                     by_step_size = 0.001)
 
 # from the plot below we can begin to eyeball what the optimal cutoff might be 
@@ -458,13 +482,14 @@ accuracy_info$plot
 ![](logistic_regression_files/figure-markdown_github/unnamed-chunk-14-1.png)
 
 ``` r
-# Moving on To Using ROC Curves to pintpoint optimal cutoffs
+# Moving on to using ROC Curves to pinpoint optimal cutoffs
+
 # user-defined costs for false negative and false positive to pinpoint where total cost is minimized
+cost_fp <- 10 # cost of false positive
+cost_fn <- 100 # cost of false negative
+# here the assumption I've made is that a false positive is 1/10th as costly as a false negative
 
-cost_fp <- 10
-cost_fn <- 100
-# here the assumption I've made that a false positive is 1/10th as costly as a false negative
-
+# creates the base data needed to visualize the ROC curves
 roc_info <- ROCInfo(data = predictions_test_full, 
                     predict = "prediction", 
                     actual = "low_qual_flag", 
@@ -474,6 +499,7 @@ roc_info <- ROCInfo(data = predictions_test_full,
 
 ``` r
 # plot the roc / cutoff-selection plots
+# color on the chart is cost -- darker is higher cost / greener is lower cost
 grid.draw(roc_info$plot)
 ```
 
@@ -491,7 +517,7 @@ Examining Model Performance for the Basic Logit
 cm_info <- ConfusionMatrixInfo(data = predictions_test_full, 
                                predict = "prediction", 
                                actual = "low_qual_flag", 
-                               cutoff = .11) # (determined by roc_info$plot)
+                               cutoff = .11) # (determined by roc_info$plot above)
 
 # prints the visualization of the confusion matrix (use print(cm_info$data) to see the raw data)
 cm_info$plot
@@ -503,7 +529,7 @@ cm_info$plot
 # lastly, we'll use the cutoff we have arrived at from the work above to test the model's predictions
 # think of this section as the cross-tab version of the confusion matrix plot shown above
 
-# getting model probabilities for our testing holdout set
+# getting model probabilities for our testing set
 logit_fit_probs <- predict(logit_fit,
                            newdata = testing,
                            type = "response")
@@ -546,14 +572,13 @@ Penalized Logistic Regression (Lasso)
 =====================================
 
 -   Now using an Objective Function that penalizes low-ROI variables. This is similar to ridge regression except variables with coefficients non-consequential enough will be zero'ed out of the model.
+-   Useful source: <http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/>
 
-<http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/>
-
-Tuning the Hyperparamter for the Lasso Model (Optmizing Lamda)
---------------------------------------------------------------
+Tuning the Hyperparameter for the Lasso Model (Optmizing Lamda)
+---------------------------------------------------------------
 
 ``` r
-library(glmnet)
+library(glmnet) # package needed for ridge methods 
 ```
 
     ## Loading required package: Matrix
@@ -563,106 +588,39 @@ library(glmnet)
     ## Loaded glmnet 2.0-13
 
 ``` r
-# for all varieties of smote, see https://cran.r-project.org/web/packages/smotefamily/smotefamily.pdf
-library(smotefamily)
-library(dbscan) #needed for dbsmote
+# we need two packages for an advanced samplign technique called SMOTE
+# because of the cross-validation involved in tuning our hyperparameter, we need more balanced data
+# SMOTE is one method of achieving this balance (others include: upsampling / downsampling / ROSE)
+# for all varieties of SMOTE, see https://cran.r-project.org/web/packages/smotefamily/smotefamily.pdf
+library(smotefamily) # main SMOTE variety package
+# there are different algos behind the types of SMOTE; we'll rely on one that uses KNN / DBSCAN
+library(dbscan) #needed for dbsmote type of SMOTE to function
 
+# first we construct a SMOTE-built training dataset that is more well-balanced than our actual pop. 
 smote2_train <- smotefamily::DBSMOTE(training[,-c(12)], as.numeric(as.character(training$low_qual_flag)))
-```
+# then we inspect the incidence rate of our left-hand-side variable in the new training set
+janitor::tabyl(smote2_train$data$class) 
 
-    ## [1] 3
-    ## [1] 2
-    ## [1] 2
-    ## [1] 2
-    ## [1] 2
-    ## [1] 3
-    ## [1] 2
-    ## [1] 2
-    ## [1] 2
-    ## [1] 4
-    ## [1] 2
-    ## [1] 3
-    ## [1] 3
-    ## [1] 2
-    ## [1] 2
-    ## [1] 3
-    ## [1] 2
-    ## [1] 2
-    ## [1] 3
-    ## [1] 2
-    ## [1] 2
-    ## [1] 3
-    ## [1] 2
-    ## [1] 2
-    ## [1] 3
-    ## [1] 2
-    ## [1] 2
-    ## [1] 2
-    ## [1] 2
-    ## [1] 3
-    ## [1] 2
-    ## [1] 2
-    ## [1] 2
-    ## [1] 2
-    ## [1] 2
-    ## [1] 2
-    ## [1] 2
-    ## [1] 2
-    ## [1] 2
-    ## [1] "DBSMOTE is Done"
-
-``` r
-janitor::tabyl(smote2_train$data$class)
-```
-
-    ##  smote2_train$data$class    n  percent
-    ##                        0 1229 0.509747
-    ##                        1 1182 0.490253
-
-``` r
-# Dummy code categorical predictor variables
+# Then we build our model matrix (including all two-way interactions possible (hence ^2))
 x <- model.matrix(class~.^2, smote2_train$data)
 # calling out what the outcome variable should be explicitly for this method
 y <- smote2_train$data$class
 
-# Find the best lambda using cross-validation
-# Note: cross-validation is for tuning of hyperparameters; not generally needed if model type requires no hyperparameters
 
+# Next we move on to find the best lambda using cross-validation
+# Cross-validation is for tuning hyperparameters; not normally needed if model requires no hyperparameters
 set.seed(777) # set seed for reproduciblity
 # alpha = 1 just means lasso ; alpha = 0 is ridge
+# this step below can take a long time, as the range of possible lambdas is simulated
 cv.lasso <- cv.glmnet(x^2, y, alpha = 1, family = "binomial")
 ```
-
-    ## Warning: from glmnet Fortran code (error code -90); Convergence for 90th
-    ## lambda value not reached after maxit=100000 iterations; solutions for
-    ## larger lambdas returned
-
-    ## Warning: from glmnet Fortran code (error code -77); Convergence for 77th
-    ## lambda value not reached after maxit=100000 iterations; solutions for
-    ## larger lambdas returned
-
-    ## Warning: from glmnet Fortran code (error code -70); Convergence for 70th
-    ## lambda value not reached after maxit=100000 iterations; solutions for
-    ## larger lambdas returned
-
-    ## Warning: from glmnet Fortran code (error code -69); Convergence for 69th
-    ## lambda value not reached after maxit=100000 iterations; solutions for
-    ## larger lambdas returned
-
-    ## Warning: from glmnet Fortran code (error code -69); Convergence for 69th
-    ## lambda value not reached after maxit=100000 iterations; solutions for
-    ## larger lambdas returned
-
-    ## Warning: from glmnet Fortran code (error code -66); Convergence for 66th
-    ## lambda value not reached after maxit=100000 iterations; solutions for
-    ## larger lambdas returned
 
 ``` r
 # plots the various possible lambdas 
 plot(cv.lasso)
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-18-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-19-1.png)
 
 ``` r
 # Two common choices for lambda: lambda min and lambda lse (both are shown with dotted lines, in turn)
@@ -841,7 +799,7 @@ coef(cv.lasso, cv.lasso$lambda.1se)
     ## sulphates:alcohol                         .
 
 ``` r
-# storing the coeficients for later use
+# storing the coefficients for later use
 lambda_coefs <- broom::tidy(coef(cv.lasso, cv.lasso$lambda.1se))
 ```
 
@@ -849,12 +807,13 @@ Re-Estimating Refined Logit Based on Lasso Results
 --------------------------------------------------
 
 ``` r
-# working on a method to transform a column into a list separated by +'s to be used in the model
+# working on a method to transform a column into a list separated by +'s to be used in the formula
 coef_list <- lambda_coefs %>%
+  # arrange the coefficients in descending order of absolute value
   arrange(desc(abs(value))) %>%
   select(row)
 
-# rebuilt logit based on info gained from lasso; woudl like to be able to simply plug in the coef list, from above
+# rebuilt logit based on info gained from lasso; would like to be able to simply plug in the coef list, from above
 v2_logit_fit <- glm(low_qual_flag ~ citric_acid + density + p_h + volatile_acidity + fixed_acidity + volatile_acidity:alcohol + free_sulfur_dioxide + total_sulfur_dioxide + free_sulfur_dioxide:alcohol + volatile_acidity:citric_acid + citric_acid:alcohol + fixed_acidity:citric_acid + chlorides + alcohol + chlorides:total_sulfur_dioxide + volatile_acidity:chlorides + citric_acid:residual_sugar + citric_acid:sulphates,
                  data = training,
                  family = binomial)
@@ -928,17 +887,22 @@ summary(v2_logit_fit)
     ## 
     ## Number of Fisher Scoring iterations: 8
 
+Re-Determining What Classification Cutoff is Appropriate (Round 2)
+------------------------------------------------------------------
+
 ``` r
-# running predictions on the new post-lasso model
+# running predictions on the new post-lasso-improvements-integrated model
+# same chunks of code used previously below; 1st to find best cutoff, then to test performance
 
 # run predictions on testing set
 prediction_test <- predict(v2_logit_fit, newdata = testing, type = "response" )
 predictions_test_full <- data.frame(prediction = prediction_test, low_qual_flag = testing$low_qual_flag)
 
+# again defining the costs of false positive vs. costs of false negative (same ratio maintained)
 cost_fp <- 10
 cost_fn <- 100
-# here the assumption I've made that a false positive is 1/10th as costly as a false negative
 
+# building the data structure needed for the ROC charts
 roc_info <- ROCInfo(data = predictions_test_full, 
                     predict = "prediction", 
                     actual = "low_qual_flag", 
@@ -947,18 +911,21 @@ roc_info <- ROCInfo(data = predictions_test_full,
 ```
 
 ``` r
-# plot the roc / cutoff-selection plots
+# plot the new roc / cutoff-selection plots
 grid.draw(roc_info$plot)
 ```
 
 <img src="logistic_regression_files/figure-markdown_github/fig3-1.png" style="display: block; margin: auto;" />
 
 ``` r
-# looks like the optimal cutoff is at 0.23 
+# looks like the optimal cutoff is now at 0.23 
 ```
 
+Examining Model Performance for the "Refined" Post-Lasso Logit
+--------------------------------------------------------------
+
 ``` r
-# getting model probabilities for our testing holdout set
+# getting model probabilities for our testing set 
 logit_fit_probs <- predict(v2_logit_fit,
                            newdata = testing,
                            type = "response")
@@ -997,4 +964,4 @@ caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1'
     ##        'Positive' Class : 1               
     ## 
 
-Conclusion: it doesn't look like any of the interactions suggested by the dbsmote-training-set-estimated lasso logit added much value when re-integrated into the original logit. Perhaps other sampling methods could be tried.
+Conclusion: it doesn't look like any of the interactions suggested by the dbsmote-training-set-estimated lasso logit added much value when re-integrated into the original logit. Perhaps other sampling methods could be tried, or different methods of variable-selection may prove more insightful.

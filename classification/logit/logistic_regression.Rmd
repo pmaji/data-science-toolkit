@@ -208,12 +208,18 @@ theme_economist()
 ## Determining What Classification Cutoff is Appropriate
 
 ```{r}
-source("useful_classification_functions.R") 
 # some custom functions are sourced in, to reduce document's length
 # the majority of these functions are from ethen8181's GitHub, with edits / improvements I added
 # more info on these custom functions here: http://ethen8181.github.io/machine-learning/unbalanced/unbalanced.html
 
-# using function AccuracyCutoffInfo to test for optimal cutoff visually
+# sourcing my adopted version of the aforementioned functions directly from my GitHub
+library(RCurl) # Provides functions to allow one to compose general HTTP requests, etc. in R
+# grabbing the raw info from my GitHub to turn into a text object
+script <- getURL("https://raw.githubusercontent.com/pmaji/r-stats-and-modeling/master/classification/useful_classification_functions.R", ssl.verifypeer = FALSE)
+# sourcing that code just like you might source an R Script locally
+eval(parse(text = script))
+
+# using newly-sourced function AccuracyCutoffInfo to test for optimal cutoff visually
 accuracy_info <- AccuracyCutoffInfo(train = predictions_train_full, 
                                     test = predictions_test_full, 
                                     predict = "prediction", 

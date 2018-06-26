@@ -1,7 +1,8 @@
-# r-stats-playground
+# stats-playground
 
-Welcome! This is the repository that I will use to build out my stockpile of statistical methods and modeling techniques in R. 
+Welcome! This is the repository that I will use to build out my stockpile of statistical methods and modeling techniques. I began my self-teaching of all things modeling-related with the ISLR, and I have included some of my notes and practice code from those readings and videos under the "ISLR" folder.
 
-As I build out more resources that 
+After going through the entire ISLR, I wanted to jump into some deeper-dives into particular modeling techniques. I began with classification techniques, and in each folder--for example /r-stats-and-modeling/classifcation/logit--click on the .md file to read the rendered markdown document that will display all relevant code and output.
 
+I welcome all feedback and contributions to this codebase as I seek to build this out further! Don't hesitate to contact me via the opening of an Issue in the tab above. 
 

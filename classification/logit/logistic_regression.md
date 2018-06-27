@@ -297,6 +297,48 @@ glimpse(red_final_df)
     ## $ alcohol              <dbl> -0.95994580, -0.58459423, -0.58459423, -0...
     ## $ low_qual_flag        <fct> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,...
 
+Checking for Variable Correlations
+----------------------------------
+
+For more on all the cool varieties of correlation plots that can be created, see below: - <https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html>
+
+``` r
+# package needed for all varieties of correlation plots
+library(corrplot)
+```
+
+    ## corrplot 0.84 loaded
+
+``` r
+# building a correlation matrix and ensuring that it only takes in components that are numeric 
+# this is necessary because if there are any non-numeric elements in the matrix, this will break 
+corr_matrix <- cor(red_final_df[, sapply(red_final_df, is.numeric)])
+
+# getting the matrix of p-values that correspond to the strength of correlation for each pairing
+res1 <- cor.mtest(red_final_df[, sapply(red_final_df, is.numeric)], conf.level = .95)
+
+# first we'll build a correlation plot that checks for significance level
+# this one will also give us a hint at strength of correlation based on the colors 
+corrplot(corr_matrix, p.mat = res1$p, method = "color", type = "upper",
+         sig.level = c(.001, .01, .05), pch.cex = .9,
+         insig = "label_sig", pch.col = "black", order = "AOE", na.label = "NA")
+```
+
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-11-1.png)
+
+``` r
+# and finally we'll build a simpler corrplot to get the strenth of correlation numbers visualized
+corrplot(corr_matrix, method = "number", type = "upper", pch.cex = .9,
+         order = "AOE", number.cex = .7, na.label = "NA")
+```
+
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-11-2.png)
+
+Takeways from these types of exploratory techniques can help us to create a more informed model. We may, depending on the circumstances, treat variables differently in our model-building process as a result of these types of charts. For example, we might discover a great degree of cross-correlation that allows us to delete duplicative variables, etc. We can notice a few interesting trends from our results above in this case:
+
+-   Citric acid and fixed acidity are verging on highly correlated. So too are fixed acidity and density, and total sulfur dioxide and free sulfur dioxide. These correlations are also significant. While most of these are intuitive, we might do well to remember these cross-correlations when it comes time to do dimensionality reduction with this model (if necessary) as in most cases if variables are highly correlated there may not be a strong marginal lift that justifies keeping both in the final model.
+-   There are also a few very obvious relationships, such as the negative correlation between pH and citric acid, but all in all this chart seems to demonstrate that there isn't a massive amount to be concerned about in terms of cross-correlation.
+
 Prepping Data for the Modeling Process
 --------------------------------------
 
@@ -406,7 +448,7 @@ scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) +
 theme_economist()
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-13-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-14-1.png)
 
 ``` r
 # distribution of the prediction score grouped by known outcome (for testing set only)
@@ -417,7 +459,7 @@ scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) +
 theme_economist()
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-13-2.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-14-2.png)
 
 Determining What Classification Cutoff is Appropriate
 -----------------------------------------------------
@@ -479,7 +521,7 @@ accuracy_info <- AccuracyCutoffInfo(train = predictions_train_full,
 accuracy_info$plot
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-14-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-15-1.png)
 
 ``` r
 # Moving on to using ROC Curves to pinpoint optimal cutoffs
@@ -523,7 +565,7 @@ cm_info <- ConfusionMatrixInfo(data = predictions_test_full,
 cm_info$plot
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-16-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-17-1.png)
 
 ``` r
 # lastly, we'll use the cutoff we have arrived at from the work above to test the model's predictions
@@ -620,7 +662,7 @@ cv.lasso <- cv.glmnet(x^2, y, alpha = 1, family = "binomial")
 plot(cv.lasso)
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-19-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-20-1.png)
 
 ``` r
 # Two common choices for lambda: lambda min and lambda lse (both are shown with dotted lines, in turn)
@@ -965,3 +1007,205 @@ caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1'
     ## 
 
 Conclusion: it doesn't look like any of the interactions suggested by the dbsmote-training-set-estimated lasso logit added much value when re-integrated into the original logit. Perhaps other sampling methods could be tried, or different methods of variable-selection may prove more insightful.
+
+Stepwise Variable Selection Techniques
+--------------------------------------
+
+``` r
+# rebuilding the basic model just a reminder of its form 
+logit_fit <- glm(low_qual_flag ~ .,
+                 data = training,
+                 family = binomial)
+
+# the default will be to do backwards stepwise variable selection only, so that's what we'll start off with
+slm1 <- step(logit_fit)
+```
+
+``` r
+summary(slm1)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = low_qual_flag ~ volatile_acidity + chlorides + 
+    ##     free_sulfur_dioxide + p_h, family = binomial, data = training)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -1.7521  -0.2849  -0.1914  -0.1288   3.2277  
+    ## 
+    ## Coefficients:
+    ##                     Estimate Std. Error z value             Pr(>|z|)    
+    ## (Intercept)          -3.8419     0.2144 -17.920 < 0.0000000000000002 ***
+    ## volatile_acidity      0.9023     0.1374   6.566      0.0000000000517 ***
+    ## chlorides             0.2657     0.1198   2.218               0.0266 *  
+    ## free_sulfur_dioxide  -0.5189     0.2055  -2.525               0.0116 *  
+    ## p_h                   0.3266     0.1531   2.133               0.0329 *  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 428.66  on 1279  degrees of freedom
+    ## Residual deviance: 350.64  on 1275  degrees of freedom
+    ## AIC: 360.64
+    ## 
+    ## Number of Fisher Scoring iterations: 7
+
+``` r
+# getting model probabilities for our testing set 
+logit_fit_probs <- predict(slm1,
+                           newdata = testing,
+                           type = "response")
+
+# turning these probabilities into classifications using the cutoff determined above 
+logit_fit_predictions <- factor(ifelse(logit_fit_probs > 0.04, 1, 0),levels=c('0','1'))
+
+# builiding a confusion matrix 
+caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1')
+```
+
+    ## Confusion Matrix and Statistics
+    ## 
+    ##           Reference
+    ## Prediction   0   1
+    ##          0 230   6
+    ##          1  77   6
+    ##                                              
+    ##                Accuracy : 0.7398             
+    ##                  95% CI : (0.688, 0.7871)    
+    ##     No Information Rate : 0.9624             
+    ##     P-Value [Acc > NIR] : 1                  
+    ##                                              
+    ##                   Kappa : 0.0648             
+    ##  Mcnemar's Test P-Value : 0.00000000000001548
+    ##                                              
+    ##             Sensitivity : 0.50000            
+    ##             Specificity : 0.74919            
+    ##          Pos Pred Value : 0.07229            
+    ##          Neg Pred Value : 0.97458            
+    ##              Prevalence : 0.03762            
+    ##          Detection Rate : 0.01881            
+    ##    Detection Prevalence : 0.26019            
+    ##       Balanced Accuracy : 0.62459            
+    ##                                              
+    ##        'Positive' Class : 1                  
+    ## 
+
+``` r
+# now running stepwise variable selection in both directions
+# for endposts we're using a model with all interactions as the most complicated possible to be considered
+# and for the least complicated possible model we're using the simplest model returned from the backwards step
+slm2 <- step(logit_fit, scope = list(upper = as.formula(low_qual_flag ~ .^2),
+                               lower = as.formula(low_qual_flag ~ volatile_acidity + chlorides + 
+    free_sulfur_dioxide + p_h)),
+             direction = "both")
+```
+
+``` r
+summary(slm2)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = low_qual_flag ~ fixed_acidity + volatile_acidity + 
+    ##     residual_sugar + chlorides + free_sulfur_dioxide + total_sulfur_dioxide + 
+    ##     p_h + sulphates + alcohol + free_sulfur_dioxide:sulphates + 
+    ##     fixed_acidity:residual_sugar + residual_sugar:alcohol + p_h:alcohol + 
+    ##     free_sulfur_dioxide:alcohol + free_sulfur_dioxide:total_sulfur_dioxide + 
+    ##     fixed_acidity:total_sulfur_dioxide + volatile_acidity:residual_sugar, 
+    ##     family = binomial, data = training)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -1.9254  -0.2463  -0.1187  -0.0473   3.5012  
+    ## 
+    ## Coefficients:
+    ##                                          Estimate Std. Error z value
+    ## (Intercept)                              -4.72113    0.38095 -12.393
+    ## fixed_acidity                             0.48563    0.30934   1.570
+    ## volatile_acidity                          0.98153    0.18126   5.415
+    ## residual_sugar                           -0.96043    0.52117  -1.843
+    ## chlorides                                 0.06487    0.19864   0.327
+    ## free_sulfur_dioxide                      -0.32963    0.33283  -0.990
+    ## total_sulfur_dioxide                     -0.20259    0.32161  -0.630
+    ## p_h                                       0.91019    0.26440   3.443
+    ## sulphates                                -0.25609    0.26287  -0.974
+    ## alcohol                                  -0.79018    0.35142  -2.249
+    ## free_sulfur_dioxide:sulphates             0.88560    0.20933   4.231
+    ## fixed_acidity:residual_sugar             -0.97418    0.45836  -2.125
+    ## residual_sugar:alcohol                    1.33877    0.40246   3.326
+    ## p_h:alcohol                               0.39313    0.15747   2.497
+    ## free_sulfur_dioxide:alcohol              -0.52459    0.30950  -1.695
+    ## free_sulfur_dioxide:total_sulfur_dioxide -0.67600    0.32479  -2.081
+    ## fixed_acidity:total_sulfur_dioxide        0.63080    0.33620   1.876
+    ## volatile_acidity:residual_sugar           0.35736    0.22312   1.602
+    ##                                                      Pr(>|z|)    
+    ## (Intercept)                              < 0.0000000000000002 ***
+    ## fixed_acidity                                        0.116443    
+    ## volatile_acidity                                 0.0000000613 ***
+    ## residual_sugar                                       0.065352 .  
+    ## chlorides                                            0.743974    
+    ## free_sulfur_dioxide                                  0.321977    
+    ## total_sulfur_dioxide                                 0.528746    
+    ## p_h                                                  0.000576 ***
+    ## sulphates                                            0.329959    
+    ## alcohol                                              0.024544 *  
+    ## free_sulfur_dioxide:sulphates                    0.0000233031 ***
+    ## fixed_acidity:residual_sugar                         0.033558 *  
+    ## residual_sugar:alcohol                               0.000880 ***
+    ## p_h:alcohol                                          0.012542 *  
+    ## free_sulfur_dioxide:alcohol                          0.090081 .  
+    ## free_sulfur_dioxide:total_sulfur_dioxide             0.037400 *  
+    ## fixed_acidity:total_sulfur_dioxide                   0.060620 .  
+    ## volatile_acidity:residual_sugar                      0.109234    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 428.66  on 1279  degrees of freedom
+    ## Residual deviance: 287.53  on 1262  degrees of freedom
+    ## AIC: 323.53
+    ## 
+    ## Number of Fisher Scoring iterations: 9
+
+``` r
+# getting model probabilities for our testing set 
+logit_fit_probs <- predict(slm2,
+                           newdata = testing,
+                           type = "response")
+
+# turning these probabilities into classifications using the cutoff determined above 
+logit_fit_predictions <- factor(ifelse(logit_fit_probs > 0.04, 1, 0),levels=c('0','1'))
+
+# builiding a confusion matrix 
+caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1')
+```
+
+    ## Confusion Matrix and Statistics
+    ## 
+    ##           Reference
+    ## Prediction   0   1
+    ##          0 244   8
+    ##          1  63   4
+    ##                                           
+    ##                Accuracy : 0.7774          
+    ##                  95% CI : (0.7277, 0.8219)
+    ##     No Information Rate : 0.9624          
+    ##     P-Value [Acc > NIR] : 1               
+    ##                                           
+    ##                   Kappa : 0.04            
+    ##  Mcnemar's Test P-Value : 0.0000000001468 
+    ##                                           
+    ##             Sensitivity : 0.33333         
+    ##             Specificity : 0.79479         
+    ##          Pos Pred Value : 0.05970         
+    ##          Neg Pred Value : 0.96825         
+    ##              Prevalence : 0.03762         
+    ##          Detection Rate : 0.01254         
+    ##    Detection Prevalence : 0.21003         
+    ##       Balanced Accuracy : 0.56406         
+    ##                                           
+    ##        'Positive' Class : 1               
+    ##

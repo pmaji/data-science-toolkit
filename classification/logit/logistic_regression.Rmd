@@ -140,6 +140,38 @@ red_final_df[,-12] <- scale(red_final_df[,-12], center = TRUE, scale = TRUE)
 glimpse(red_final_df)
 ```
 
+## Checking for Variable Correlations
+
+For more on all the cool varieties of correlation plots that can be created, see below:
+- https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html
+
+```{r}
+# package needed for all varieties of correlation plots
+library(corrplot)
+
+# building a correlation matrix and ensuring that it only takes in components that are numeric 
+# this is necessary because if there are any non-numeric elements in the matrix, this will break 
+corr_matrix <- cor(red_final_df[, sapply(red_final_df, is.numeric)])
+
+# getting the matrix of p-values that correspond to the strength of correlation for each pairing
+res1 <- cor.mtest(red_final_df[, sapply(red_final_df, is.numeric)], conf.level = .95)
+
+# first we'll build a correlation plot that checks for significance level
+# this one will also give us a hint at strength of correlation based on the colors 
+corrplot(corr_matrix, p.mat = res1$p, method = "color", type = "upper",
+         sig.level = c(.001, .01, .05), pch.cex = .9,
+         insig = "label_sig", pch.col = "black", order = "AOE", na.label = "NA")
+
+# and finally we'll build a simpler corrplot to get the strenth of correlation numbers visualized
+corrplot(corr_matrix, method = "number", type = "upper", pch.cex = .9,
+         order = "AOE", number.cex = .7, na.label = "NA")
+```
+
+Takeways from these types of exploratory techniques can help us to create a more informed model. We may, depending on the circumstances, treat variables differently in our model-building process as a result of these types of charts. For example, we might discover a great degree of cross-correlation that allows us to delete duplicative variables, etc. We can notice a few interesting trends from our results above in this case:
+
+- Citric acid and fixed acidity are verging on highly correlated. So too are fixed acidity and density, and total sulfur dioxide and free sulfur dioxide. These correlations are also significant. While most of these are intuitive, we might do well to remember these cross-correlations when it comes time to do dimensionality reduction with this model (if necessary) as in most cases if variables are highly correlated there may not be a strong marginal lift that justifies keeping both in the final model. 
+- There are also a few very obvious relationships, such as the negative correlation between pH and citric acid, but all in all this chart seems to demonstrate that there isn't a massive amount to be concerned about in terms of cross-correlation. 
+
 ## Prepping Data for the Modeling Process
 
 ```{r}
@@ -411,8 +443,67 @@ caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1'
 
 Conclusion: it doesn't look like any of the interactions suggested by the dbsmote-training-set-estimated lasso logit added much value when re-integrated into the original logit. Perhaps other sampling methods could be tried, or different methods of variable-selection may prove more insightful. 
 
-```{r}
 
+## Stepwise Variable Selection Techniques 
+
+For additional resources on stepwise variable selection methods, see below:
+
+- https://stackoverflow.com/questions/34278344/syntax-for-stepwise-logistic-regression-in-r
+- http://www.utstat.toronto.edu/~brunner/oldclass/appliedf11/handouts/2101f11StepwiseLogisticR.pdf
+
+
+```{r echo=T, results='hide', warning=FALSE}
+
+# rebuilding the basic model just a reminder of its form 
+logit_fit <- glm(low_qual_flag ~ .,
+                 data = training,
+                 family = binomial)
+
+# the default will be to do backwards stepwise variable selection only, so that's what we'll start off with
+slm1 <- step(logit_fit)
+```
+
+```{r}
+summary(slm1)
+
+# getting model probabilities for our testing set 
+logit_fit_probs <- predict(slm1,
+                           newdata = testing,
+                           type = "response")
+
+# turning these probabilities into classifications using the cutoff determined above 
+logit_fit_predictions <- factor(ifelse(logit_fit_probs > 0.04, 1, 0),levels=c('0','1'))
+
+# builiding a confusion matrix 
+caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1')
+```
+
+
+
+```{r echo=T, results='hide', warning=FALSE}
+
+# now running stepwise variable selection in both directions
+# for endposts we're using a model with all interactions as the most complicated possible to be considered
+# and for the least complicated possible model we're using the simplest model returned from the backwards step
+slm2 <- step(logit_fit, scope = list(upper = as.formula(low_qual_flag ~ .^2),
+                               lower = as.formula(low_qual_flag ~ volatile_acidity + chlorides + 
+    free_sulfur_dioxide + p_h)),
+             direction = "both")
+```
+
+```{r}
+summary(slm2)
+
+# getting model probabilities for our testing set 
+logit_fit_probs <- predict(slm2,
+                           newdata = testing,
+                           type = "response")
+
+# turning these probabilities into classifications using the cutoff determined above 
+logit_fit_predictions <- factor(ifelse(logit_fit_probs > 0.04, 1, 0),levels=c('0','1'))
+
+# builiding a confusion matrix 
+caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1')
 ```
 
 

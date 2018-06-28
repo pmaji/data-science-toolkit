@@ -393,10 +393,8 @@ Some information on random forest models vs. ctree, etc.:
 -   <https://www.r-bloggers.com/binary-classification-a-comparison-of-titanic-proportions-between-logistic-regression-random-forests-and-conditional-trees/>
 
 ``` r
-require(randomForest)
+library(randomForest)
 ```
-
-    ## Loading required package: randomForest
 
     ## randomForest 4.6-12
 
@@ -414,9 +412,16 @@ require(randomForest)
     ##     combine
 
 ``` r
+set.seed(333)
+
+# using an upsampled dataset to account for the various interations of CV being conducted that may dilute the sample
+test <- caret::upSample(training, (training$low_qual_flag))
+
+training2 <- test[,-12]
+
 # fitting the model with 500 trees
-wine_rf_model <- randomForest(low_qual_flag ~ ., 
-                              data = training, 
+wine_rf_model <- randomForest(Class ~ ., 
+                              data = training2, 
                               ntree=500)
 
 wine_rf_model
@@ -424,16 +429,16 @@ wine_rf_model
 
     ## 
     ## Call:
-    ##  randomForest(formula = low_qual_flag ~ ., data = training, ntree = 500) 
+    ##  randomForest(formula = Class ~ ., data = training2, ntree = 500) 
     ##                Type of random forest: classification
     ##                      Number of trees: 500
     ## No. of variables tried at each split: 3
     ## 
-    ##         OOB estimate of  error rate: 4.45%
+    ##         OOB estimate of  error rate: 0.28%
     ## Confusion matrix:
-    ##      0 1 class.error
-    ## 0 1223 6 0.004882018
-    ## 1   51 0 1.000000000
+    ##      0    1 class.error
+    ## 0 1222    7 0.005695688
+    ## 1    0 1229 0.000000000
 
 ``` r
 # getting tree model probabilities from for our testing set 
@@ -442,7 +447,7 @@ wine_rf_probs <- predict(wine_rf_model,
                            type = "response")
 
 # turning these probabilities into classifications using our population mean as our baseline
-wine_rf_predictions <- factor(ifelse(as.numeric(as.character(wine_rf_probs)) > 0.01, 1, 0),levels=c('0','1'))
+wine_rf_predictions <- factor(ifelse(as.numeric(as.character(wine_rf_probs)) > 0.001, 1, 0),levels=c('0','1'))
 
 # builiding a confusion matrix to test model accuracy metrics
 caret::confusionMatrix(wine_rf_predictions,testing$low_qual_flag, positive='1')
@@ -452,25 +457,25 @@ caret::confusionMatrix(wine_rf_predictions,testing$low_qual_flag, positive='1')
     ## 
     ##           Reference
     ## Prediction   0   1
-    ##          0 307  12
-    ##          1   0   0
+    ##          0 304   9
+    ##          1   3   3
     ##                                           
     ##                Accuracy : 0.9624          
     ##                  95% CI : (0.9352, 0.9804)
     ##     No Information Rate : 0.9624          
-    ##     P-Value [Acc > NIR] : 0.575979        
+    ##     P-Value [Acc > NIR] : 0.5760          
     ##                                           
-    ##                   Kappa : 0               
-    ##  Mcnemar's Test P-Value : 0.001496        
+    ##                   Kappa : 0.3162          
+    ##  Mcnemar's Test P-Value : 0.1489          
     ##                                           
-    ##             Sensitivity : 0.00000         
-    ##             Specificity : 1.00000         
-    ##          Pos Pred Value :     NaN         
-    ##          Neg Pred Value : 0.96238         
-    ##              Prevalence : 0.03762         
-    ##          Detection Rate : 0.00000         
-    ##    Detection Prevalence : 0.00000         
-    ##       Balanced Accuracy : 0.50000         
+    ##             Sensitivity : 0.250000        
+    ##             Specificity : 0.990228        
+    ##          Pos Pred Value : 0.500000        
+    ##          Neg Pred Value : 0.971246        
+    ##              Prevalence : 0.037618        
+    ##          Detection Rate : 0.009404        
+    ##    Detection Prevalence : 0.018809        
+    ##       Balanced Accuracy : 0.620114        
     ##                                           
     ##        'Positive' Class : 1               
     ##

@@ -197,22 +197,30 @@ Some information on random forest models vs. ctree, etc.:
 - https://www.r-bloggers.com/binary-classification-a-comparison-of-titanic-proportions-between-logistic-regression-random-forests-and-conditional-trees/
 
 ```{r}
-require(randomForest)
+library(randomForest)
+set.seed(333)
+
+# using an upsampled dataset to account for the various interations of CV being conducted that may dilute the sample
+test <- caret::upSample(training, (training$low_qual_flag))
+
+training2 <- test[,-12]
 
 # fitting the model with 500 trees
-wine_rf_model <- randomForest(low_qual_flag ~ ., 
-                              data = training, 
+wine_rf_model <- randomForest(Class ~ ., 
+                              data = training2, 
                               ntree=500)
 
 wine_rf_model
+```
 
+```{r}
 # getting tree model probabilities from for our testing set 
 wine_rf_probs <- predict(wine_rf_model,
                            newdata = testing,
                            type = "response")
 
 # turning these probabilities into classifications using our population mean as our baseline
-wine_rf_predictions <- factor(ifelse(as.numeric(as.character(wine_rf_probs)) > 0.01, 1, 0),levels=c('0','1'))
+wine_rf_predictions <- factor(ifelse(as.numeric(as.character(wine_rf_probs)) > 0.001, 1, 0),levels=c('0','1'))
 
 # builiding a confusion matrix to test model accuracy metrics
 caret::confusionMatrix(wine_rf_predictions,testing$low_qual_flag, positive='1')

@@ -142,7 +142,7 @@ main_wine_df <- main_wine_df %>%
 # for the purpose of simplicity, we are going to start by only looking at the red wine
 red_main_df <- main_wine_df %>%
   # filtering to just the red wine
-  filter(color == "red") %>%
+  filter(color == "white") %>%
   # dropping the now-useless variable
   select(-color) %>%
   # ensuring quality is a factor; this will be useful later
@@ -153,20 +153,20 @@ red_main_df <- main_wine_df %>%
 glimpse(red_main_df)
 ```
 
-    ## Observations: 1,599
+    ## Observations: 4,898
     ## Variables: 12
-    ## $ fixed_acidity        <dbl> 7.4, 7.8, 7.8, 11.2, 7.4, 7.4, 7.9, 7.3, ...
-    ## $ volatile_acidity     <dbl> 0.700, 0.880, 0.760, 0.280, 0.700, 0.660,...
-    ## $ citric_acid          <dbl> 0.00, 0.00, 0.04, 0.56, 0.00, 0.00, 0.06,...
-    ## $ residual_sugar       <dbl> 1.9, 2.6, 2.3, 1.9, 1.9, 1.8, 1.6, 1.2, 2...
-    ## $ chlorides            <dbl> 0.076, 0.098, 0.092, 0.075, 0.076, 0.075,...
-    ## $ free_sulfur_dioxide  <dbl> 11, 25, 15, 17, 11, 13, 15, 15, 9, 17, 15...
-    ## $ total_sulfur_dioxide <dbl> 34, 67, 54, 60, 34, 40, 59, 21, 18, 102, ...
-    ## $ density              <dbl> 0.9978, 0.9968, 0.9970, 0.9980, 0.9978, 0...
-    ## $ p_h                  <dbl> 3.51, 3.20, 3.26, 3.16, 3.51, 3.51, 3.30,...
-    ## $ sulphates            <dbl> 0.56, 0.68, 0.65, 0.58, 0.56, 0.56, 0.46,...
-    ## $ alcohol              <dbl> 9.4, 9.8, 9.8, 9.8, 9.4, 9.4, 9.4, 10.0, ...
-    ## $ quality              <fct> 5, 5, 5, 6, 5, 5, 5, 7, 7, 5, 5, 5, 5, 5,...
+    ## $ fixed_acidity        <dbl> 7.0, 6.3, 8.1, 7.2, 7.2, 8.1, 6.2, 7.0, 6...
+    ## $ volatile_acidity     <dbl> 0.27, 0.30, 0.28, 0.23, 0.23, 0.28, 0.32,...
+    ## $ citric_acid          <dbl> 0.36, 0.34, 0.40, 0.32, 0.32, 0.40, 0.16,...
+    ## $ residual_sugar       <dbl> 20.70, 1.60, 6.90, 8.50, 8.50, 6.90, 7.00...
+    ## $ chlorides            <dbl> 0.045, 0.049, 0.050, 0.058, 0.058, 0.050,...
+    ## $ free_sulfur_dioxide  <dbl> 45, 14, 30, 47, 47, 30, 30, 45, 14, 28, 1...
+    ## $ total_sulfur_dioxide <dbl> 170, 132, 97, 186, 186, 97, 136, 170, 132...
+    ## $ density              <dbl> 1.0010, 0.9940, 0.9951, 0.9956, 0.9956, 0...
+    ## $ p_h                  <dbl> 3.00, 3.30, 3.26, 3.19, 3.19, 3.26, 3.18,...
+    ## $ sulphates            <dbl> 0.45, 0.49, 0.44, 0.40, 0.40, 0.44, 0.47,...
+    ## $ alcohol              <dbl> 8.8, 9.5, 10.1, 9.9, 9.9, 10.1, 9.6, 8.8,...
+    ## $ quality              <fct> 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5, 5, 7,...
 
 Exploring the Data
 ------------------
@@ -218,13 +218,14 @@ plot_bar(data = red_main_df, order_bar = FALSE, title = "Categorical Variables E
 janitor::tabyl(red_main_df$quality)
 ```
 
-    ##  red_main_df$quality   n     percent
-    ##                    3  10 0.006253909
-    ##                    4  53 0.033145716
-    ##                    5 681 0.425891182
-    ##                    6 638 0.398999375
-    ##                    7 199 0.124452783
-    ##                    8  18 0.011257036
+    ##  red_main_df$quality    n     percent
+    ##                    3   20 0.004083299
+    ##                    4  163 0.033278889
+    ##                    5 1457 0.297468354
+    ##                    6 2198 0.448754594
+    ##                    7  880 0.179665169
+    ##                    8  175 0.035728869
+    ##                    9    5 0.001020825
 
 ``` r
 # it looks like wines with a rating < 5 are exceptionally bad, so we'll use that as our benchmark
@@ -244,19 +245,19 @@ red_final_df <- red_main_df %>%
 glimpse(red_final_df) # taking another look at the new dataset
 ```
 
-    ## Observations: 1,599
+    ## Observations: 4,898
     ## Variables: 12
-    ## $ fixed_acidity        <dbl> 7.4, 7.8, 7.8, 11.2, 7.4, 7.4, 7.9, 7.3, ...
-    ## $ volatile_acidity     <dbl> 0.700, 0.880, 0.760, 0.280, 0.700, 0.660,...
-    ## $ citric_acid          <dbl> 0.00, 0.00, 0.04, 0.56, 0.00, 0.00, 0.06,...
-    ## $ residual_sugar       <dbl> 1.9, 2.6, 2.3, 1.9, 1.9, 1.8, 1.6, 1.2, 2...
-    ## $ chlorides            <dbl> 0.076, 0.098, 0.092, 0.075, 0.076, 0.075,...
-    ## $ free_sulfur_dioxide  <dbl> 11, 25, 15, 17, 11, 13, 15, 15, 9, 17, 15...
-    ## $ total_sulfur_dioxide <dbl> 34, 67, 54, 60, 34, 40, 59, 21, 18, 102, ...
-    ## $ density              <dbl> 0.9978, 0.9968, 0.9970, 0.9980, 0.9978, 0...
-    ## $ p_h                  <dbl> 3.51, 3.20, 3.26, 3.16, 3.51, 3.51, 3.30,...
-    ## $ sulphates            <dbl> 0.56, 0.68, 0.65, 0.58, 0.56, 0.56, 0.46,...
-    ## $ alcohol              <dbl> 9.4, 9.8, 9.8, 9.8, 9.4, 9.4, 9.4, 10.0, ...
+    ## $ fixed_acidity        <dbl> 7.0, 6.3, 8.1, 7.2, 7.2, 8.1, 6.2, 7.0, 6...
+    ## $ volatile_acidity     <dbl> 0.27, 0.30, 0.28, 0.23, 0.23, 0.28, 0.32,...
+    ## $ citric_acid          <dbl> 0.36, 0.34, 0.40, 0.32, 0.32, 0.40, 0.16,...
+    ## $ residual_sugar       <dbl> 20.70, 1.60, 6.90, 8.50, 8.50, 6.90, 7.00...
+    ## $ chlorides            <dbl> 0.045, 0.049, 0.050, 0.058, 0.058, 0.050,...
+    ## $ free_sulfur_dioxide  <dbl> 45, 14, 30, 47, 47, 30, 30, 45, 14, 28, 1...
+    ## $ total_sulfur_dioxide <dbl> 170, 132, 97, 186, 186, 97, 136, 170, 132...
+    ## $ density              <dbl> 1.0010, 0.9940, 0.9951, 0.9956, 0.9956, 0...
+    ## $ p_h                  <dbl> 3.00, 3.30, 3.26, 3.19, 3.19, 3.26, 3.18,...
+    ## $ sulphates            <dbl> 0.45, 0.49, 0.44, 0.40, 0.40, 0.44, 0.47,...
+    ## $ alcohol              <dbl> 8.8, 9.5, 10.1, 9.9, 9.9, 10.1, 9.6, 8.8,...
     ## $ low_qual_flag        <fct> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,...
 
 ``` r
@@ -264,8 +265,8 @@ tabyl(red_final_df$low_qual_flag)
 ```
 
     ##  red_final_df$low_qual_flag    n    percent
-    ##                           0 1536 0.96060038
-    ##                           1   63 0.03939962
+    ##                           0 4715 0.96263781
+    ##                           1  183 0.03736219
 
 ``` r
 # the data now look nice and clean!
@@ -282,19 +283,19 @@ red_final_df[,-12] <- scale(red_final_df[,-12], center = TRUE, scale = TRUE)
 glimpse(red_final_df)
 ```
 
-    ## Observations: 1,599
+    ## Observations: 4,898
     ## Variables: 12
-    ## $ fixed_acidity        <dbl> -0.5281944, -0.2984541, -0.2984541, 1.654...
-    ## $ volatile_acidity     <dbl> 0.9615758, 1.9668271, 1.2966596, -1.38401...
-    ## $ citric_acid          <dbl> -1.39103710, -1.39103710, -1.18569949, 1....
-    ## $ residual_sugar       <dbl> -0.45307667, 0.04340257, -0.16937425, -0....
-    ## $ chlorides            <dbl> -0.24363047, 0.22380518, 0.09632273, -0.2...
-    ## $ free_sulfur_dioxide  <dbl> -0.46604672, 0.87236532, -0.08364328, 0.1...
-    ## $ total_sulfur_dioxide <dbl> -0.3790141, 0.6241680, 0.2289750, 0.41137...
-    ## $ density              <dbl> 0.55809987, 0.02825193, 0.13422152, 0.664...
-    ## $ p_h                  <dbl> 1.28823990, -0.71970814, -0.33107304, -0....
-    ## $ sulphates            <dbl> -0.57902538, 0.12891007, -0.04807379, -0....
-    ## $ alcohol              <dbl> -0.95994580, -0.58459423, -0.58459423, -0...
+    ## $ fixed_acidity        <dbl> 0.17207939, -0.65743400, 1.47560044, 0.40...
+    ## $ volatile_acidity     <dbl> -0.08176155, 0.21587359, 0.01745016, -0.4...
+    ## $ citric_acid          <dbl> 0.21325843, 0.04799622, 0.54378284, -0.11...
+    ## $ residual_sugar       <dbl> 2.8210611, -0.9446688, 0.1002720, 0.41572...
+    ## $ chlorides            <dbl> -0.03535139, 0.14773200, 0.19350284, 0.55...
+    ## $ free_sulfur_dioxide  <dbl> 0.56987339, -1.25289074, -0.31210925, 0.6...
+    ## $ total_sulfur_dioxide <dbl> 0.74448902, -0.14966934, -0.97323626, 1.1...
+    ## $ density              <dbl> 2.331273996, -0.009153237, 0.358628185, 0...
+    ## $ p_h                  <dbl> -1.24679399, 0.73995309, 0.47505348, 0.01...
+    ## $ sulphates            <dbl> -0.34914861, 0.00134171, -0.43677119, -0....
+    ## $ alcohol              <dbl> -1.39301024, -0.82419153, -0.33663264, -0...
     ## $ low_qual_flag        <fct> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,...
 
 Checking for Variable Correlations
@@ -367,13 +368,13 @@ testing <- red_final_df[-in_train,]
 dim(training)
 ```
 
-    ## [1] 1280   12
+    ## [1] 3919   12
 
 ``` r
 dim(testing)
 ```
 
-    ## [1] 319  12
+    ## [1] 979  12
 
 Building a Basic Logit
 ======================
@@ -397,30 +398,30 @@ summary(logit_fit)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -1.7012  -0.2826  -0.1831  -0.1213   3.2069  
+    ## -1.8387  -0.2603  -0.1841  -0.1334   4.0915  
     ## 
     ## Coefficients:
     ##                      Estimate Std. Error z value             Pr(>|z|)    
-    ## (Intercept)           -3.9151     0.2277 -17.198 < 0.0000000000000002 ***
-    ## fixed_acidity          0.1915     0.5235   0.366               0.7145    
-    ## volatile_acidity       0.8911     0.1607   5.544         0.0000000296 ***
-    ## citric_acid            0.1595     0.2695   0.592               0.5540    
-    ## residual_sugar         0.3059     0.1946   1.572               0.1160    
-    ## chlorides              0.2870     0.1562   1.838               0.0660 .  
-    ## free_sulfur_dioxide   -0.3722     0.2785  -1.337               0.1813    
-    ## total_sulfur_dioxide  -0.2903     0.2827  -1.027               0.3045    
-    ## density               -0.2784     0.4286  -0.649               0.5161    
-    ## p_h                    0.5509     0.2916   1.889               0.0588 .  
-    ## sulphates             -0.1199     0.2277  -0.526               0.5985    
-    ## alcohol               -0.4794     0.3018  -1.588               0.1122    
+    ## (Intercept)          -3.86720    0.12352 -31.308 < 0.0000000000000002 ***
+    ## fixed_acidity         0.29099    0.10881   2.674              0.00749 ** 
+    ## volatile_acidity      0.63663    0.07207   8.834 < 0.0000000000000002 ***
+    ## citric_acid          -0.16949    0.09671  -1.753              0.07968 .  
+    ## residual_sugar       -1.12102    0.24831  -4.515           0.00000634 ***
+    ## chlorides             0.02198    0.07398   0.297              0.76642    
+    ## free_sulfur_dioxide  -0.26507    0.13405  -1.977              0.04799 *  
+    ## total_sulfur_dioxide -0.10961    0.12136  -0.903              0.36642    
+    ## density               0.88345    0.28104   3.144              0.00167 ** 
+    ## p_h                   0.05183    0.11864   0.437              0.66220    
+    ## sulphates            -0.08620    0.10351  -0.833              0.40501    
+    ## alcohol              -0.27069    0.16757  -1.615              0.10624    
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
-    ##     Null deviance: 428.66  on 1279  degrees of freedom
-    ## Residual deviance: 344.39  on 1268  degrees of freedom
-    ## AIC: 368.39
+    ##     Null deviance: 1253.7  on 3918  degrees of freedom
+    ## Residual deviance: 1017.7  on 3907  degrees of freedom
+    ## AIC: 1041.7
     ## 
     ## Number of Fisher Scoring iterations: 7
 
@@ -528,7 +529,7 @@ accuracy_info$plot
 
 # user-defined costs for false negative and false positive to pinpoint where total cost is minimized
 cost_fp <- 10 # cost of false positive
-cost_fn <- 100 # cost of false negative
+cost_fn <- 100# cost of false negative
 # here the assumption I've made is that a false positive is 1/10th as costly as a false negative
 
 # creates the base data needed to visualize the ROC curves
@@ -548,7 +549,7 @@ grid.draw(roc_info$plot)
 <img src="logistic_regression_files/figure-markdown_github/fig2-1.png" style="display: block; margin: auto;" />
 
 ``` r
-# looks like the optimal cutoff is at 0.11 
+# looks like the optimal cutoff is at 0.07
 ```
 
 Examining Model Performance for the Basic Logit
@@ -559,7 +560,7 @@ Examining Model Performance for the Basic Logit
 cm_info <- ConfusionMatrixInfo(data = predictions_test_full, 
                                predict = "prediction", 
                                actual = "low_qual_flag", 
-                               cutoff = .11) # (determined by roc_info$plot above)
+                               cutoff = .07) # (determined by roc_info$plot above)
 
 # prints the visualization of the confusion matrix (use print(cm_info$data) to see the raw data)
 cm_info$plot
@@ -587,25 +588,25 @@ caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1'
     ## 
     ##           Reference
     ## Prediction   0   1
-    ##          0 288   7
-    ##          1  19   5
+    ##          0 892  26
+    ##          1  51  10
     ##                                           
-    ##                Accuracy : 0.9185          
-    ##                  95% CI : (0.8829, 0.9461)
-    ##     No Information Rate : 0.9624          
-    ##     P-Value [Acc > NIR] : 0.99991         
+    ##                Accuracy : 0.9213          
+    ##                  95% CI : (0.9027, 0.9374)
+    ##     No Information Rate : 0.9632          
+    ##     P-Value [Acc > NIR] : 1.000000        
     ##                                           
-    ##                   Kappa : 0.2396          
-    ##  Mcnemar's Test P-Value : 0.03098         
+    ##                   Kappa : 0.1677          
+    ##  Mcnemar's Test P-Value : 0.006237        
     ##                                           
-    ##             Sensitivity : 0.41667         
-    ##             Specificity : 0.93811         
-    ##          Pos Pred Value : 0.20833         
-    ##          Neg Pred Value : 0.97627         
-    ##              Prevalence : 0.03762         
-    ##          Detection Rate : 0.01567         
-    ##    Detection Prevalence : 0.07524         
-    ##       Balanced Accuracy : 0.67739         
+    ##             Sensitivity : 0.27778         
+    ##             Specificity : 0.94592         
+    ##          Pos Pred Value : 0.16393         
+    ##          Neg Pred Value : 0.97168         
+    ##              Prevalence : 0.03677         
+    ##          Detection Rate : 0.01021         
+    ##    Detection Prevalence : 0.06231         
+    ##       Balanced Accuracy : 0.61185         
     ##                                           
     ##        'Positive' Class : 1               
     ## 
@@ -616,8 +617,8 @@ Penalized Logistic Regression (Lasso)
 -   Now using an Objective Function that penalizes low-ROI variables. This is similar to ridge regression except variables with coefficients non-consequential enough will be zero'ed out of the model.
 -   Useful source: <http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/>
 
-Tuning the Hyperparameter for the Lasso Model (Optmizing Lamda)
----------------------------------------------------------------
+Tuning the Hyperparameter for the Lasso Model w/ 2-Way Interactions (Optmizing Lamda)
+-------------------------------------------------------------------------------------
 
 ``` r
 library(glmnet) # package needed for ridge methods 
@@ -654,7 +655,7 @@ y <- smote2_train$data$class
 set.seed(777) # set seed for reproduciblity
 # alpha = 1 just means lasso ; alpha = 0 is ridge
 # this step below can take a long time, as the range of possible lambdas is simulated
-cv.lasso <- cv.glmnet(x^2, y, alpha = 1, family = "binomial")
+cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
 ```
 
 ``` r
@@ -679,7 +680,7 @@ The main purpose of using the lasso here is to look for any interaction effects 
 cv.lasso$lambda.min
 ```
 
-    ## [1] 0.002685661
+    ## [1] 0.02427122
 
 ``` r
 # showing coefficients using lambda min (if . then variable has been zero'ed out)
@@ -687,82 +688,82 @@ coef(cv.lasso, cv.lasso$lambda.min)
 ```
 
     ## 68 x 1 sparse Matrix of class "dgCMatrix"
-    ##                                                     1
-    ## (Intercept)                              -0.175075186
-    ## (Intercept)                               .          
-    ## fixed_acidity                            -0.092669516
-    ## volatile_acidity                          0.347998638
-    ## citric_acid                               0.893358145
-    ## residual_sugar                           -0.008259115
-    ## chlorides                                -0.096642325
-    ## free_sulfur_dioxide                      -0.386654476
-    ## total_sulfur_dioxide                     -0.116177303
-    ## density                                  -0.702104842
-    ## p_h                                      -0.781805455
-    ## sulphates                                 0.037149679
-    ## alcohol                                   .          
-    ## fixed_acidity:volatile_acidity           -0.010988854
-    ## fixed_acidity:citric_acid                -0.191136364
-    ## fixed_acidity:residual_sugar              0.013851591
-    ## fixed_acidity:chlorides                   .          
-    ## fixed_acidity:free_sulfur_dioxide         .          
-    ## fixed_acidity:total_sulfur_dioxide        .          
-    ## fixed_acidity:density                     .          
-    ## fixed_acidity:p_h                         0.131511027
-    ## fixed_acidity:sulphates                  -0.124192079
-    ## fixed_acidity:alcohol                     .          
-    ## volatile_acidity:citric_acid              0.165702137
-    ## volatile_acidity:residual_sugar           .          
-    ## volatile_acidity:chlorides                .          
-    ## volatile_acidity:free_sulfur_dioxide      .          
-    ## volatile_acidity:total_sulfur_dioxide     .          
-    ## volatile_acidity:density                  .          
-    ## volatile_acidity:p_h                     -0.015062301
-    ## volatile_acidity:sulphates                .          
-    ## volatile_acidity:alcohol                 -0.247164107
-    ## citric_acid:residual_sugar               -0.023063129
-    ## citric_acid:chlorides                     .          
-    ## citric_acid:free_sulfur_dioxide           .          
-    ## citric_acid:total_sulfur_dioxide          0.070670193
-    ## citric_acid:density                       .          
-    ## citric_acid:p_h                           .          
-    ## citric_acid:sulphates                     0.022936606
-    ## citric_acid:alcohol                      -0.197174001
-    ## residual_sugar:chlorides                  .          
-    ## residual_sugar:free_sulfur_dioxide        .          
-    ## residual_sugar:total_sulfur_dioxide       .          
-    ## residual_sugar:density                    .          
-    ## residual_sugar:p_h                        0.036699541
-    ## residual_sugar:sulphates                  .          
-    ## residual_sugar:alcohol                    .          
-    ## chlorides:free_sulfur_dioxide             .          
-    ## chlorides:total_sulfur_dioxide           -0.113982062
-    ## chlorides:density                         .          
-    ## chlorides:p_h                             .          
-    ## chlorides:sulphates                       .          
-    ## chlorides:alcohol                         .          
-    ## free_sulfur_dioxide:total_sulfur_dioxide  .          
-    ## free_sulfur_dioxide:density               .          
-    ## free_sulfur_dioxide:p_h                   0.078055105
-    ## free_sulfur_dioxide:sulphates             .          
-    ## free_sulfur_dioxide:alcohol              -0.053897482
-    ## total_sulfur_dioxide:density              .          
-    ## total_sulfur_dioxide:p_h                  .          
-    ## total_sulfur_dioxide:sulphates            .          
-    ## total_sulfur_dioxide:alcohol             -0.196984665
-    ## density:p_h                               .          
-    ## density:sulphates                         .          
-    ## density:alcohol                           .          
-    ## p_h:sulphates                             .          
-    ## p_h:alcohol                               0.054428988
-    ## sulphates:alcohol                         0.018544055
+    ##                                                    1
+    ## (Intercept)                              -1.00868703
+    ## (Intercept)                               .         
+    ## fixed_acidity                             0.16038093
+    ## volatile_acidity                          0.71248610
+    ## citric_acid                               .         
+    ## residual_sugar                           -0.16363150
+    ## chlorides                                 .         
+    ## free_sulfur_dioxide                      -1.05927820
+    ## total_sulfur_dioxide                      .         
+    ## density                                   0.39465237
+    ## p_h                                       .         
+    ## sulphates                                 .         
+    ## alcohol                                  -0.21830615
+    ## fixed_acidity:volatile_acidity            .         
+    ## fixed_acidity:citric_acid                -0.06912063
+    ## fixed_acidity:residual_sugar              .         
+    ## fixed_acidity:chlorides                   .         
+    ## fixed_acidity:free_sulfur_dioxide        -0.05685387
+    ## fixed_acidity:total_sulfur_dioxide        .         
+    ## fixed_acidity:density                     .         
+    ## fixed_acidity:p_h                         0.06883735
+    ## fixed_acidity:sulphates                   .         
+    ## fixed_acidity:alcohol                     .         
+    ## volatile_acidity:citric_acid              .         
+    ## volatile_acidity:residual_sugar          -0.10013435
+    ## volatile_acidity:chlorides                .         
+    ## volatile_acidity:free_sulfur_dioxide     -0.03346143
+    ## volatile_acidity:total_sulfur_dioxide    -0.10210991
+    ## volatile_acidity:density                  .         
+    ## volatile_acidity:p_h                      .         
+    ## volatile_acidity:sulphates                .         
+    ## volatile_acidity:alcohol                  .         
+    ## citric_acid:residual_sugar                .         
+    ## citric_acid:chlorides                    -0.03964028
+    ## citric_acid:free_sulfur_dioxide           .         
+    ## citric_acid:total_sulfur_dioxide          .         
+    ## citric_acid:density                       .         
+    ## citric_acid:p_h                           .         
+    ## citric_acid:sulphates                     .         
+    ## citric_acid:alcohol                       .         
+    ## residual_sugar:chlorides                  0.03430541
+    ## residual_sugar:free_sulfur_dioxide        0.03168152
+    ## residual_sugar:total_sulfur_dioxide       .         
+    ## residual_sugar:density                    .         
+    ## residual_sugar:p_h                        .         
+    ## residual_sugar:sulphates                  .         
+    ## residual_sugar:alcohol                    .         
+    ## chlorides:free_sulfur_dioxide             .         
+    ## chlorides:total_sulfur_dioxide            .         
+    ## chlorides:density                         .         
+    ## chlorides:p_h                             .         
+    ## chlorides:sulphates                       .         
+    ## chlorides:alcohol                         0.01381740
+    ## free_sulfur_dioxide:total_sulfur_dioxide  0.04342281
+    ## free_sulfur_dioxide:density               .         
+    ## free_sulfur_dioxide:p_h                   .         
+    ## free_sulfur_dioxide:sulphates             .         
+    ## free_sulfur_dioxide:alcohol               .         
+    ## total_sulfur_dioxide:density              .         
+    ## total_sulfur_dioxide:p_h                  .         
+    ## total_sulfur_dioxide:sulphates            0.08622362
+    ## total_sulfur_dioxide:alcohol              .         
+    ## density:p_h                               .         
+    ## density:sulphates                         .         
+    ## density:alcohol                           0.43208851
+    ## p_h:sulphates                             .         
+    ## p_h:alcohol                               .         
+    ## sulphates:alcohol                         .
 
 ``` r
 # lambda lse gives the simplest model but also lies within one SE of the optimal value of lambda
 cv.lasso$lambda.1se
 ```
 
-    ## [1] 0.007473011
+    ## [1] 0.02427122
 
 ``` r
 # showing coefficients using lambda min (if . then variable has been zero'ed out)
@@ -771,71 +772,71 @@ coef(cv.lasso, cv.lasso$lambda.1se)
 
     ## 68 x 1 sparse Matrix of class "dgCMatrix"
     ##                                                    1
-    ## (Intercept)                              -0.23200307
+    ## (Intercept)                              -1.00868703
     ## (Intercept)                               .         
-    ## fixed_acidity                            -0.10441167
-    ## volatile_acidity                          0.27584939
-    ## citric_acid                               0.74541149
-    ## residual_sugar                            .         
-    ## chlorides                                -0.05166003
-    ## free_sulfur_dioxide                      -0.19773534
-    ## total_sulfur_dioxide                     -0.14908317
-    ## density                                  -0.67819552
-    ## p_h                                      -0.46561126
+    ## fixed_acidity                             0.16038093
+    ## volatile_acidity                          0.71248610
+    ## citric_acid                               .         
+    ## residual_sugar                           -0.16363150
+    ## chlorides                                 .         
+    ## free_sulfur_dioxide                      -1.05927820
+    ## total_sulfur_dioxide                      .         
+    ## density                                   0.39465237
+    ## p_h                                       .         
     ## sulphates                                 .         
-    ## alcohol                                   .         
+    ## alcohol                                  -0.21830615
     ## fixed_acidity:volatile_acidity            .         
-    ## fixed_acidity:citric_acid                -0.11552325
+    ## fixed_acidity:citric_acid                -0.06912063
     ## fixed_acidity:residual_sugar              .         
     ## fixed_acidity:chlorides                   .         
-    ## fixed_acidity:free_sulfur_dioxide         .         
+    ## fixed_acidity:free_sulfur_dioxide        -0.05685387
     ## fixed_acidity:total_sulfur_dioxide        .         
     ## fixed_acidity:density                     .         
-    ## fixed_acidity:p_h                         .         
-    ## fixed_acidity:sulphates                  -0.01064575
+    ## fixed_acidity:p_h                         0.06883735
+    ## fixed_acidity:sulphates                   .         
     ## fixed_acidity:alcohol                     .         
-    ## volatile_acidity:citric_acid              0.15675089
-    ## volatile_acidity:residual_sugar           .         
-    ## volatile_acidity:chlorides               -0.01204146
-    ## volatile_acidity:free_sulfur_dioxide      .         
-    ## volatile_acidity:total_sulfur_dioxide     .         
+    ## volatile_acidity:citric_acid              .         
+    ## volatile_acidity:residual_sugar          -0.10013435
+    ## volatile_acidity:chlorides                .         
+    ## volatile_acidity:free_sulfur_dioxide     -0.03346143
+    ## volatile_acidity:total_sulfur_dioxide    -0.10210991
     ## volatile_acidity:density                  .         
     ## volatile_acidity:p_h                      .         
     ## volatile_acidity:sulphates                .         
-    ## volatile_acidity:alcohol                 -0.19238440
-    ## citric_acid:residual_sugar               -0.01144969
-    ## citric_acid:chlorides                     .         
+    ## volatile_acidity:alcohol                  .         
+    ## citric_acid:residual_sugar                .         
+    ## citric_acid:chlorides                    -0.03964028
     ## citric_acid:free_sulfur_dioxide           .         
     ## citric_acid:total_sulfur_dioxide          .         
     ## citric_acid:density                       .         
     ## citric_acid:p_h                           .         
-    ## citric_acid:sulphates                     0.01092184
-    ## citric_acid:alcohol                      -0.10342270
-    ## residual_sugar:chlorides                  .         
-    ## residual_sugar:free_sulfur_dioxide        .         
+    ## citric_acid:sulphates                     .         
+    ## citric_acid:alcohol                       .         
+    ## residual_sugar:chlorides                  0.03430541
+    ## residual_sugar:free_sulfur_dioxide        0.03168152
     ## residual_sugar:total_sulfur_dioxide       .         
     ## residual_sugar:density                    .         
     ## residual_sugar:p_h                        .         
     ## residual_sugar:sulphates                  .         
     ## residual_sugar:alcohol                    .         
     ## chlorides:free_sulfur_dioxide             .         
-    ## chlorides:total_sulfur_dioxide           -0.03503599
+    ## chlorides:total_sulfur_dioxide            .         
     ## chlorides:density                         .         
     ## chlorides:p_h                             .         
     ## chlorides:sulphates                       .         
-    ## chlorides:alcohol                         .         
-    ## free_sulfur_dioxide:total_sulfur_dioxide  .         
+    ## chlorides:alcohol                         0.01381740
+    ## free_sulfur_dioxide:total_sulfur_dioxide  0.04342281
     ## free_sulfur_dioxide:density               .         
     ## free_sulfur_dioxide:p_h                   .         
     ## free_sulfur_dioxide:sulphates             .         
-    ## free_sulfur_dioxide:alcohol              -0.11303709
+    ## free_sulfur_dioxide:alcohol               .         
     ## total_sulfur_dioxide:density              .         
     ## total_sulfur_dioxide:p_h                  .         
-    ## total_sulfur_dioxide:sulphates            .         
+    ## total_sulfur_dioxide:sulphates            0.08622362
     ## total_sulfur_dioxide:alcohol              .         
     ## density:p_h                               .         
     ## density:sulphates                         .         
-    ## density:alcohol                           .         
+    ## density:alcohol                           0.43208851
     ## p_h:sulphates                             .         
     ## p_h:alcohol                               .         
     ## sulphates:alcohol                         .
@@ -875,59 +876,59 @@ summary(v2_logit_fit)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -1.7843  -0.2731  -0.1735  -0.1098   3.2392  
+    ## -1.9962  -0.2646  -0.1905  -0.1342   5.0928  
     ## 
     ## Coefficients:
-    ##                                 Estimate Std. Error z value
-    ## (Intercept)                    -4.266571   0.307918 -13.856
-    ## citric_acid                     0.032898   0.317213   0.104
-    ## density                         0.006764   0.370119   0.018
-    ## p_h                             0.511906   0.299267   1.711
-    ## volatile_acidity                0.845572   0.190059   4.449
-    ## fixed_acidity                   0.004095   0.517026   0.008
-    ## free_sulfur_dioxide            -0.565910   0.315487  -1.794
-    ## total_sulfur_dioxide           -0.188424   0.298143  -0.632
-    ## chlorides                      -0.206465   0.264630  -0.780
-    ## alcohol                        -0.613222   0.339245  -1.808
-    ## volatile_acidity:alcohol       -0.226813   0.201551  -1.125
-    ## alcohol:free_sulfur_dioxide    -0.277174   0.266344  -1.041
-    ## citric_acid:volatile_acidity   -0.036845   0.184877  -0.199
-    ## citric_acid:alcohol            -0.394505   0.240666  -1.639
-    ## citric_acid:fixed_acidity       0.095652   0.212376   0.450
-    ## total_sulfur_dioxide:chlorides -0.306372   0.253547  -1.208
-    ## volatile_acidity:chlorides      0.017454   0.156145   0.112
-    ## citric_acid:residual_sugar     -0.259255   0.232851  -1.113
-    ## citric_acid:sulphates           0.364743   0.155161   2.351
+    ##                                Estimate Std. Error z value
+    ## (Intercept)                    -4.04991    0.14976 -27.043
+    ## citric_acid                    -0.13978    0.13186  -1.060
+    ## density                        -0.49237    0.16428  -2.997
+    ## p_h                             0.36092    0.10639   3.392
+    ## volatile_acidity                0.60745    0.07810   7.778
+    ## fixed_acidity                   0.59265    0.10124   5.854
+    ## free_sulfur_dioxide            -0.59996    0.15288  -3.924
+    ## total_sulfur_dioxide           -0.04407    0.12059  -0.365
+    ## chlorides                       0.01338    0.12065   0.111
+    ## alcohol                        -1.02519    0.19615  -5.226
+    ## volatile_acidity:alcohol        0.01341    0.08182   0.164
+    ## alcohol:free_sulfur_dioxide    -0.38063    0.13510  -2.817
+    ## citric_acid:volatile_acidity   -0.01544    0.05451  -0.283
+    ## citric_acid:alcohol             0.07409    0.09913   0.747
+    ## citric_acid:fixed_acidity       0.10514    0.05945   1.769
+    ## total_sulfur_dioxide:chlorides  0.04515    0.08219   0.549
+    ## volatile_acidity:chlorides      0.02566    0.06055   0.424
+    ## citric_acid:residual_sugar      0.09690    0.07826   1.238
+    ## citric_acid:sulphates           0.07439    0.07390   1.007
     ##                                            Pr(>|z|)    
     ## (Intercept)                    < 0.0000000000000002 ***
-    ## citric_acid                                  0.9174    
-    ## density                                      0.9854    
-    ## p_h                                          0.0872 .  
-    ## volatile_acidity                         0.00000863 ***
-    ## fixed_acidity                                0.9937    
-    ## free_sulfur_dioxide                          0.0729 .  
-    ## total_sulfur_dioxide                         0.5274    
-    ## chlorides                                    0.4353    
-    ## alcohol                                      0.0707 .  
-    ## volatile_acidity:alcohol                     0.2604    
-    ## alcohol:free_sulfur_dioxide                  0.2980    
-    ## citric_acid:volatile_acidity                 0.8420    
-    ## citric_acid:alcohol                          0.1012    
-    ## citric_acid:fixed_acidity                    0.6524    
-    ## total_sulfur_dioxide:chlorides               0.2269    
-    ## volatile_acidity:chlorides                   0.9110    
-    ## citric_acid:residual_sugar                   0.2655    
-    ## citric_acid:sulphates                        0.0187 *  
+    ## citric_acid                                0.289118    
+    ## density                                    0.002725 ** 
+    ## p_h                                        0.000693 ***
+    ## volatile_acidity                0.00000000000000737 ***
+    ## fixed_acidity                   0.00000000479633961 ***
+    ## free_sulfur_dioxide             0.00008695962487035 ***
+    ## total_sulfur_dioxide                       0.714776    
+    ## chlorides                                  0.911664    
+    ## alcohol                         0.00000017280461352 ***
+    ## volatile_acidity:alcohol                   0.869769    
+    ## alcohol:free_sulfur_dioxide                0.004843 ** 
+    ## citric_acid:volatile_acidity               0.776933    
+    ## citric_acid:alcohol                        0.454841    
+    ## citric_acid:fixed_acidity                  0.076971 .  
+    ## total_sulfur_dioxide:chlorides             0.582808    
+    ## volatile_acidity:chlorides                 0.671736    
+    ## citric_acid:residual_sugar                 0.215682    
+    ## citric_acid:sulphates                      0.314130    
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
-    ##     Null deviance: 428.66  on 1279  degrees of freedom
-    ## Residual deviance: 332.39  on 1261  degrees of freedom
-    ## AIC: 370.39
+    ##     Null deviance: 1253.7  on 3918  degrees of freedom
+    ## Residual deviance: 1020.2  on 3900  degrees of freedom
+    ## AIC: 1058.2
     ## 
-    ## Number of Fisher Scoring iterations: 8
+    ## Number of Fisher Scoring iterations: 7
 
 Re-Determining What Classification Cutoff is Appropriate (Round 2)
 ------------------------------------------------------------------
@@ -983,83 +984,651 @@ caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1'
     ## 
     ##           Reference
     ## Prediction   0   1
-    ##          0 301  10
-    ##          1   6   2
+    ##          0 929  32
+    ##          1  14   4
     ##                                           
-    ##                Accuracy : 0.9498          
-    ##                  95% CI : (0.9198, 0.9711)
-    ##     No Information Rate : 0.9624          
-    ##     P-Value [Acc > NIR] : 0.9029          
+    ##                Accuracy : 0.953           
+    ##                  95% CI : (0.9378, 0.9654)
+    ##     No Information Rate : 0.9632          
+    ##     P-Value [Acc > NIR] : 0.95851         
     ##                                           
-    ##                   Kappa : 0.1752          
-    ##  Mcnemar's Test P-Value : 0.4533          
+    ##                   Kappa : 0.1267          
+    ##  Mcnemar's Test P-Value : 0.01219         
     ##                                           
-    ##             Sensitivity : 0.16667         
-    ##             Specificity : 0.98046         
-    ##          Pos Pred Value : 0.25000         
-    ##          Neg Pred Value : 0.96785         
-    ##              Prevalence : 0.03762         
-    ##          Detection Rate : 0.00627         
-    ##    Detection Prevalence : 0.02508         
-    ##       Balanced Accuracy : 0.57356         
+    ##             Sensitivity : 0.111111        
+    ##             Specificity : 0.985154        
+    ##          Pos Pred Value : 0.222222        
+    ##          Neg Pred Value : 0.966701        
+    ##              Prevalence : 0.036772        
+    ##          Detection Rate : 0.004086        
+    ##    Detection Prevalence : 0.018386        
+    ##       Balanced Accuracy : 0.548132        
     ##                                           
     ##        'Positive' Class : 1               
     ## 
 
 Conclusion: it doesn't look like any of the interactions suggested by the dbsmote-training-set-estimated lasso logit added much value when re-integrated into the original logit. Perhaps other sampling methods could be tried, or different methods of variable-selection may prove more insightful.
 
-Stepwise Variable Selection Techniques
---------------------------------------
+N-Degree Polynomial Variable Search Via Second Lasso Model
+----------------------------------------------------------
 
 ``` r
-# rebuilding the basic model just a reminder of its form 
-logit_fit <- glm(low_qual_flag ~ .,
+# first we need to find a way to get all variables with their correspoding degree polynomial into the model
+# I'm also including here all two:way interaction effects
+# in the code below, the integer in quotes determines the max nth degree polynomial to be tested
+logit_3_formula <- as.formula(
+  paste('low_qual_flag ~', paste('poly(', colnames(training[-12]),',3)', collapse = ' + '), '+ .^2', '- .')
+  )
+
+# prints the formula so that we can see what will be used to create the logit
+logit_3_formula
+```
+
+    ## low_qual_flag ~ poly(fixed_acidity, 3) + poly(volatile_acidity, 
+    ##     3) + poly(citric_acid, 3) + poly(residual_sugar, 3) + poly(chlorides, 
+    ##     3) + poly(free_sulfur_dioxide, 3) + poly(total_sulfur_dioxide, 
+    ##     3) + poly(density, 3) + poly(p_h, 3) + poly(sulphates, 3) + 
+    ##     poly(alcohol, 3) + .^2 - .
+
+``` r
+# below is what the basic model without any variable-elimination yet conducted
+v3_logit_fit <- glm(logit_3_formula,
+                 data = training,
+                 family = binomial)
+```
+
+    ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+``` r
+summary(v3_logit_fit)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = logit_3_formula, family = binomial, data = training)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -2.0944  -0.1987  -0.0998  -0.0428   3.5990  
+    ## 
+    ## Coefficients:
+    ##                                             Estimate  Std. Error z value
+    ## (Intercept)                                 -7.48591     2.57983  -2.902
+    ## poly(fixed_acidity, 3)1                     19.16973    18.75518   1.022
+    ## poly(fixed_acidity, 3)2                    -18.13166    16.02067  -1.132
+    ## poly(fixed_acidity, 3)3                     18.05408    10.59599   1.704
+    ## poly(volatile_acidity, 3)1                  44.68770    10.55645   4.233
+    ## poly(volatile_acidity, 3)2                  -4.21387     6.89061  -0.612
+    ## poly(volatile_acidity, 3)3                   6.24538     7.03002   0.888
+    ## poly(citric_acid, 3)1                        2.77527    10.51712   0.264
+    ## poly(citric_acid, 3)2                       16.21686     8.65503   1.874
+    ## poly(citric_acid, 3)3                       -6.60538     7.19282  -0.918
+    ## poly(residual_sugar, 3)1                   -51.88089    88.79483  -0.584
+    ## poly(residual_sugar, 3)2                    -4.56898   224.55701  -0.020
+    ## poly(residual_sugar, 3)3                   -18.93931    94.46714  -0.200
+    ## poly(chlorides, 3)1                          0.11717    24.17011   0.005
+    ## poly(chlorides, 3)2                        -14.06451    12.57107  -1.119
+    ## poly(chlorides, 3)3                         15.05307     9.63883   1.562
+    ## poly(free_sulfur_dioxide, 3)1              -36.53427    18.05771  -2.023
+    ## poly(free_sulfur_dioxide, 3)2               96.21402    59.96385   1.605
+    ## poly(free_sulfur_dioxide, 3)3              -16.04561    30.88196  -0.520
+    ## poly(total_sulfur_dioxide, 3)1               2.72958    14.81898   0.184
+    ## poly(total_sulfur_dioxide, 3)2               9.20191    14.00597   0.657
+    ## poly(total_sulfur_dioxide, 3)3               6.72901     8.44044   0.797
+    ## poly(density, 3)1                         -316.20032   162.91667  -1.941
+    ## poly(density, 3)2                        -1393.98157   605.71830  -2.301
+    ## poly(density, 3)3                         -355.08432   154.70282  -2.295
+    ## poly(p_h, 3)1                               -9.11268    19.16855  -0.475
+    ## poly(p_h, 3)2                              -14.01334    17.89251  -0.783
+    ## poly(p_h, 3)3                                1.37887     6.09271   0.226
+    ## poly(sulphates, 3)1                        -14.74787    14.46562  -1.020
+    ## poly(sulphates, 3)2                        -16.40106    13.15638  -1.247
+    ## poly(sulphates, 3)3                         -5.45319     9.34625  -0.583
+    ## poly(alcohol, 3)1                          -83.65732    44.27161  -1.890
+    ## poly(alcohol, 3)2                         -100.92535    38.19252  -2.643
+    ## poly(alcohol, 3)3                          -41.29337    11.51073  -3.587
+    ## fixed_acidity:volatile_acidity              -0.22404     0.16993  -1.318
+    ## fixed_acidity:citric_acid                    0.16588     0.19562   0.848
+    ## fixed_acidity:residual_sugar                -0.25437     0.51771  -0.491
+    ## fixed_acidity:chlorides                      0.15233     0.31430   0.485
+    ## fixed_acidity:free_sulfur_dioxide            0.22713     0.22286   1.019
+    ## fixed_acidity:total_sulfur_dioxide          -0.05175     0.24743  -0.209
+    ## fixed_acidity:density                        1.15394     0.74148   1.556
+    ## fixed_acidity:p_h                           -0.27691     0.29049  -0.953
+    ## fixed_acidity:sulphates                     -0.64924     0.25839  -2.513
+    ## fixed_acidity:alcohol                        0.33384     0.42927   0.778
+    ## volatile_acidity:citric_acid                -0.04266     0.09774  -0.437
+    ## volatile_acidity:residual_sugar             -0.58629     0.32919  -1.781
+    ## volatile_acidity:chlorides                   0.04748     0.14324   0.331
+    ## volatile_acidity:free_sulfur_dioxide         0.36134     0.13830   2.613
+    ## volatile_acidity:total_sulfur_dioxide       -0.24502     0.13145  -1.864
+    ## volatile_acidity:density                     0.63791     0.54274   1.175
+    ## volatile_acidity:p_h                        -0.29169     0.16587  -1.759
+    ## volatile_acidity:sulphates                   0.14351     0.13799   1.040
+    ## volatile_acidity:alcohol                     0.38562     0.28150   1.370
+    ## citric_acid:residual_sugar                   0.53503     0.43641   1.226
+    ## citric_acid:chlorides                       -0.15517     0.15751  -0.985
+    ## citric_acid:free_sulfur_dioxide             -0.12751     0.12883  -0.990
+    ## citric_acid:total_sulfur_dioxide             0.31751     0.14596   2.175
+    ## citric_acid:density                         -1.17350     0.71061  -1.651
+    ## citric_acid:p_h                              0.02924     0.18695   0.156
+    ## citric_acid:sulphates                        0.20905     0.13410   1.559
+    ## citric_acid:alcohol                         -0.41263     0.36194  -1.140
+    ## residual_sugar:chlorides                     1.65779     0.74075   2.238
+    ## residual_sugar:free_sulfur_dioxide          -0.29386     0.57472  -0.511
+    ## residual_sugar:total_sulfur_dioxide          0.81761     0.51876   1.576
+    ## residual_sugar:density                       0.28381     2.08837   0.136
+    ## residual_sugar:p_h                          -0.38944     0.63152  -0.617
+    ## residual_sugar:sulphates                    -1.22455     0.53231  -2.300
+    ## residual_sugar:alcohol                       0.97543     1.08912   0.896
+    ## chlorides:free_sulfur_dioxide               -0.24418     0.23925  -1.021
+    ## chlorides:total_sulfur_dioxide               0.05161     0.23629   0.218
+    ## chlorides:density                           -1.94040     1.14154  -1.700
+    ## chlorides:p_h                                0.26669     0.27724   0.962
+    ## chlorides:sulphates                          0.23536     0.15701   1.499
+    ## chlorides:alcohol                           -1.28263     0.61125  -2.098
+    ## free_sulfur_dioxide:total_sulfur_dioxide    -0.32951     0.19818  -1.663
+    ## free_sulfur_dioxide:density                 -0.13779     0.88056  -0.156
+    ## free_sulfur_dioxide:p_h                     -0.12650     0.24944  -0.507
+    ## free_sulfur_dioxide:sulphates                0.33023     0.17670   1.869
+    ## free_sulfur_dioxide:alcohol                 -0.68703     0.46460  -1.479
+    ## total_sulfur_dioxide:density                -0.28133     0.86401  -0.326
+    ## total_sulfur_dioxide:p_h                     0.29113     0.24355   1.195
+    ## total_sulfur_dioxide:sulphates              -0.06669     0.20220  -0.330
+    ## total_sulfur_dioxide:alcohol                -0.40564     0.42847  -0.947
+    ## density:p_h                                  0.90254     0.91628   0.985
+    ## density:sulphates                            2.04671     0.87092   2.350
+    ## density:alcohol                             -1.69142     1.66045  -1.019
+    ## p_h:sulphates                               -0.53390     0.23291  -2.292
+    ## p_h:alcohol                                  0.28439     0.51696   0.550
+    ## sulphates:alcohol                            1.17238     0.45707   2.565
+    ##                                          Pr(>|z|)    
+    ## (Intercept)                              0.003711 ** 
+    ## poly(fixed_acidity, 3)1                  0.306732    
+    ## poly(fixed_acidity, 3)2                  0.257732    
+    ## poly(fixed_acidity, 3)3                  0.088407 .  
+    ## poly(volatile_acidity, 3)1               0.000023 ***
+    ## poly(volatile_acidity, 3)2               0.540844    
+    ## poly(volatile_acidity, 3)3               0.374332    
+    ## poly(citric_acid, 3)1                    0.791871    
+    ## poly(citric_acid, 3)2                    0.060973 .  
+    ## poly(citric_acid, 3)3                    0.358446    
+    ## poly(residual_sugar, 3)1                 0.559033    
+    ## poly(residual_sugar, 3)2                 0.983767    
+    ## poly(residual_sugar, 3)3                 0.841101    
+    ## poly(chlorides, 3)1                      0.996132    
+    ## poly(chlorides, 3)2                      0.263226    
+    ## poly(chlorides, 3)3                      0.118356    
+    ## poly(free_sulfur_dioxide, 3)1            0.043053 *  
+    ## poly(free_sulfur_dioxide, 3)2            0.108596    
+    ## poly(free_sulfur_dioxide, 3)3            0.603357    
+    ## poly(total_sulfur_dioxide, 3)1           0.853860    
+    ## poly(total_sulfur_dioxide, 3)2           0.511181    
+    ## poly(total_sulfur_dioxide, 3)3           0.425315    
+    ## poly(density, 3)1                        0.052274 .  
+    ## poly(density, 3)2                        0.021371 *  
+    ## poly(density, 3)3                        0.021718 *  
+    ## poly(p_h, 3)1                            0.634504    
+    ## poly(p_h, 3)2                            0.433512    
+    ## poly(p_h, 3)3                            0.820957    
+    ## poly(sulphates, 3)1                      0.307960    
+    ## poly(sulphates, 3)2                      0.212535    
+    ## poly(sulphates, 3)3                      0.559581    
+    ## poly(alcohol, 3)1                        0.058806 .  
+    ## poly(alcohol, 3)2                        0.008229 ** 
+    ## poly(alcohol, 3)3                        0.000334 ***
+    ## fixed_acidity:volatile_acidity           0.187350    
+    ## fixed_acidity:citric_acid                0.396455    
+    ## fixed_acidity:residual_sugar             0.623183    
+    ## fixed_acidity:chlorides                  0.627915    
+    ## fixed_acidity:free_sulfur_dioxide        0.308120    
+    ## fixed_acidity:total_sulfur_dioxide       0.834319    
+    ## fixed_acidity:density                    0.119648    
+    ## fixed_acidity:p_h                        0.340471    
+    ## fixed_acidity:sulphates                  0.011983 *  
+    ## fixed_acidity:alcohol                    0.436750    
+    ## volatile_acidity:citric_acid             0.662468    
+    ## volatile_acidity:residual_sugar          0.074914 .  
+    ## volatile_acidity:chlorides               0.740295    
+    ## volatile_acidity:free_sulfur_dioxide     0.008982 ** 
+    ## volatile_acidity:total_sulfur_dioxide    0.062317 .  
+    ## volatile_acidity:density                 0.239857    
+    ## volatile_acidity:p_h                     0.078655 .  
+    ## volatile_acidity:sulphates               0.298337    
+    ## volatile_acidity:alcohol                 0.170725    
+    ## citric_acid:residual_sugar               0.220211    
+    ## citric_acid:chlorides                    0.324555    
+    ## citric_acid:free_sulfur_dioxide          0.322316    
+    ## citric_acid:total_sulfur_dioxide         0.029610 *  
+    ## citric_acid:density                      0.098657 .  
+    ## citric_acid:p_h                          0.875710    
+    ## citric_acid:sulphates                    0.119015    
+    ## citric_acid:alcohol                      0.254265    
+    ## residual_sugar:chlorides                 0.025222 *  
+    ## residual_sugar:free_sulfur_dioxide       0.609134    
+    ## residual_sugar:total_sulfur_dioxide      0.115008    
+    ## residual_sugar:density                   0.891899    
+    ## residual_sugar:p_h                       0.537451    
+    ## residual_sugar:sulphates                 0.021424 *  
+    ## residual_sugar:alcohol                   0.370461    
+    ## chlorides:free_sulfur_dioxide            0.307435    
+    ## chlorides:total_sulfur_dioxide           0.827113    
+    ## chlorides:density                        0.089167 .  
+    ## chlorides:p_h                            0.336078    
+    ## chlorides:sulphates                      0.133864    
+    ## chlorides:alcohol                        0.035872 *  
+    ## free_sulfur_dioxide:total_sulfur_dioxide 0.096384 .  
+    ## free_sulfur_dioxide:density              0.875654    
+    ## free_sulfur_dioxide:p_h                  0.612071    
+    ## free_sulfur_dioxide:sulphates            0.061636 .  
+    ## free_sulfur_dioxide:alcohol              0.139201    
+    ## total_sulfur_dioxide:density             0.744715    
+    ## total_sulfur_dioxide:p_h                 0.231952    
+    ## total_sulfur_dioxide:sulphates           0.741533    
+    ## total_sulfur_dioxide:alcohol             0.343779    
+    ## density:p_h                              0.324621    
+    ## density:sulphates                        0.018770 *  
+    ## density:alcohol                          0.308366    
+    ## p_h:sulphates                            0.021889 *  
+    ## p_h:alcohol                              0.582234    
+    ## sulphates:alcohol                        0.010318 *  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 1253.66  on 3918  degrees of freedom
+    ## Residual deviance:  753.08  on 3830  degrees of freedom
+    ## AIC: 931.08
+    ## 
+    ## Number of Fisher Scoring iterations: 10
+
+Tuning the Hyperparameter for the Lasso Model w/ All n-th Degree Polynomials (Optmizing Lamda)
+----------------------------------------------------------------------------------------------
+
+``` r
+library(glmnet) # package needed for ridge methods 
+
+# we need two packages for an advanced samplign technique called SMOTE
+# because of the cross-validation involved in tuning our hyperparameter, we need more balanced data
+# SMOTE is one method of achieving this balance (others include: upsampling / downsampling / ROSE)
+# for all varieties of SMOTE, see https://cran.r-project.org/web/packages/smotefamily/smotefamily.pdf
+library(smotefamily) # main SMOTE variety package
+# there are different algos behind the types of SMOTE; we'll rely on one that uses KNN / DBSCAN
+library(dbscan) #needed for dbsmote type of SMOTE to function
+
+# first we construct a SMOTE-built training dataset that is more well-balanced than our actual pop. 
+smote2_train <- smotefamily::DBSMOTE(training[,-c(12)], as.numeric(as.character(training$low_qual_flag)))
+# then we inspect the incidence rate of our left-hand-side variable in the new training set
+janitor::tabyl(smote2_train$data$class) 
+
+# now using the same methodology as above, we recreate the formula with nth degree polynomial terms for the lasso
+# formula looks at all interaction effects as well as all degree polynomials from 1:n without repetition
+lasso_3_formula <- as.formula(
+  paste('class ~', paste('poly(', colnames(smote2_train$data[-12]),',3)', collapse = ' + '), '+ .^2', '- .')
+  )
+
+# prints the formula so that we can see what will be used to create the logit
+lasso_3_formula
+
+# Then we build our model matrix (including all two-way interactions possible (hence ^2))
+x_2 <- model.matrix(lasso_3_formula, smote2_train$data)
+# calling out what the outcome variable should be explicitly for this method
+y_2 <- smote2_train$data$class
+
+# Next we move on to find the best lambda using cross-validation
+# Cross-validation is for tuning hyperparameters; not normally needed if model requires no hyperparameters
+set.seed(777) # set seed for reproduciblity
+# alpha = 1 just means lasso ; alpha = 0 is ridge
+# this step below can take a long time, as the range of possible lambdas is simulated
+cv.lasso <- cv.glmnet(x_2, y_2, alpha = 1, family = "binomial")
+```
+
+``` r
+# plots the various possible lambdas 
+plot(cv.lasso)
+```
+
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-28-1.png)
+
+``` r
+# Two common choices for lambda: lambda min and lambda lse (both are shown with dotted lines, in turn)
+# Up to the modeler to decide which to choose in this case; simplicity / error-minimization tradeoff
+```
+
+Examining the Resultant Coefficients
+------------------------------------
+
+``` r
+# lambda min is the value that minimizes the prediction error
+cv.lasso$lambda.min
+```
+
+    ## [1] 0.04637678
+
+``` r
+# showing coefficients using lambda min (if . then variable has been zero'ed out)
+coef(cv.lasso, cv.lasso$lambda.min)
+```
+
+    ## 90 x 1 sparse Matrix of class "dgCMatrix"
+    ##                                                    1
+    ## (Intercept)                               -0.1350894
+    ## (Intercept)                                .        
+    ## poly(fixed_acidity, 3)1                    8.0817617
+    ## poly(fixed_acidity, 3)2                    .        
+    ## poly(fixed_acidity, 3)3                    .        
+    ## poly(volatile_acidity, 3)1                62.9083390
+    ## poly(volatile_acidity, 3)2               -10.6151093
+    ## poly(volatile_acidity, 3)3                 .        
+    ## poly(citric_acid, 3)1                      .        
+    ## poly(citric_acid, 3)2                      .        
+    ## poly(citric_acid, 3)3                      .        
+    ## poly(residual_sugar, 3)1                   .        
+    ## poly(residual_sugar, 3)2                   .        
+    ## poly(residual_sugar, 3)3                   .        
+    ## poly(chlorides, 3)1                        .        
+    ## poly(chlorides, 3)2                        .        
+    ## poly(chlorides, 3)3                        .        
+    ## poly(free_sulfur_dioxide, 3)1            -71.2063501
+    ## poly(free_sulfur_dioxide, 3)2              .        
+    ## poly(free_sulfur_dioxide, 3)3              .        
+    ## poly(total_sulfur_dioxide, 3)1             .        
+    ## poly(total_sulfur_dioxide, 3)2             .        
+    ## poly(total_sulfur_dioxide, 3)3             .        
+    ## poly(density, 3)1                          .        
+    ## poly(density, 3)2                          .        
+    ## poly(density, 3)3                          .        
+    ## poly(p_h, 3)1                              .        
+    ## poly(p_h, 3)2                              .        
+    ## poly(p_h, 3)3                              .        
+    ## poly(sulphates, 3)1                        .        
+    ## poly(sulphates, 3)2                        .        
+    ## poly(sulphates, 3)3                        .        
+    ## poly(alcohol, 3)1                        -20.6568081
+    ## poly(alcohol, 3)2                        -28.7588779
+    ## poly(alcohol, 3)3                          .        
+    ## fixed_acidity:volatile_acidity             .        
+    ## fixed_acidity:citric_acid                  .        
+    ## fixed_acidity:residual_sugar               .        
+    ## fixed_acidity:chlorides                    .        
+    ## fixed_acidity:free_sulfur_dioxide          .        
+    ## fixed_acidity:total_sulfur_dioxide         .        
+    ## fixed_acidity:density                      .        
+    ## fixed_acidity:p_h                          .        
+    ## fixed_acidity:sulphates                    .        
+    ## fixed_acidity:alcohol                      .        
+    ## volatile_acidity:citric_acid               .        
+    ## volatile_acidity:residual_sugar            .        
+    ## volatile_acidity:chlorides                 .        
+    ## volatile_acidity:free_sulfur_dioxide      -0.1352953
+    ## volatile_acidity:total_sulfur_dioxide      .        
+    ## volatile_acidity:density                   .        
+    ## volatile_acidity:p_h                       .        
+    ## volatile_acidity:sulphates                 .        
+    ## volatile_acidity:alcohol                   .        
+    ## citric_acid:residual_sugar                 .        
+    ## citric_acid:chlorides                      .        
+    ## citric_acid:free_sulfur_dioxide            .        
+    ## citric_acid:total_sulfur_dioxide           .        
+    ## citric_acid:density                        .        
+    ## citric_acid:p_h                            .        
+    ## citric_acid:sulphates                      .        
+    ## citric_acid:alcohol                        .        
+    ## residual_sugar:chlorides                   .        
+    ## residual_sugar:free_sulfur_dioxide         .        
+    ## residual_sugar:total_sulfur_dioxide        .        
+    ## residual_sugar:density                     .        
+    ## residual_sugar:p_h                         .        
+    ## residual_sugar:sulphates                   .        
+    ## residual_sugar:alcohol                     .        
+    ## chlorides:free_sulfur_dioxide              .        
+    ## chlorides:total_sulfur_dioxide             .        
+    ## chlorides:density                          .        
+    ## chlorides:p_h                              .        
+    ## chlorides:sulphates                        .        
+    ## chlorides:alcohol                          .        
+    ## free_sulfur_dioxide:total_sulfur_dioxide   .        
+    ## free_sulfur_dioxide:density                .        
+    ## free_sulfur_dioxide:p_h                    .        
+    ## free_sulfur_dioxide:sulphates              .        
+    ## free_sulfur_dioxide:alcohol                .        
+    ## total_sulfur_dioxide:density               .        
+    ## total_sulfur_dioxide:p_h                   .        
+    ## total_sulfur_dioxide:sulphates             .        
+    ## total_sulfur_dioxide:alcohol               .        
+    ## density:p_h                                .        
+    ## density:sulphates                          .        
+    ## density:alcohol                            .        
+    ## p_h:sulphates                              .        
+    ## p_h:alcohol                                .        
+    ## sulphates:alcohol                          .
+
+``` r
+# lambda lse gives the simplest model but also lies within one SE of the optimal value of lambda
+cv.lasso$lambda.1se
+```
+
+    ## [1] 0.04637678
+
+``` r
+# showing coefficients using lambda min (if . then variable has been zero'ed out)
+coef(cv.lasso, cv.lasso$lambda.1se)
+```
+
+    ## 90 x 1 sparse Matrix of class "dgCMatrix"
+    ##                                                    1
+    ## (Intercept)                               -0.1350894
+    ## (Intercept)                                .        
+    ## poly(fixed_acidity, 3)1                    8.0817617
+    ## poly(fixed_acidity, 3)2                    .        
+    ## poly(fixed_acidity, 3)3                    .        
+    ## poly(volatile_acidity, 3)1                62.9083390
+    ## poly(volatile_acidity, 3)2               -10.6151093
+    ## poly(volatile_acidity, 3)3                 .        
+    ## poly(citric_acid, 3)1                      .        
+    ## poly(citric_acid, 3)2                      .        
+    ## poly(citric_acid, 3)3                      .        
+    ## poly(residual_sugar, 3)1                   .        
+    ## poly(residual_sugar, 3)2                   .        
+    ## poly(residual_sugar, 3)3                   .        
+    ## poly(chlorides, 3)1                        .        
+    ## poly(chlorides, 3)2                        .        
+    ## poly(chlorides, 3)3                        .        
+    ## poly(free_sulfur_dioxide, 3)1            -71.2063501
+    ## poly(free_sulfur_dioxide, 3)2              .        
+    ## poly(free_sulfur_dioxide, 3)3              .        
+    ## poly(total_sulfur_dioxide, 3)1             .        
+    ## poly(total_sulfur_dioxide, 3)2             .        
+    ## poly(total_sulfur_dioxide, 3)3             .        
+    ## poly(density, 3)1                          .        
+    ## poly(density, 3)2                          .        
+    ## poly(density, 3)3                          .        
+    ## poly(p_h, 3)1                              .        
+    ## poly(p_h, 3)2                              .        
+    ## poly(p_h, 3)3                              .        
+    ## poly(sulphates, 3)1                        .        
+    ## poly(sulphates, 3)2                        .        
+    ## poly(sulphates, 3)3                        .        
+    ## poly(alcohol, 3)1                        -20.6568081
+    ## poly(alcohol, 3)2                        -28.7588779
+    ## poly(alcohol, 3)3                          .        
+    ## fixed_acidity:volatile_acidity             .        
+    ## fixed_acidity:citric_acid                  .        
+    ## fixed_acidity:residual_sugar               .        
+    ## fixed_acidity:chlorides                    .        
+    ## fixed_acidity:free_sulfur_dioxide          .        
+    ## fixed_acidity:total_sulfur_dioxide         .        
+    ## fixed_acidity:density                      .        
+    ## fixed_acidity:p_h                          .        
+    ## fixed_acidity:sulphates                    .        
+    ## fixed_acidity:alcohol                      .        
+    ## volatile_acidity:citric_acid               .        
+    ## volatile_acidity:residual_sugar            .        
+    ## volatile_acidity:chlorides                 .        
+    ## volatile_acidity:free_sulfur_dioxide      -0.1352953
+    ## volatile_acidity:total_sulfur_dioxide      .        
+    ## volatile_acidity:density                   .        
+    ## volatile_acidity:p_h                       .        
+    ## volatile_acidity:sulphates                 .        
+    ## volatile_acidity:alcohol                   .        
+    ## citric_acid:residual_sugar                 .        
+    ## citric_acid:chlorides                      .        
+    ## citric_acid:free_sulfur_dioxide            .        
+    ## citric_acid:total_sulfur_dioxide           .        
+    ## citric_acid:density                        .        
+    ## citric_acid:p_h                            .        
+    ## citric_acid:sulphates                      .        
+    ## citric_acid:alcohol                        .        
+    ## residual_sugar:chlorides                   .        
+    ## residual_sugar:free_sulfur_dioxide         .        
+    ## residual_sugar:total_sulfur_dioxide        .        
+    ## residual_sugar:density                     .        
+    ## residual_sugar:p_h                         .        
+    ## residual_sugar:sulphates                   .        
+    ## residual_sugar:alcohol                     .        
+    ## chlorides:free_sulfur_dioxide              .        
+    ## chlorides:total_sulfur_dioxide             .        
+    ## chlorides:density                          .        
+    ## chlorides:p_h                              .        
+    ## chlorides:sulphates                        .        
+    ## chlorides:alcohol                          .        
+    ## free_sulfur_dioxide:total_sulfur_dioxide   .        
+    ## free_sulfur_dioxide:density                .        
+    ## free_sulfur_dioxide:p_h                    .        
+    ## free_sulfur_dioxide:sulphates              .        
+    ## free_sulfur_dioxide:alcohol                .        
+    ## total_sulfur_dioxide:density               .        
+    ## total_sulfur_dioxide:p_h                   .        
+    ## total_sulfur_dioxide:sulphates             .        
+    ## total_sulfur_dioxide:alcohol               .        
+    ## density:p_h                                .        
+    ## density:sulphates                          .        
+    ## density:alcohol                            .        
+    ## p_h:sulphates                              .        
+    ## p_h:alcohol                                .        
+    ## sulphates:alcohol                          .
+
+``` r
+# storing the coefficients for later use
+lambda_coefs <- broom::tidy(coef(cv.lasso, cv.lasso$lambda.1se))
+```
+
+``` r
+# grabs list of variables determined to be important by the lasso
+coef_list_lasso_2 <- lambda_coefs %>%
+  # arrange the coefficients in descending order of absolute value
+  arrange(desc(abs(value))) %>%
+  filter(row!='(Intercept)') %>%
+  select(row) 
+
+# prints out the list of the non-zero'ed out variables
+coef_list_lasso_2
+```
+
+    ##                                    row
+    ## 1        poly(free_sulfur_dioxide, 3)1
+    ## 2           poly(volatile_acidity, 3)1
+    ## 3                    poly(alcohol, 3)2
+    ## 4                    poly(alcohol, 3)1
+    ## 5           poly(volatile_acidity, 3)2
+    ## 6              poly(fixed_acidity, 3)1
+    ## 7 volatile_acidity:free_sulfur_dioxide
+
+``` r
+# rebuilt logit based on info gained from lasso; would like to be able to simply plug in the coef list, from above
+v5_logit_fit <- glm(low_qual_flag ~ free_sulfur_dioxide + poly(volatile_acidity,2) + poly(alcohol,2) + poly(fixed_acidity, 2),
                  data = training,
                  family = binomial)
 
-# the default will be to do backwards stepwise variable selection only, so that's what we'll start off with
-slm1 <- step(logit_fit)
-```
-
-``` r
-summary(slm1)
+summary(v5_logit_fit)
 ```
 
     ## 
     ## Call:
-    ## glm(formula = low_qual_flag ~ volatile_acidity + chlorides + 
-    ##     free_sulfur_dioxide + p_h, family = binomial, data = training)
+    ## glm(formula = low_qual_flag ~ free_sulfur_dioxide + poly(volatile_acidity, 
+    ##     2) + poly(alcohol, 2) + poly(fixed_acidity, 2), family = binomial, 
+    ##     data = training)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -1.7521  -0.2849  -0.1914  -0.1288   3.2277  
+    ## -1.7185  -0.2698  -0.1917  -0.1395   4.8593  
     ## 
     ## Coefficients:
-    ##                     Estimate Std. Error z value             Pr(>|z|)    
-    ## (Intercept)          -3.8419     0.2144 -17.920 < 0.0000000000000002 ***
-    ## volatile_acidity      0.9023     0.1374   6.566      0.0000000000517 ***
-    ## chlorides             0.2657     0.1198   2.218               0.0266 *  
-    ## free_sulfur_dioxide  -0.5189     0.2055  -2.525               0.0116 *  
-    ## p_h                   0.3266     0.1531   2.133               0.0329 *  
+    ##                            Estimate Std. Error z value
+    ## (Intercept)                 -3.8363     0.1258 -30.500
+    ## free_sulfur_dioxide         -0.5342     0.1063  -5.024
+    ## poly(volatile_acidity, 2)1  47.4095     5.1979   9.121
+    ## poly(volatile_acidity, 2)2  -7.4693     3.7667  -1.983
+    ## poly(alcohol, 2)1          -38.5113     7.6787  -5.015
+    ## poly(alcohol, 2)2          -18.5825     7.3973  -2.512
+    ## poly(fixed_acidity, 2)1     15.3303     5.1415   2.982
+    ## poly(fixed_acidity, 2)2      5.2095     3.5514   1.467
+    ##                                        Pr(>|z|)    
+    ## (Intercept)                < 0.0000000000000002 ***
+    ## free_sulfur_dioxide                 0.000000507 ***
+    ## poly(volatile_acidity, 2)1 < 0.0000000000000002 ***
+    ## poly(volatile_acidity, 2)2              0.04737 *  
+    ## poly(alcohol, 2)1                   0.000000529 ***
+    ## poly(alcohol, 2)2                       0.01200 *  
+    ## poly(fixed_acidity, 2)1                 0.00287 ** 
+    ## poly(fixed_acidity, 2)2                 0.14240    
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
-    ##     Null deviance: 428.66  on 1279  degrees of freedom
-    ## Residual deviance: 350.64  on 1275  degrees of freedom
-    ## AIC: 360.64
+    ##     Null deviance: 1253.7  on 3918  degrees of freedom
+    ## Residual deviance: 1048.1  on 3911  degrees of freedom
+    ## AIC: 1064.1
     ## 
     ## Number of Fisher Scoring iterations: 7
 
+Re-Determining What Classification Cutoff is Appropriate for Poly Lasso (Round 3)
+---------------------------------------------------------------------------------
+
+``` r
+# running predictions on the new post-lasso-improvements-integrated model
+# same chunks of code used previously below; 1st to find best cutoff, then to test performance
+
+# run predictions on testing set
+prediction_test <- predict(v5_logit_fit, newdata = testing, type = "response" )
+predictions_test_full <- data.frame(prediction = prediction_test, low_qual_flag = testing$low_qual_flag)
+
+# again defining the costs of false positive vs. costs of false negative (same ratio maintained)
+cost_fp <- 10
+cost_fn <- 100
+
+# building the data structure needed for the ROC charts
+roc_info <- ROCInfo(data = predictions_test_full, 
+                    predict = "prediction", 
+                    actual = "low_qual_flag", 
+                    cost.fp = cost_fp, 
+                    cost.fn = cost_fn )
+```
+
+``` r
+# plot the new roc / cutoff-selection plots
+grid.draw(roc_info$plot)
+```
+
+<img src="logistic_regression_files/figure-markdown_github/fig9-1.png" style="display: block; margin: auto;" />
+
+``` r
+# looks like the optimal cutoff is now at 0.14
+```
+
+Examining Model Performance for the "Refined" Post-Poly-Lasso Logit
+-------------------------------------------------------------------
+
 ``` r
 # getting model probabilities for our testing set 
-logit_fit_probs <- predict(slm1,
+logit5_fit_probs <- predict(v5_logit_fit,
                            newdata = testing,
                            type = "response")
 
 # turning these probabilities into classifications using the cutoff determined above 
-logit_fit_predictions <- factor(ifelse(logit_fit_probs > 0.04, 1, 0),levels=c('0','1'))
+logit_fit_predictions <- factor(ifelse(logit5_fit_probs > 0.14, 1, 0),levels=c('0','1'))
 
 # builiding a confusion matrix 
 caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1')
@@ -1069,143 +1638,25 @@ caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1'
     ## 
     ##           Reference
     ## Prediction   0   1
-    ##          0 230   6
-    ##          1  77   6
-    ##                                              
-    ##                Accuracy : 0.7398             
-    ##                  95% CI : (0.688, 0.7871)    
-    ##     No Information Rate : 0.9624             
-    ##     P-Value [Acc > NIR] : 1                  
-    ##                                              
-    ##                   Kappa : 0.0648             
-    ##  Mcnemar's Test P-Value : 0.00000000000001548
-    ##                                              
-    ##             Sensitivity : 0.50000            
-    ##             Specificity : 0.74919            
-    ##          Pos Pred Value : 0.07229            
-    ##          Neg Pred Value : 0.97458            
-    ##              Prevalence : 0.03762            
-    ##          Detection Rate : 0.01881            
-    ##    Detection Prevalence : 0.26019            
-    ##       Balanced Accuracy : 0.62459            
-    ##                                              
-    ##        'Positive' Class : 1                  
-    ## 
-
-``` r
-# now running stepwise variable selection in both directions
-# for endposts we're using a model with all interactions as the most complicated possible to be considered
-# and for the least complicated possible model we're using the simplest model returned from the backwards step
-slm2 <- step(logit_fit, scope = list(upper = as.formula(low_qual_flag ~ .^2),
-                               lower = as.formula(low_qual_flag ~ volatile_acidity + chlorides + 
-    free_sulfur_dioxide + p_h)),
-             direction = "both")
-```
-
-``` r
-summary(slm2)
-```
-
-    ## 
-    ## Call:
-    ## glm(formula = low_qual_flag ~ fixed_acidity + volatile_acidity + 
-    ##     residual_sugar + chlorides + free_sulfur_dioxide + total_sulfur_dioxide + 
-    ##     p_h + sulphates + alcohol + free_sulfur_dioxide:sulphates + 
-    ##     fixed_acidity:residual_sugar + residual_sugar:alcohol + p_h:alcohol + 
-    ##     free_sulfur_dioxide:alcohol + free_sulfur_dioxide:total_sulfur_dioxide + 
-    ##     fixed_acidity:total_sulfur_dioxide + volatile_acidity:residual_sugar, 
-    ##     family = binomial, data = training)
-    ## 
-    ## Deviance Residuals: 
-    ##     Min       1Q   Median       3Q      Max  
-    ## -1.9254  -0.2463  -0.1187  -0.0473   3.5012  
-    ## 
-    ## Coefficients:
-    ##                                          Estimate Std. Error z value
-    ## (Intercept)                              -4.72113    0.38095 -12.393
-    ## fixed_acidity                             0.48563    0.30934   1.570
-    ## volatile_acidity                          0.98153    0.18126   5.415
-    ## residual_sugar                           -0.96043    0.52117  -1.843
-    ## chlorides                                 0.06487    0.19864   0.327
-    ## free_sulfur_dioxide                      -0.32963    0.33283  -0.990
-    ## total_sulfur_dioxide                     -0.20259    0.32161  -0.630
-    ## p_h                                       0.91019    0.26440   3.443
-    ## sulphates                                -0.25609    0.26287  -0.974
-    ## alcohol                                  -0.79018    0.35142  -2.249
-    ## free_sulfur_dioxide:sulphates             0.88560    0.20933   4.231
-    ## fixed_acidity:residual_sugar             -0.97418    0.45836  -2.125
-    ## residual_sugar:alcohol                    1.33877    0.40246   3.326
-    ## p_h:alcohol                               0.39313    0.15747   2.497
-    ## free_sulfur_dioxide:alcohol              -0.52459    0.30950  -1.695
-    ## free_sulfur_dioxide:total_sulfur_dioxide -0.67600    0.32479  -2.081
-    ## fixed_acidity:total_sulfur_dioxide        0.63080    0.33620   1.876
-    ## volatile_acidity:residual_sugar           0.35736    0.22312   1.602
-    ##                                                      Pr(>|z|)    
-    ## (Intercept)                              < 0.0000000000000002 ***
-    ## fixed_acidity                                        0.116443    
-    ## volatile_acidity                                 0.0000000613 ***
-    ## residual_sugar                                       0.065352 .  
-    ## chlorides                                            0.743974    
-    ## free_sulfur_dioxide                                  0.321977    
-    ## total_sulfur_dioxide                                 0.528746    
-    ## p_h                                                  0.000576 ***
-    ## sulphates                                            0.329959    
-    ## alcohol                                              0.024544 *  
-    ## free_sulfur_dioxide:sulphates                    0.0000233031 ***
-    ## fixed_acidity:residual_sugar                         0.033558 *  
-    ## residual_sugar:alcohol                               0.000880 ***
-    ## p_h:alcohol                                          0.012542 *  
-    ## free_sulfur_dioxide:alcohol                          0.090081 .  
-    ## free_sulfur_dioxide:total_sulfur_dioxide             0.037400 *  
-    ## fixed_acidity:total_sulfur_dioxide                   0.060620 .  
-    ## volatile_acidity:residual_sugar                      0.109234    
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## (Dispersion parameter for binomial family taken to be 1)
-    ## 
-    ##     Null deviance: 428.66  on 1279  degrees of freedom
-    ## Residual deviance: 287.53  on 1262  degrees of freedom
-    ## AIC: 323.53
-    ## 
-    ## Number of Fisher Scoring iterations: 9
-
-``` r
-# getting model probabilities for our testing set 
-logit_fit_probs <- predict(slm2,
-                           newdata = testing,
-                           type = "response")
-
-# turning these probabilities into classifications using the cutoff determined above 
-logit_fit_predictions <- factor(ifelse(logit_fit_probs > 0.04, 1, 0),levels=c('0','1'))
-
-# builiding a confusion matrix 
-caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1')
-```
-
-    ## Confusion Matrix and Statistics
-    ## 
-    ##           Reference
-    ## Prediction   0   1
-    ##          0 244   8
-    ##          1  63   4
-    ##                                           
-    ##                Accuracy : 0.7774          
-    ##                  95% CI : (0.7277, 0.8219)
-    ##     No Information Rate : 0.9624          
-    ##     P-Value [Acc > NIR] : 1               
-    ##                                           
-    ##                   Kappa : 0.04            
-    ##  Mcnemar's Test P-Value : 0.0000000001468 
-    ##                                           
-    ##             Sensitivity : 0.33333         
-    ##             Specificity : 0.79479         
-    ##          Pos Pred Value : 0.05970         
-    ##          Neg Pred Value : 0.96825         
-    ##              Prevalence : 0.03762         
-    ##          Detection Rate : 0.01254         
-    ##    Detection Prevalence : 0.21003         
-    ##       Balanced Accuracy : 0.56406         
-    ##                                           
-    ##        'Positive' Class : 1               
+    ##          0 905  28
+    ##          1  38   8
+    ##                                          
+    ##                Accuracy : 0.9326         
+    ##                  95% CI : (0.915, 0.9475)
+    ##     No Information Rate : 0.9632         
+    ##     P-Value [Acc > NIR] : 1.0000         
+    ##                                          
+    ##                   Kappa : 0.1605         
+    ##  Mcnemar's Test P-Value : 0.2679         
+    ##                                          
+    ##             Sensitivity : 0.222222       
+    ##             Specificity : 0.959703       
+    ##          Pos Pred Value : 0.173913       
+    ##          Neg Pred Value : 0.969989       
+    ##              Prevalence : 0.036772       
+    ##          Detection Rate : 0.008172       
+    ##    Detection Prevalence : 0.046987       
+    ##       Balanced Accuracy : 0.590963       
+    ##                                          
+    ##        'Positive' Class : 1              
     ##

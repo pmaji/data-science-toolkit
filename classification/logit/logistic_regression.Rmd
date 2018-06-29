@@ -3,7 +3,9 @@ title: "Logistic Regression"
 output: github_document
 ---
 
-```{r}
+```{r results='hide', warning=FALSE, message=FALSE}
+# first a few general set-up items / housekeeping items
+
 # setting the appropriate working directory
 setwd("~/Desktop/Personal/personal_code/classification/")
 
@@ -59,14 +61,16 @@ library(janitor) # for data cleaning and tabular exploration
 # tidying variable names and dropping any useless rows / columns
 
 main_wine_df <- main_wine_df %>%
-  janitor::clean_names() %>% #converts to underscore case and cleans
+  janitor::clean_names() %>% # converts to underscore case and cleans
   janitor::remove_empty(which = c("rows","cols")) # drops all rows and columns that are entirely empty
 ```
 
+In this preliminary analysis, I will build a model only for white wine. The reason for this is entirely arbitrary--I personally love most red wine, and the only wine I have ever absolutely despised was white. As such, for my own intellectual curriosity I wanted to create a model that predicts the classification of the lowest quality white wine specifically, with an eye towards better understanding the characteristics of the worst white wine in order to avoid them altogether. 
+
 ```{r}
-# for the purpose of simplicity, we are going to start by only looking at the red wine
-red_main_df <- main_wine_df %>%
-  # filtering to just the red wine
+# for the purpose of simplicity, we are going to start by only looking at the white wine
+white_main_df <- main_wine_df %>%
+  # filtering to just the white wine
   filter(color == "white") %>%
   # dropping the now-useless variable
   select(-color) %>%
@@ -75,7 +79,7 @@ red_main_df <- main_wine_df %>%
   mutate(quality = factor(quality))
 
 # examining the newly created dataset
-glimpse(red_main_df)
+glimpse(white_main_df)
 ```
 
 ## Exploring the Data
@@ -84,19 +88,22 @@ glimpse(red_main_df)
 # Even though we dropped any rows / cols that are entirely null, we need to check for NA problems
 library(DataExplorer) # allows for creation of missings values map
 # documentation for DataExplorer: https://towardsdatascience.com/simple-fast-exploratory-data-analysis-in-r-with-dataexplorer-package-e055348d9619
-DataExplorer::plot_missing(red_main_df) # shows % of NAs within each variable
-# good news is this dataset looks perfectly clean of nulls!
-# If there were any problems with nulls, we would solve it using complete.cases() or something similar
+DataExplorer::plot_missing(white_main_df) # shows % of NAs within each variable
 ```
+
+Good news at this point is this dataset looks perfectly clean of nulls! If there were any problems with nulls, we would solve it using complete.cases() or something similar.
 
 ### Continous Variables Exploration 
 
 ```{r}
 # high-level univariate variable-exploration
 # first a histogram of all continuous variables in the dataset
-DataExplorer::plot_histogram(data = red_main_df, title = "Continuous Variables Explored (Histograms)")
+DataExplorer::plot_histogram(data = white_main_df, title = "Continuous Variables Explored (Histograms)")
+```
+
+```{r}
 # then a density chart of all continous variables in the dataset
-DataExplorer::plot_density(data = red_main_df, title = "Continuous Variables Explored (Density Plots)")
+DataExplorer::plot_density(data = white_main_df, title = "Continuous Variables Explored (Density Plots)")
 ```
 
 ### Categorical Variable Exploration
@@ -105,27 +112,36 @@ DataExplorer::plot_density(data = red_main_df, title = "Continuous Variables Exp
 # the only categorical variable in our data in this case is what we'll use to create our low quality flag
 # if we had many categorical variables, it would make sense to use order_bar = TRUE
 # the order would then be in descending order of prevalence, which is helpful at a glance
-plot_bar(data = red_main_df, order_bar = FALSE, title = "Categorical Variables Explored")
+plot_bar(data = white_main_df, order_bar = FALSE, title = "Categorical Variables Explored")
+```
 
+```{r}
 # and then we can use janitor to see the exact cross-tab of our quality variable
-janitor::tabyl(red_main_df$quality)
+janitor::tabyl(white_main_df$quality)
 # it looks like wines with a rating < 5 are exceptionally bad, so we'll use that as our benchmark
 # all together wines with a rating below 5 represent just under 4% of the population
 ```
+
+It looks like wines with a rating < 5 are exceptionally bad, so we'll use that as our benchmark. All together wines with a rating below 5 represent under 4% of the population--so we'll be dealing with a low incidence binary outcome left-hand side variable in this particular modeling scenario. 
+
 
 ### Outcome Variable Creation
 
 ```{r}
 # given the above analysis, we'll flag anything with a quality rating < 5 as low-quality 
-red_final_df <- red_main_df %>%
+white_final_df <- white_main_df %>%
   # type conversion here can be tricky because to de-factor requires multiple steps
   # we have to de-factor, perform the logical test on the numeric, and then re-factor
   mutate(low_qual_flag = factor(ifelse(as.numeric(as.character(quality)) < 5,1,0))) %>%
   select(-quality)
 
-glimpse(red_final_df) # taking another look at the new dataset
-tabyl(red_final_df$low_qual_flag)
-# the data now look nice and clean!
+glimpse(white_final_df) # taking another look at the new dataset
+```
+
+```{r}
+# And now we'll take one final look at the distribution of our outcome variable
+# as can be seen, a low quality white wine is a rare event; ~3.75% of the time
+tabyl(white_final_df$low_qual_flag)
 ```
 
 ## Centering and Normalizing the Data 
@@ -136,8 +152,8 @@ For more information on when to center / normalize data, see below:
 
 ```{r}
 # we're going to scale and center all variables (except our left-hand side)
-red_final_df[,-12] <- scale(red_final_df[,-12], center = TRUE, scale = TRUE)
-glimpse(red_final_df)
+white_final_df[,-12] <- scale(white_final_df[,-12], center = TRUE, scale = TRUE)
+glimpse(white_final_df)
 ```
 
 ## Checking for Variable Correlations
@@ -151,10 +167,10 @@ library(corrplot)
 
 # building a correlation matrix and ensuring that it only takes in components that are numeric 
 # this is necessary because if there are any non-numeric elements in the matrix, this will break 
-corr_matrix <- cor(red_final_df[, sapply(red_final_df, is.numeric)])
+corr_matrix <- cor(white_final_df[, sapply(white_final_df, is.numeric)])
 
 # getting the matrix of p-values that correspond to the strength of correlation for each pairing
-res1 <- cor.mtest(red_final_df[, sapply(red_final_df, is.numeric)], conf.level = .95)
+res1 <- cor.mtest(white_final_df[, sapply(white_final_df, is.numeric)], conf.level = .95)
 
 # first we'll build a correlation plot that checks for significance level
 # this one will also give us a hint at strength of correlation based on the colors 
@@ -169,8 +185,8 @@ corrplot(corr_matrix, method = "number", type = "upper", pch.cex = .9,
 
 Takeways from these types of exploratory techniques can help us to create a more informed model. We may, depending on the circumstances, treat variables differently in our model-building process as a result of these types of charts. For example, we might discover a great degree of cross-correlation that allows us to delete duplicative variables, etc. We can notice a few interesting trends from our results above in this case:
 
-- Citric acid and fixed acidity are verging on highly correlated. So too are fixed acidity and density, and total sulfur dioxide and free sulfur dioxide. These correlations are also significant. While most of these are intuitive, we might do well to remember these cross-correlations when it comes time to do dimensionality reduction with this model (if necessary) as in most cases if variables are highly correlated there may not be a strong marginal lift that justifies keeping both in the final model. 
-- There are also a few very obvious relationships, such as the negative correlation between pH and citric acid, but all in all this chart seems to demonstrate that there isn't a massive amount to be concerned about in terms of cross-correlation. 
+- Residual sugar and denisty are highly positively correlated, while alcohol and density are highly negatively correlated. These correlations are also significant. While most of these are intuitive, we might do well to remember these cross-correlations when it comes time to do dimensionality reduction with this model (if necessary). All in all, it seems as though there are a few interesting relationships to be explored here, but nothing that appears concerning from the perspective of very high degree of multicolinearity. 
+
 
 ## Prepping Data for the Modeling Process
 
@@ -182,11 +198,11 @@ library(caret) # needed to createDataPartitions
 # set seed to ensure reproducibility
 set.seed(777)
 
-in_train <- caret::createDataPartition(y=red_final_df$low_qual_flag, p=0.80, list=FALSE)
+in_train <- caret::createDataPartition(y=white_final_df$low_qual_flag, p=0.80, list=FALSE)
 
 # splits the data into training and testing sets
-training <- red_final_df[in_train,]
-testing <- red_final_df[-in_train,]
+training <- white_final_df[in_train,]
+testing <- white_final_df[-in_train,]
 
 # shows the row count and column count of the training and test sets, to check that all worked as planned
 dim(training)
@@ -200,11 +216,11 @@ dim(testing)
 ```{r}
 # simple logistic regression
 # models using all variables in the training dataset (hence ~ .)
-logit_fit <- glm(low_qual_flag ~ .,
+simple_logit_fit <- glm(low_qual_flag ~ .,
                  data = training,
                  family = binomial)
 
-summary(logit_fit)
+summary(simple_logit_fit)
 ```
 
 ## First Look at Model Predictions 
@@ -215,11 +231,11 @@ summary(logit_fit)
 # then we'll observe the distribution of modelled probabilities to look for interesting trends
 
 # run predictions on training set
-prediction_train <- predict(logit_fit, newdata = training, type = "response" )
+prediction_train <- predict(simple_logit_fit, newdata = training, type = "response" )
 predictions_train_full <- data.frame(prediction = prediction_train, low_qual_flag = training$low_qual_flag)
 
 # run predictions on testing set
-prediction_test <- predict(logit_fit, newdata = testing, type = "response" )
+prediction_test <- predict(simple_logit_fit, newdata = testing, type = "response" )
 predictions_test_full <- data.frame(prediction = prediction_test, low_qual_flag = testing$low_qual_flag)
 
 # distribution of the prediction score grouped by known outcome (for training set only)
@@ -237,7 +253,7 @@ scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) +
 theme_economist()
 ```
 
-## Determining What Classification Cutoff is Appropriate
+## Determining What Classification Cutoff is Appropriate (Simple Logit)
 
 ```{r}
 # some custom functions are sourced in, to reduce document's length
@@ -271,7 +287,7 @@ accuracy_info$plot
 
 # user-defined costs for false negative and false positive to pinpoint where total cost is minimized
 cost_fp <- 10 # cost of false positive
-cost_fn <- 100# cost of false negative
+cost_fn <- 100 # cost of false negative
 # here the assumption I've made is that a false positive is 1/10th as costly as a false negative
 
 # creates the base data needed to visualize the ROC curves
@@ -282,14 +298,18 @@ roc_info <- ROCInfo(data = predictions_test_full,
                     cost.fn = cost_fn )
 ```
 
+### ROC Curve for Simple Logit 
+
 ```{r fig2, fig.height = 4, fig.width = 6, fig.align = "center"}
 # plot the roc / cutoff-selection plots
 # color on the chart is cost -- darker is higher cost / greener is lower cost
 grid.draw(roc_info$plot)
-# looks like the optimal cutoff is at 0.07
 ```
 
-## Examining Model Performance for the Basic Logit
+It looks like, for the Simple Logit, the optimal cutoff is 0.07. 
+
+
+## Examining Model Performance for the Simple Logit
 
 ```{r}
 # visualize a particular cutoff's effectiveness at classification
@@ -307,46 +327,93 @@ cm_info$plot
 # think of this section as the cross-tab version of the confusion matrix plot shown above
 
 # getting model probabilities for our testing set
-logit_fit_probs <- predict(logit_fit,
+simple_logit_fit_probs <- predict(simple_logit_fit,
                            newdata = testing,
                            type = "response")
 
 # turning these probabilities into classifications using the cutoff determined above 
-logit_fit_predictions <- factor(ifelse(logit_fit_probs > 0.11, 1, 0),levels=c('0','1'))
+simple_logit_fit_predictions <- factor(ifelse(simple_logit_fit_probs > 0.07, 1, 0),levels=c('0','1'))
 
 # builiding a confusion matrix 
-caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1')
+simple_logit_conmatrix <- caret::confusionMatrix(simple_logit_fit_predictions,testing$low_qual_flag, positive='1')
+simple_logit_conmatrix
 ```
+
 
 # Penalized Logistic Regression (Lasso)
 
 - Now using an Objective Function that penalizes low-ROI variables. This is similar to ridge regression except variables with coefficients non-consequential enough will be zero'ed out of the model.
 - Useful source: http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/
 
-## Tuning the Hyperparameter for the Lasso Model w/ 2-Way Interactions (Optmizing Lamda)
+## Tuning the Hyperparameter for the Lasso Model w/ 2-Way Interactions and Polynomial Terms
+
+The first step here is optmizing lamda--the hyperparameter of importance in a lasso regression. Given the nature of the cross-validation involved in a the hyperparameter optimization process, we need a dataset where the data aren't as scarce as they are in the main dataset. There are a variety of methods available to deal with this problem, including upsampling, downsampling, and a host of synthetic sampling methodologies that generally into categories abbreviated ROSE and SMOTE. For information on all varieties of synthetic sampling that exist, see the link below. 
+
+- https://cran.r-project.org/web/packages/smotefamily/smotefamily.pdf
+
+For the purpose of this project, we will estimate two lasso models:
+- One trained on data created via simple upsampling.
+- And one trained on data created via DBSMOTE--a dbscan-backed version of synthetic upsampling. 
+
+The reason for these two choices is that upsampling is the simplest method for this type of problem, and DBSMOTE is the fanciest synthetic data creation methodology that makes sense for this type of problem--so we're testing the two extremes of possible solutions to the data paucity problem. 
+
+Finally, it may be worth stating explicitly that my purpose of using the lasso method is to get an idea for what variables might be useful, and what variables might not be useful. As such, it makes sense to throw many variables at the lasso model to take full advantage of its capacity to weed out the noise. For this exercise, I will consider all of the following in each lasso model:
+
+- All single variable terms
+- All nth-degree polynomial terms (where n is bounded by 3 for simplicity's sake)
+- All unique two-direction interaction effects 
+
+After training the models using both aforementioned sampling methodologies, we will hopefully be able to glean some information in the end about what polynomial terms, interaction effects, or single variables appear most statistically powerful and thus worthy of consideration in the final model. 
+
+
+## Sampling Methodology Explored -- Upsampling
+
+### Building the Upsampled Dataset
+
+```{r}
+# creating new training dataset with upsampled low quality cases
+upsample_training <- caret::upSample(training, (training$low_qual_flag))
+
+# one downside of the upSample function is it creates a new left-hand side variable (class)
+# as such, we have to do some minor clenaing
+
+upsample_training <- upsample_training %>%
+  select(-low_qual_flag) %>%
+  rename(`low_qual_flag` = `Class`)
+
+# then we inspect the incidence rate of our left-hand-side variable in the new training set
+# the result should now be a 50 / 50 split 
+janitor::tabyl(upsample_training$low_qual_flag) 
+```
+
+## Building the Model Formula (Upsampled Lasso)
+
+```{r}
+# first we get all variables with their corresponding degree polynomial into the model
+# I'm also including here all two:way interaction effects
+# in the code below, the integer in quotes determines the max nth degree polynomial to be tested
+upsample_lasso_formula <- as.formula(
+  paste('low_qual_flag ~', paste('poly(', colnames(upsample_training[-12]),',3)', collapse = ' + '), '+ .^2', '- .')
+  )
+
+# prints the formula so that we can see what will be used to create the logit
+upsample_lasso_formula
+```
+
+
+### Building the Upsampled Model Matrix
+
+```{r}
+# Then we build our model matrix (including all two-way interactions possible and polynomials up to 3rd degree)
+x <- model.matrix(upsample_lasso_formula, upsample_training)
+# calling out what the outcome variable should be explicitly for this method
+y <- upsample_training$low_qual_flag
+```
+
+### Tuning Lambda for Upsampled Logit
 
 ```{r echo=T, results='hide', warning=FALSE}
 library(glmnet) # package needed for ridge methods 
-
-# we need two packages for an advanced samplign technique called SMOTE
-# because of the cross-validation involved in tuning our hyperparameter, we need more balanced data
-# SMOTE is one method of achieving this balance (others include: upsampling / downsampling / ROSE)
-# for all varieties of SMOTE, see https://cran.r-project.org/web/packages/smotefamily/smotefamily.pdf
-library(smotefamily) # main SMOTE variety package
-# there are different algos behind the types of SMOTE; we'll rely on one that uses KNN / DBSCAN
-library(dbscan) #needed for dbsmote type of SMOTE to function
-
-# first we construct a SMOTE-built training dataset that is more well-balanced than our actual pop. 
-smote2_train <- smotefamily::DBSMOTE(training[,-c(12)], as.numeric(as.character(training$low_qual_flag)))
-# then we inspect the incidence rate of our left-hand-side variable in the new training set
-janitor::tabyl(smote2_train$data$class) 
-
-# Then we build our model matrix (including all two-way interactions possible (hence ^2))
-x <- model.matrix(class~.^2, smote2_train$data)
-# calling out what the outcome variable should be explicitly for this method
-y <- smote2_train$data$class
-
-
 # Next we move on to find the best lambda using cross-validation
 # Cross-validation is for tuning hyperparameters; not normally needed if model requires no hyperparameters
 set.seed(777) # set seed for reproduciblity
@@ -355,6 +422,9 @@ set.seed(777) # set seed for reproduciblity
 cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
 ```
 
+
+### Plotting Lambdas for Upsampled Logit
+
 ```{r}
 # plots the various possible lambdas 
 plot(cv.lasso)
@@ -362,50 +432,81 @@ plot(cv.lasso)
 # Up to the modeler to decide which to choose in this case; simplicity / error-minimization tradeoff
 ```
 
-## Examining the Resultant Coefficients
+The two common choices are shown visually with dotted lines, in turn:
+- Lambda Min (the value that minimizes the prediction error)
+- Lambda LSE (gives the simplest model but also lies within one SE of the optimal value of lambda)
 
-The main purpose of using the lasso here is to look for any interaction effects that might be powerful predictors, and/or to trim variables that are of visibly no importance. Because of how quickly variable count scales when you consider all possible interactions, it seems pertinent to focus in particular on the coefficient list where we use lambda.lse (and thus have zero'ed out more coefficients)
+
+### Examining the Resultant Coefficients (Upsampled Lasso)
+
+The number of non-zero'ed out variables that you will get as the result of tuning your lambda for your particular lasso model can vary greatly from model-to-model, depending on a host of variables including your training dataset. Given that this is the first time the coefficient list has showed up in this document, we'll include both the lambda min coefficient list and the lamda lse coefficient list below, but thereafter will only use the one deemed most appropriate. This choice is left up the modeler and is balancing act between exhaustiveness and simplicity, in most cases. 
+
+### First the Coefficients for the Lambda Min Upsampled Lasso
 
 ```{r}
 # lambda min is the value that minimizes the prediction error
-cv.lasso$lambda.min
+# cv.lasso$lambda.min  # uncomment and call this if you wanted the raw lambda 
+
 # showing coefficients using lambda min (if . then variable has been zero'ed out)
 coef(cv.lasso, cv.lasso$lambda.min)
+```
 
-# lambda lse gives the simplest model but also lies within one SE of the optimal value of lambda
-cv.lasso$lambda.1se
+### Second the Coefficients for the Lambda LSE Upsampled Lasso
+
+```{r}
+#cv.lasso$lambda.1se # uncomment and call this if you wanted the raw lambda 
 # showing coefficients using lambda min (if . then variable has been zero'ed out)
 coef(cv.lasso, cv.lasso$lambda.1se)
 
 # storing the coefficients for later use
-lambda_coefs <- broom::tidy(coef(cv.lasso, cv.lasso$lambda.1se))
+upsample_lambda_coefs <- broom::tidy(coef(cv.lasso, cv.lasso$lambda.1se))
 ```
 
-## Re-Estimating Refined Logit Based on Lasso Results 
+### Building the Upsampled Lasso Logit Formula Based on Coefficient List
 
 ```{r}
-# working on a method to transform a column into a list separated by +'s to be used in the formula
-coef_list <- lambda_coefs %>%
+# first we trim from the coefficient list only the coefficients that weren't 0'ed out
+upsample_coef_list <- upsample_lambda_coefs %>%
   # arrange the coefficients in descending order of absolute value
-  arrange(desc(abs(value))) %>%
-  select(row)
+  arrange(desc(abs(value))) %>% 
+  select(row) %>%
+  # dropping the intercept which isn't needed in formula
+  filter(row != '(Intercept)') %>%
+  as.data.frame()
 
+# then we take this jumbled list and need to perform a few annoying operations to get it into a clean formula
+# adding unique at the end because once we drop the polynomial number at the end, we'll have some dupes
+clean_upsample_coef_list <- gsub(").*", ")", upsample_coef_list$row) %>% unique()
+
+# the gsub above resolts in a clean character vector, but now we need to make it into a formula
+result_upsample_lasso_formula <- as.formula(
+  paste('low_qual_flag ~', paste(clean_upsample_coef_list, collapse = ' + '))
+  )
+
+# the final resulting formula is below
+result_upsample_lasso_formula
+```
+
+### Rebuilding Logit Based on Outcome of Upsample Lasso Selection Methodology
+
+```{r}
 # rebuilt logit based on info gained from lasso; would like to be able to simply plug in the coef list, from above
-v2_logit_fit <- glm(low_qual_flag ~ citric_acid + density + p_h + volatile_acidity + fixed_acidity + volatile_acidity:alcohol + free_sulfur_dioxide + total_sulfur_dioxide + free_sulfur_dioxide:alcohol + volatile_acidity:citric_acid + citric_acid:alcohol + fixed_acidity:citric_acid + chlorides + alcohol + chlorides:total_sulfur_dioxide + volatile_acidity:chlorides + citric_acid:residual_sugar + citric_acid:sulphates,
+result_upsample_lasso_fit <- glm(result_upsample_lasso_formula,
                  data = training,
                  family = binomial)
 
-summary(v2_logit_fit)
+summary(result_upsample_lasso_fit)
 ```
 
-## Re-Determining What Classification Cutoff is Appropriate (Round 2)
+
+### Re-Determining What Classification Cutoff is Appropriate (Upsample Lasso)
 
 ```{r}
 # running predictions on the new post-lasso-improvements-integrated model
 # same chunks of code used previously below; 1st to find best cutoff, then to test performance
 
 # run predictions on testing set
-prediction_test <- predict(v2_logit_fit, newdata = testing, type = "response" )
+prediction_test <- predict(result_upsample_lasso_fit, newdata = testing, type = "response" )
 predictions_test_full <- data.frame(prediction = prediction_test, low_qual_flag = testing$low_qual_flag)
 
 # again defining the costs of false positive vs. costs of false negative (same ratio maintained)
@@ -420,93 +521,96 @@ roc_info <- ROCInfo(data = predictions_test_full,
                     cost.fn = cost_fn )
 ```
 
-```{r fig3, fig.height = 4, fig.width = 6, fig.align = "center"}
+### ROC Curve for Logit Resuliting from Upsample Lasso
+
+```{r fig4, fig.height = 4, fig.width = 6, fig.align = "center"}
 # plot the new roc / cutoff-selection plots
 grid.draw(roc_info$plot)
-# looks like the optimal cutoff is now at 0.23 
 ```
 
-## Examining Model Performance for the "Refined" Post-Lasso Logit
+Looks like the optimal cutoff for this particular model is 0.13. 
+
+
+### Examining Model Performance (Upsample Lasso)
 
 ```{r}
 # getting model probabilities for our testing set 
-logit_fit_probs <- predict(v2_logit_fit,
+result_upsample_lasso_fit_probs <- predict(result_upsample_lasso_fit,
                            newdata = testing,
                            type = "response")
 
 # turning these probabilities into classifications using the cutoff determined above 
-logit_fit_predictions <- factor(ifelse(logit_fit_probs > 0.23, 1, 0),levels=c('0','1'))
+result_upsample_logit_fit_predictions <- factor(ifelse(result_upsample_lasso_fit_probs > 0.13, 1, 0),levels=c('0','1'))
 
 # builiding a confusion matrix 
-caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1')
-```
-
-Conclusion: it doesn't look like any of the interactions suggested by the dbsmote-training-set-estimated lasso logit added much value when re-integrated into the original logit. Perhaps other sampling methods could be tried, or different methods of variable-selection may prove more insightful. 
-
-
-## N-Degree Polynomial Variable Search Via Second Lasso Model
-
-```{r}
-# first we need to find a way to get all variables with their correspoding degree polynomial into the model
-# I'm also including here all two:way interaction effects
-# in the code below, the integer in quotes determines the max nth degree polynomial to be tested
-logit_3_formula <- as.formula(
-  paste('low_qual_flag ~', paste('poly(', colnames(training[-12]),',3)', collapse = ' + '), '+ .^2', '- .')
-  )
-
-# prints the formula so that we can see what will be used to create the logit
-logit_3_formula
-```
-
-```{r}
-# below is what the basic model without any variable-elimination yet conducted
-v3_logit_fit <- glm(logit_3_formula,
-                 data = training,
-                 family = binomial)
-
-summary(v3_logit_fit)
+result_upsample_conmatrix <- caret::confusionMatrix(result_upsample_logit_fit_predictions,testing$low_qual_flag, positive='1')
+result_upsample_conmatrix
 ```
 
 
-## Tuning the Hyperparameter for the Lasso Model w/ All n-th Degree Polynomials (Optmizing Lamda)
+
+
+## Sampling Methodology Explored -- DBSMOTE
+
+### Building the DBSMOTE Dataset
 
 ```{r echo=T, results='hide', warning=FALSE}
-library(glmnet) # package needed for ridge methods 
-
-# we need two packages for an advanced samplign technique called SMOTE
-# because of the cross-validation involved in tuning our hyperparameter, we need more balanced data
-# SMOTE is one method of achieving this balance (others include: upsampling / downsampling / ROSE)
-# for all varieties of SMOTE, see https://cran.r-project.org/web/packages/smotefamily/smotefamily.pdf
 library(smotefamily) # main SMOTE variety package
-# there are different algos behind the types of SMOTE; we'll rely on one that uses KNN / DBSCAN
 library(dbscan) #needed for dbsmote type of SMOTE to function
 
 # first we construct a SMOTE-built training dataset that is more well-balanced than our actual pop. 
-smote2_train <- smotefamily::DBSMOTE(training[,-c(12)], as.numeric(as.character(training$low_qual_flag)))
+dbsmote_training <- smotefamily::DBSMOTE(training[,-c(12)], as.numeric(as.character(training$low_qual_flag)))
 # then we inspect the incidence rate of our left-hand-side variable in the new training set
-janitor::tabyl(smote2_train$data$class) 
+```
 
-# now using the same methodology as above, we recreate the formula with nth degree polynomial terms for the lasso
-# formula looks at all interaction effects as well as all degree polynomials from 1:n without repetition
-lasso_3_formula <- as.formula(
-  paste('class ~', paste('poly(', colnames(smote2_train$data[-12]),',3)', collapse = ' + '), '+ .^2', '- .')
+```{r}
+# as with the upsampled dataset we created, the smote dataset requires some cleaning
+dbsmote_training <- dbsmote_training$data %>%
+  as.data.frame() %>%
+  mutate(low_qual_flag = factor(class)) %>%
+  select(-class)
+  
+# then we inspect the incidence rate of our left-hand-side variable in the new training set
+# the result should now be close to a 50 / 50 split 
+janitor::tabyl(dbsmote_training$low_qual_flag) 
+```
+
+
+## Building the Model Formula (DBSMOTE Lasso)
+
+```{r}
+# first we get all variables with their corresponding degree polynomial into the model
+# I'm also including here all two:way interaction effects
+# in the code below, the integer in quotes determines the max nth degree polynomial to be tested
+dbsmote_lasso_formula <- as.formula(
+  paste('low_qual_flag ~', paste('poly(', colnames(dbsmote_training[-12]),',3)', collapse = ' + '), '+ .^2', '- .')
   )
 
 # prints the formula so that we can see what will be used to create the logit
-lasso_3_formula
+dbsmote_lasso_formula
+```
 
-# Then we build our model matrix (including all two-way interactions possible (hence ^2))
-x_2 <- model.matrix(lasso_3_formula, smote2_train$data)
+### Building the DBSMOTE Model Matrix
+
+```{r}
+# Then we build our model matrix (including all two-way interactions possible and polynomials up to 3rd degree)
+x <- model.matrix(dbsmote_lasso_formula, dbsmote_training)
 # calling out what the outcome variable should be explicitly for this method
-y_2 <- smote2_train$data$class
+y <- dbsmote_training$low_qual_flag
+```
 
+### Tuning Lambda for DBSMOTE Lasso
+
+```{r echo=T, results='hide', warning=FALSE}
 # Next we move on to find the best lambda using cross-validation
 # Cross-validation is for tuning hyperparameters; not normally needed if model requires no hyperparameters
 set.seed(777) # set seed for reproduciblity
 # alpha = 1 just means lasso ; alpha = 0 is ridge
 # this step below can take a long time, as the range of possible lambdas is simulated
-cv.lasso <- cv.glmnet(x_2, y_2, alpha = 1, family = "binomial")
+cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
 ```
+
+### Plotting Lambdas for DBSMOTE Logit
 
 ```{r}
 # plots the various possible lambdas 
@@ -515,50 +619,73 @@ plot(cv.lasso)
 # Up to the modeler to decide which to choose in this case; simplicity / error-minimization tradeoff
 ```
 
-## Examining the Resultant Coefficients 
+
+### First the Coefficients for the Lambda Min DBSMOTE Lasso
 
 ```{r}
 # lambda min is the value that minimizes the prediction error
-cv.lasso$lambda.min
+# cv.lasso$lambda.min  # uncomment and call this if you wanted the raw lambda 
+
 # showing coefficients using lambda min (if . then variable has been zero'ed out)
 coef(cv.lasso, cv.lasso$lambda.min)
+```
 
-# lambda lse gives the simplest model but also lies within one SE of the optimal value of lambda
-cv.lasso$lambda.1se
+### Second the Coefficients for the Lambda LSE DBSMOTE Lasso
+
+```{r}
+#cv.lasso$lambda.1se # uncomment and call this if you wanted the raw lambda 
 # showing coefficients using lambda min (if . then variable has been zero'ed out)
 coef(cv.lasso, cv.lasso$lambda.1se)
 
 # storing the coefficients for later use
-lambda_coefs <- broom::tidy(coef(cv.lasso, cv.lasso$lambda.1se))
+dbsmote_lambda_coefs <- broom::tidy(coef(cv.lasso, cv.lasso$lambda.1se))
 ```
 
+
+### Building the DBSMOTE Lasso Logit Formula Based on Coefficient List
+
 ```{r}
-# grabs list of variables determined to be important by the lasso
-coef_list_lasso_2 <- lambda_coefs %>%
+# first we trim from the coefficient list only the coefficients that weren't 0'ed out
+dbsmote_coef_list <- dbsmote_lambda_coefs %>%
   # arrange the coefficients in descending order of absolute value
-  arrange(desc(abs(value))) %>%
-  filter(row!='(Intercept)') %>%
-  select(row) 
+  arrange(desc(abs(value))) %>% 
+  select(row) %>%
+  # dropping the intercept which isn't needed in formula
+  filter(row != '(Intercept)') %>%
+  as.data.frame()
 
-# prints out the list of the non-zero'ed out variables
-coef_list_lasso_2
+# then we take this jumbled list and need to perform a few annoying operations to get it into a clean formula
+clean_dbsmote_coef_list <- gsub(").*", ")", dbsmote_coef_list$row) %>% unique()
 
+# the gsub above resolts in a clean character vector, but now we need to make it into a formula
+result_dbsmote_lasso_formula <- as.formula(
+  paste('low_qual_flag ~', paste(clean_dbsmote_coef_list, collapse = ' + '))
+  )
+
+# the final resulting formula is below
+result_dbsmote_lasso_formula
+```
+
+### Rebuilding Logit Based on Outcome of DBSMOTE Lasso Selection Methodology
+
+```{r}
 # rebuilt logit based on info gained from lasso; would like to be able to simply plug in the coef list, from above
-v5_logit_fit <- glm(low_qual_flag ~ free_sulfur_dioxide + poly(volatile_acidity,2) + poly(alcohol,2) + poly(fixed_acidity, 2),
+result_dbsmote_lasso_fit <- glm(result_dbsmote_lasso_formula,
                  data = training,
                  family = binomial)
 
-summary(v5_logit_fit)
+summary(result_dbsmote_lasso_fit)
 ```
 
-## Re-Determining What Classification Cutoff is Appropriate for Poly Lasso (Round 3)
+
+### Re-Determining What Classification Cutoff is Appropriate (DBSMOTE Lasso)
 
 ```{r}
 # running predictions on the new post-lasso-improvements-integrated model
 # same chunks of code used previously below; 1st to find best cutoff, then to test performance
 
 # run predictions on testing set
-prediction_test <- predict(v5_logit_fit, newdata = testing, type = "response" )
+prediction_test <- predict(result_dbsmote_lasso_fit, newdata = testing, type = "response" )
 predictions_test_full <- data.frame(prediction = prediction_test, low_qual_flag = testing$low_qual_flag)
 
 # again defining the costs of false positive vs. costs of false negative (same ratio maintained)
@@ -573,28 +700,40 @@ roc_info <- ROCInfo(data = predictions_test_full,
                     cost.fn = cost_fn )
 ```
 
-```{r fig9, fig.height = 4, fig.width = 6, fig.align = "center"}
+### ROC Curve for Logit Resuliting from DBSMOTE Lasso
+
+```{r fig5, fig.height = 4, fig.width = 6, fig.align = "center"}
 # plot the new roc / cutoff-selection plots
 grid.draw(roc_info$plot)
-# looks like the optimal cutoff is now at 0.14
 ```
 
-## Examining Model Performance for the "Refined" Post-Poly-Lasso Logit
+Looks like the optimal cutoff for this particular model is 0.07. 
+
+
+### Examining Model Performance (DBSMOTE Lasso)
 
 ```{r}
 # getting model probabilities for our testing set 
-logit5_fit_probs <- predict(v5_logit_fit,
+result_dbsmote_lasso_fit_probs <- predict(result_dbsmote_lasso_fit,
                            newdata = testing,
                            type = "response")
 
 # turning these probabilities into classifications using the cutoff determined above 
-logit_fit_predictions <- factor(ifelse(logit5_fit_probs > 0.14, 1, 0),levels=c('0','1'))
+result_dbsmote_lasso_fit_predictions <- factor(ifelse(result_dbsmote_lasso_fit_probs > 0.07, 1, 0),levels=c('0','1'))
 
 # builiding a confusion matrix 
-caret::confusionMatrix(logit_fit_predictions,testing$low_qual_flag, positive='1')
+result_dbsmote_conmatrix <- caret::confusionMatrix(result_dbsmote_lasso_fit_predictions,testing$low_qual_flag, positive='1')
+result_dbsmote_conmatrix
 ```
+
+# Final Model Comparison (Progress Thus Far)
 
 ```{r}
-
+simple_logit_conmatrix
+result_upsample_conmatrix
+result_dbsmote_conmatrix
 ```
+
+
+
 

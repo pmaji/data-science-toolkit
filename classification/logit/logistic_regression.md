@@ -24,6 +24,7 @@ Importing the Data
 
 -   Data taken from: <https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/>
 -   Explanation of the meaning / origin of the data can be found in this academic paper here: <http://www3.dsi.uminho.pt/pcortez/wine5.pdf>
+-   Additional explanation of the data and corresponding Kaggle page: <https://www.kaggle.com/uciml/red-wine-quality-cortez-et-al-2009>
 
 ``` r
 # we have both red and white wine datasets with the same variables 
@@ -588,6 +589,40 @@ simple_logit_conmatrix
     ##        'Positive' Class : 1                 
     ## 
 
+Documenting Performance of Simple Logit Model
+---------------------------------------------
+
+``` r
+# creating a blank table to record a running set of performance metrics for each model we create
+running_model_synopsis_table <- data.frame(
+  model_name = character(),
+  classification_cutoff = numeric(),
+  sensitivity=character(), 
+  specificity=character(), 
+  number_of_model_terms=numeric(),
+  total_cost = numeric(),
+  stringsAsFactors=FALSE
+  )
+
+simple_logit_synopsis_info <- data.frame(
+  model_name = "Simple Logit (All Vars.)",
+  classification_cutoff = roc_info$cutoff,
+  sensitivity = percent(roc_info$sensitivity), 
+  specificity = percent(roc_info$specificity), 
+  number_of_model_terms = (length(colnames(simple_logit_fit$qr$qr))-1),
+  total_cost = roc_info$totalcost,
+  stringsAsFactors=FALSE
+  )
+
+running_model_synopsis_table <- bind_rows(running_model_synopsis_table, simple_logit_synopsis_info)
+running_model_synopsis_table
+```
+
+    ##                 model_name classification_cutoff sensitivity specificity
+    ## 1 Simple Logit (All Vars.)            0.06734321         50%         89%
+    ##   number_of_model_terms total_cost
+    ## 1                    11       2840
+
 Penalized Logistic Regression (Lasso)
 =====================================
 
@@ -696,7 +731,7 @@ cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
 plot(cv.lasso)
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-26-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-27-1.png)
 
 ``` r
 # Two common choices for lambda: lambda min and lambda lse (both are shown with dotted lines, in turn)
@@ -1235,6 +1270,32 @@ result_upsample_conmatrix
     ##        'Positive' Class : 1               
     ## 
 
+Documenting Performance of Upsample Lasso Model
+-----------------------------------------------
+
+``` r
+upsample_lasso_synopsis_info <- data.frame(
+  model_name = "Upsample Lasso",
+  classification_cutoff = roc_info$cutoff,
+  sensitivity = percent(roc_info$sensitivity), 
+  specificity = percent(roc_info$specificity), 
+  number_of_model_terms = (length(colnames(result_upsample_lasso_fit$qr$qr))-1),
+  total_cost = roc_info$totalcost,
+  stringsAsFactors=FALSE
+  )
+
+# adding the model at hand's metrics to our running table for continous comparison
+running_model_synopsis_table <- bind_rows(running_model_synopsis_table, upsample_lasso_synopsis_info)
+running_model_synopsis_table
+```
+
+    ##                 model_name classification_cutoff sensitivity specificity
+    ## 1 Simple Logit (All Vars.)            0.06734321         50%         89%
+    ## 2           Upsample Lasso            0.13501546       41.7%       93.7%
+    ##   number_of_model_terms total_cost
+    ## 1                    11       2840
+    ## 2                    77       2690
+
 Sampling Methodology Explored -- DBSMOTE
 ----------------------------------------
 
@@ -1313,7 +1374,7 @@ cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
 plot(cv.lasso)
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-38-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-40-1.png)
 
 ``` r
 # Two common choices for lambda: lambda min and lambda lse (both are shown with dotted lines, in turn)
@@ -1694,98 +1755,333 @@ result_dbsmote_conmatrix
     ##        'Positive' Class : 1                    
     ## 
 
-Final Model Comparison (Progress Thus Far)
-==========================================
+Documenting Performance of DBSMOTE Lasso Model
+----------------------------------------------
 
 ``` r
-simple_logit_conmatrix
+dbsmote_lasso_synopsis_info <- data.frame(
+  model_name = "DBSMOTE Lasso",
+  classification_cutoff = roc_info$cutoff,
+  sensitivity = percent(roc_info$sensitivity), 
+  specificity = percent(roc_info$specificity), 
+  number_of_model_terms = (length(colnames(result_dbsmote_lasso_fit$qr$qr))-1),
+  total_cost = roc_info$totalcost,
+  stringsAsFactors=FALSE
+  )
+
+# adding the model at hand's metrics to our running table for continous comparison
+running_model_synopsis_table <- bind_rows(running_model_synopsis_table, dbsmote_lasso_synopsis_info)
+running_model_synopsis_table
+```
+
+    ##                 model_name classification_cutoff sensitivity specificity
+    ## 1 Simple Logit (All Vars.)            0.06734321         50%         89%
+    ## 2           Upsample Lasso            0.13501546       41.7%       93.7%
+    ## 3            DBSMOTE Lasso            0.07360934       52.8%       89.1%
+    ##   number_of_model_terms total_cost
+    ## 1                    11       2840
+    ## 2                    77       2690
+    ## 3                    13       2730
+
+Final Model Selection (Progress Thus Far)
+=========================================
+
+Having created various models over the course of this analysis, we can take stock of where we are and compare what we have thusfar. From the running\_model\_synopsis\_table, shown above, we see that the DBSMOTE Lasso has the best sensitivity of all models. That said, our end goal should not just be to have a relatively predicitve model, but one that has some practical utility in the real world. As such, we'll look over the DBSMOTE Lasso and try to simplify it bit to end with something that is both easily explainable and practical.
+
+Trimming the Best Model Found Thus Far
+--------------------------------------
+
+We want to take the best model we have found thus far and trim its terms down to only those that are statistically significant, such that the final model is both simpler and more robust.
+
+### Functionalized Model-Trimming Based on P-Values
+
+``` r
+library(broom) # needing for tidying model summary output into a df
+
+# turns model summary for dbsmote lasso model into df
+tidy_dbsmote_lasso <- broom::tidy(result_dbsmote_lasso_fit)
+
+final_coef_list <- tidy_dbsmote_lasso %>%
+  # arrange the terms in ascending order of p-value
+  arrange(abs(p.value)) %>% 
+  # dropping the intercept which isn't needed in formula
+  # keeping only variables that are statistically significant at a 95% CI
+  filter(
+    term != '(Intercept)',
+    p.value < 0.05
+         ) %>%
+  as.data.frame()
+
+# then we take this jumbled list and need to perform a few annoying operations to get it into a clean formula
+clean_final_coef_list <- gsub(").*", ")", final_coef_list$term) %>% unique()
+
+# turns stat. significant list of final coefficients into a callable formula
+result_final_lasso_formula <- as.formula(
+  paste('low_qual_flag ~', paste(clean_final_coef_list, collapse = ' + '))
+  )
+
+# the final resulting formula is below
+result_final_lasso_formula
+```
+
+    ## low_qual_flag ~ poly(volatile_acidity, 3) + poly(free_sulfur_dioxide, 
+    ##     3) + poly(alcohol, 3) + poly(fixed_acidity, 3)
+
+``` r
+result_final_lasso_fit <- glm(result_final_lasso_formula,
+                 data = training,
+                 family = binomial)
+
+summary(result_final_lasso_fit)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = result_final_lasso_formula, family = binomial, 
+    ##     data = training)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -1.7167  -0.2250  -0.1496  -0.1064   3.2219  
+    ## 
+    ## Coefficients:
+    ##                               Estimate Std. Error z value
+    ## (Intercept)                    -4.2217     0.1517 -27.827
+    ## poly(volatile_acidity, 3)1     44.0988     5.9118   7.459
+    ## poly(volatile_acidity, 3)2     -3.7673     5.0396  -0.748
+    ## poly(volatile_acidity, 3)3     -2.0285     3.7993  -0.534
+    ## poly(free_sulfur_dioxide, 3)1 -34.5905     5.1653  -6.697
+    ## poly(free_sulfur_dioxide, 3)2  34.0152     6.8174   4.989
+    ## poly(free_sulfur_dioxide, 3)3 -27.5939     4.8737  -5.662
+    ## poly(alcohol, 3)1             -49.5088     9.3953  -5.270
+    ## poly(alcohol, 3)2             -19.8208     9.9402  -1.994
+    ## poly(alcohol, 3)3             -14.5725     8.1028  -1.798
+    ## poly(fixed_acidity, 3)1        13.1537     5.1115   2.573
+    ## poly(fixed_acidity, 3)2         9.6036     4.1770   2.299
+    ## poly(fixed_acidity, 3)3        -5.4462     3.6260  -1.502
+    ##                                           Pr(>|z|)    
+    ## (Intercept)                   < 0.0000000000000002 ***
+    ## poly(volatile_acidity, 3)1      0.0000000000000869 ***
+    ## poly(volatile_acidity, 3)2                  0.4547    
+    ## poly(volatile_acidity, 3)3                  0.5934    
+    ## poly(free_sulfur_dioxide, 3)1   0.0000000000213212 ***
+    ## poly(free_sulfur_dioxide, 3)2   0.0000006055111156 ***
+    ## poly(free_sulfur_dioxide, 3)3   0.0000000149826049 ***
+    ## poly(alcohol, 3)1               0.0000001367745702 ***
+    ## poly(alcohol, 3)2                           0.0462 *  
+    ## poly(alcohol, 3)3                           0.0721 .  
+    ## poly(fixed_acidity, 3)1                     0.0101 *  
+    ## poly(fixed_acidity, 3)2                     0.0215 *  
+    ## poly(fixed_acidity, 3)3                     0.1331    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 1253.66  on 3918  degrees of freedom
+    ## Residual deviance:  913.01  on 3906  degrees of freedom
+    ## AIC: 939.01
+    ## 
+    ## Number of Fisher Scoring iterations: 8
+
+### Manual Model-Trimming for Final Model
+
+``` r
+trimmed_final_lasso_fit <- glm(low_qual_flag ~ volatile_acidity + poly(free_sulfur_dioxide,3) + alcohol + fixed_acidity,
+                 data = training,
+                 family = binomial)
+
+summary(trimmed_final_lasso_fit)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = low_qual_flag ~ volatile_acidity + poly(free_sulfur_dioxide, 
+    ##     3) + alcohol + fixed_acidity, family = binomial, data = training)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -2.1678  -0.2277  -0.1551  -0.1092   3.2505  
+    ## 
+    ## Coefficients:
+    ##                                Estimate Std. Error z value
+    ## (Intercept)                    -4.14305    0.14173 -29.232
+    ## volatile_acidity                0.64038    0.06548   9.780
+    ## poly(free_sulfur_dioxide, 3)1 -36.64890    5.06915  -7.230
+    ## poly(free_sulfur_dioxide, 3)2  35.12316    6.66624   5.269
+    ## poly(free_sulfur_dioxide, 3)3 -28.29695    4.80672  -5.887
+    ## alcohol                        -0.64801    0.11135  -5.820
+    ## fixed_acidity                   0.29718    0.07657   3.881
+    ##                                           Pr(>|z|)    
+    ## (Intercept)                   < 0.0000000000000002 ***
+    ## volatile_acidity              < 0.0000000000000002 ***
+    ## poly(free_sulfur_dioxide, 3)1    0.000000000000484 ***
+    ## poly(free_sulfur_dioxide, 3)2    0.000000137309263 ***
+    ## poly(free_sulfur_dioxide, 3)3    0.000000003933710 ***
+    ## alcohol                          0.000000005896995 ***
+    ## fixed_acidity                             0.000104 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 1253.66  on 3918  degrees of freedom
+    ## Residual deviance:  924.05  on 3912  degrees of freedom
+    ## AIC: 938.05
+    ## 
+    ## Number of Fisher Scoring iterations: 7
+
+Checking Model Performance of Trimmed Final Lasso Model
+-------------------------------------------------------
+
+``` r
+# run predictions on testing set
+prediction_test <- predict(trimmed_final_lasso_fit, newdata = testing, type = "response" )
+predictions_test_full <- data.frame(prediction = prediction_test, low_qual_flag = testing$low_qual_flag)
+
+# user-defined costs for false negative and false positive to pinpoint where total cost is minimized
+cost_fp <- 10 # cost of false positive
+cost_fn <- 100 # cost of false negative
+# here the assumption I've made is that a false positive is 1/10th as costly as a false negative
+
+# creates the base data needed to visualize the ROC curves
+roc_info <- ROCInfo(data = predictions_test_full, 
+                    predict = "prediction", 
+                    actual = "low_qual_flag", 
+                    cost.fp = cost_fp, 
+                    cost.fn = cost_fn )
+```
+
+### ROC Curve for Trimmed Final Lasso
+
+``` r
+# plot the roc / cutoff-selection plots
+# color on the chart is cost -- darker is higher cost / greener is lower cost
+grid.draw(roc_info$plot)
+```
+
+<img src="logistic_regression_files/figure-markdown_github/fig17-1.png" style="display: block; margin: auto;" />
+
+Looks like the recommended cutoff is at 0.10.
+
+``` r
+# getting model probabilities for our testing set 
+result_final_lasso_fit_probs <- predict(result_final_lasso_fit,
+                           newdata = testing,
+                           type = "response")
+
+# turning these probabilities into classifications using the cutoff determined above 
+result_final_lasso_fit_predictions <- factor(ifelse(result_final_lasso_fit_probs > 0.10, 1, 0),levels=c('0','1'))
+
+# builiding a confusion matrix 
+final_final_conmatrix <- caret::confusionMatrix(result_final_lasso_fit_predictions,testing$low_qual_flag, positive='1')
+final_final_conmatrix
 ```
 
     ## Confusion Matrix and Statistics
     ## 
     ##           Reference
     ## Prediction   0   1
-    ##          0 843  19
-    ##          1 100  17
-    ##                                             
-    ##                Accuracy : 0.8784            
-    ##                  95% CI : (0.8563, 0.8983)  
-    ##     No Information Rate : 0.9632            
-    ##     P-Value [Acc > NIR] : 1                 
-    ##                                             
-    ##                   Kappa : 0.1759            
-    ##  Mcnemar's Test P-Value : 0.0000000000002241
-    ##                                             
-    ##             Sensitivity : 0.47222           
-    ##             Specificity : 0.89396           
-    ##          Pos Pred Value : 0.14530           
-    ##          Neg Pred Value : 0.97796           
-    ##              Prevalence : 0.03677           
-    ##          Detection Rate : 0.01736           
-    ##    Detection Prevalence : 0.11951           
-    ##       Balanced Accuracy : 0.68309           
-    ##                                             
-    ##        'Positive' Class : 1                 
-    ## 
-
-``` r
-result_upsample_conmatrix
-```
-
-    ## Confusion Matrix and Statistics
-    ## 
-    ##           Reference
-    ## Prediction   0   1
-    ##          0 884  21
-    ##          1  59  15
+    ##          0 869  22
+    ##          1  74  14
     ##                                           
-    ##                Accuracy : 0.9183          
-    ##                  95% CI : (0.8993, 0.9347)
+    ##                Accuracy : 0.9019          
+    ##                  95% CI : (0.8816, 0.9198)
     ##     No Information Rate : 0.9632          
     ##     P-Value [Acc > NIR] : 1               
     ##                                           
-    ##                   Kappa : 0.2349          
-    ##  Mcnemar's Test P-Value : 0.00003523      
+    ##                   Kappa : 0.1832          
+    ##  Mcnemar's Test P-Value : 0.0000001938    
     ##                                           
-    ##             Sensitivity : 0.41667         
-    ##             Specificity : 0.93743         
-    ##          Pos Pred Value : 0.20270         
-    ##          Neg Pred Value : 0.97680         
+    ##             Sensitivity : 0.38889         
+    ##             Specificity : 0.92153         
+    ##          Pos Pred Value : 0.15909         
+    ##          Neg Pred Value : 0.97531         
     ##              Prevalence : 0.03677         
-    ##          Detection Rate : 0.01532         
-    ##    Detection Prevalence : 0.07559         
-    ##       Balanced Accuracy : 0.67705         
+    ##          Detection Rate : 0.01430         
+    ##    Detection Prevalence : 0.08989         
+    ##       Balanced Accuracy : 0.65521         
     ##                                           
     ##        'Positive' Class : 1               
     ## 
 
+Documenting Performance of Trimmed Final Lasso Model
+----------------------------------------------------
+
 ``` r
-result_dbsmote_conmatrix
+trimmed_final_lasso_synopsis_info <- data.frame(
+  model_name = "Trimmed Final Lasso",
+  classification_cutoff = roc_info$cutoff,
+  sensitivity = percent(roc_info$sensitivity), 
+  specificity = percent(roc_info$specificity), 
+  number_of_model_terms = (length(colnames(trimmed_final_lasso_fit$qr$qr))-1),
+  total_cost = roc_info$totalcost,
+  stringsAsFactors=FALSE
+  )
+
+# adding the model at hand's metrics to our running table for continous comparison
+running_model_synopsis_table <- bind_rows(running_model_synopsis_table, trimmed_final_lasso_synopsis_info)
+running_model_synopsis_table
 ```
 
-    ## Confusion Matrix and Statistics
+    ##                 model_name classification_cutoff sensitivity specificity
+    ## 1 Simple Logit (All Vars.)            0.06734321         50%         89%
+    ## 2           Upsample Lasso            0.13501546       41.7%       93.7%
+    ## 3            DBSMOTE Lasso            0.07360934       52.8%       89.1%
+    ## 4      Trimmed Final Lasso            0.09834422       47.2%       91.9%
+    ##   number_of_model_terms total_cost
+    ## 1                    11       2840
+    ## 2                    77       2690
+    ## 3                    13       2730
+    ## 4                     6       2660
+
+Conclusions
+===========
+
+While this is a continual work-in-progress, much has been accomplished thus far. We started with a basic model using all variables in the dataset, and then, using more advanced methods like DBSMOTE sampling and Lasso regression, arrived at a model with relatively high sensitivity and specificity given our pre-selected cost preferences. Finally, we reduced the dimensionality and complexity of that most predictive model, rendering it more easy to explain and apply in practice. It appears as though, when it comes to classifiying bad white wines--the lower the levels of free sulfur dioxide, the higher the odds are that the wine in question is poor quality.
+
+Yet to come: - Variable importance commentary
+
+Summary of Chosen "Best" Model
+------------------------------
+
+``` r
+summary(trimmed_final_lasso_fit)
+```
+
     ## 
-    ##           Reference
-    ## Prediction   0   1
-    ##          0 834  17
-    ##          1 109  19
-    ##                                                
-    ##                Accuracy : 0.8713               
-    ##                  95% CI : (0.8487, 0.8916)     
-    ##     No Information Rate : 0.9632               
-    ##     P-Value [Acc > NIR] : 1                    
-    ##                                                
-    ##                   Kappa : 0.1849               
-    ##  Mcnemar's Test P-Value : 0.0000000000000005192
-    ##                                                
-    ##             Sensitivity : 0.52778              
-    ##             Specificity : 0.88441              
-    ##          Pos Pred Value : 0.14844              
-    ##          Neg Pred Value : 0.98002              
-    ##              Prevalence : 0.03677              
-    ##          Detection Rate : 0.01941              
-    ##    Detection Prevalence : 0.13075              
-    ##       Balanced Accuracy : 0.70609              
-    ##                                                
-    ##        'Positive' Class : 1                    
-    ##
+    ## Call:
+    ## glm(formula = low_qual_flag ~ volatile_acidity + poly(free_sulfur_dioxide, 
+    ##     3) + alcohol + fixed_acidity, family = binomial, data = training)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -2.1678  -0.2277  -0.1551  -0.1092   3.2505  
+    ## 
+    ## Coefficients:
+    ##                                Estimate Std. Error z value
+    ## (Intercept)                    -4.14305    0.14173 -29.232
+    ## volatile_acidity                0.64038    0.06548   9.780
+    ## poly(free_sulfur_dioxide, 3)1 -36.64890    5.06915  -7.230
+    ## poly(free_sulfur_dioxide, 3)2  35.12316    6.66624   5.269
+    ## poly(free_sulfur_dioxide, 3)3 -28.29695    4.80672  -5.887
+    ## alcohol                        -0.64801    0.11135  -5.820
+    ## fixed_acidity                   0.29718    0.07657   3.881
+    ##                                           Pr(>|z|)    
+    ## (Intercept)                   < 0.0000000000000002 ***
+    ## volatile_acidity              < 0.0000000000000002 ***
+    ## poly(free_sulfur_dioxide, 3)1    0.000000000000484 ***
+    ## poly(free_sulfur_dioxide, 3)2    0.000000137309263 ***
+    ## poly(free_sulfur_dioxide, 3)3    0.000000003933710 ***
+    ## alcohol                          0.000000005896995 ***
+    ## fixed_acidity                             0.000104 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 1253.66  on 3918  degrees of freedom
+    ## Residual deviance:  924.05  on 3912  degrees of freedom
+    ## AIC: 938.05
+    ## 
+    ## Number of Fisher Scoring iterations: 7

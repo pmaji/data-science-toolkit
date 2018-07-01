@@ -24,6 +24,8 @@ library(ggthemes) # for custom visualization
 
 - Data taken from: https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/
 - Explanation of the meaning / origin of the data can be found in this academic paper here: http://www3.dsi.uminho.pt/pcortez/wine5.pdf
+- Additional explanation of the data and corresponding Kaggle page: https://www.kaggle.com/uciml/red-wine-quality-cortez-et-al-2009
+
 
 ```{r}
 # we have both red and white wine datasets with the same variables 
@@ -339,6 +341,35 @@ simple_logit_conmatrix <- caret::confusionMatrix(simple_logit_fit_predictions,te
 simple_logit_conmatrix
 ```
 
+## Documenting Performance of Simple Logit Model
+
+```{r}
+# creating a blank table to record a running set of performance metrics for each model we create
+running_model_synopsis_table <- data.frame(
+  model_name = character(),
+  classification_cutoff = numeric(),
+  sensitivity=character(), 
+  specificity=character(), 
+  number_of_model_terms=numeric(),
+  total_cost = numeric(),
+  stringsAsFactors=FALSE
+  )
+
+simple_logit_synopsis_info <- data.frame(
+  model_name = "Simple Logit (All Vars.)",
+  classification_cutoff = roc_info$cutoff,
+  sensitivity = percent(roc_info$sensitivity), 
+  specificity = percent(roc_info$specificity), 
+  number_of_model_terms = (length(colnames(simple_logit_fit$qr$qr))-1),
+  total_cost = roc_info$totalcost,
+  stringsAsFactors=FALSE
+  )
+
+running_model_synopsis_table <- bind_rows(running_model_synopsis_table, simple_logit_synopsis_info)
+running_model_synopsis_table
+```
+
+
 
 # Penalized Logistic Regression (Lasso)
 
@@ -547,7 +578,23 @@ result_upsample_conmatrix <- caret::confusionMatrix(result_upsample_logit_fit_pr
 result_upsample_conmatrix
 ```
 
+## Documenting Performance of Upsample Lasso Model
 
+```{r}
+upsample_lasso_synopsis_info <- data.frame(
+  model_name = "Upsample Lasso",
+  classification_cutoff = roc_info$cutoff,
+  sensitivity = percent(roc_info$sensitivity), 
+  specificity = percent(roc_info$specificity), 
+  number_of_model_terms = (length(colnames(result_upsample_lasso_fit$qr$qr))-1),
+  total_cost = roc_info$totalcost,
+  stringsAsFactors=FALSE
+  )
+
+# adding the model at hand's metrics to our running table for continous comparison
+running_model_synopsis_table <- bind_rows(running_model_synopsis_table, upsample_lasso_synopsis_info)
+running_model_synopsis_table
+```
 
 
 ## Sampling Methodology Explored -- DBSMOTE
@@ -726,14 +773,161 @@ result_dbsmote_conmatrix <- caret::confusionMatrix(result_dbsmote_lasso_fit_pred
 result_dbsmote_conmatrix
 ```
 
-# Final Model Comparison (Progress Thus Far)
+## Documenting Performance of DBSMOTE Lasso Model
 
 ```{r}
-simple_logit_conmatrix
-result_upsample_conmatrix
-result_dbsmote_conmatrix
+dbsmote_lasso_synopsis_info <- data.frame(
+  model_name = "DBSMOTE Lasso",
+  classification_cutoff = roc_info$cutoff,
+  sensitivity = percent(roc_info$sensitivity), 
+  specificity = percent(roc_info$specificity), 
+  number_of_model_terms = (length(colnames(result_dbsmote_lasso_fit$qr$qr))-1),
+  total_cost = roc_info$totalcost,
+  stringsAsFactors=FALSE
+  )
+
+# adding the model at hand's metrics to our running table for continous comparison
+running_model_synopsis_table <- bind_rows(running_model_synopsis_table, dbsmote_lasso_synopsis_info)
+running_model_synopsis_table
 ```
 
 
+# Final Model Selection (Progress Thus Far)
+
+Having created various models over the course of this analysis, we can take stock of where we are and compare what we have thusfar. From the running_model_synopsis_table, shown above, we see that the DBSMOTE Lasso has the best sensitivity of all models. That said, our end goal should not just be to have a relatively predicitve model, but one that has some practical utility in the real world. As such, we'll look over the DBSMOTE Lasso and try to simplify it bit to end with something that is both easily explainable and practical. 
+
+## Trimming the Best Model Found Thus Far
+
+We want to take the best model we have found thus far and trim its terms down to only those that are statistically significant, such that the final model is both simpler and more robust. 
+
+### Functionalized Model-Trimming Based on P-Values
+
+```{r}
+library(broom) # needing for tidying model summary output into a df
+
+# turns model summary for dbsmote lasso model into df
+tidy_dbsmote_lasso <- broom::tidy(result_dbsmote_lasso_fit)
+
+final_coef_list <- tidy_dbsmote_lasso %>%
+  # arrange the terms in ascending order of p-value
+  arrange(abs(p.value)) %>% 
+  # dropping the intercept which isn't needed in formula
+  # keeping only variables that are statistically significant at a 95% CI
+  filter(
+    term != '(Intercept)',
+    p.value < 0.05
+         ) %>%
+  as.data.frame()
+
+# then we take this jumbled list and need to perform a few annoying operations to get it into a clean formula
+clean_final_coef_list <- gsub(").*", ")", final_coef_list$term) %>% unique()
+
+# turns stat. significant list of final coefficients into a callable formula
+result_final_lasso_formula <- as.formula(
+  paste('low_qual_flag ~', paste(clean_final_coef_list, collapse = ' + '))
+  )
+
+# the final resulting formula is below
+result_final_lasso_formula
+```
+
+```{r}
+result_final_lasso_fit <- glm(result_final_lasso_formula,
+                 data = training,
+                 family = binomial)
+
+summary(result_final_lasso_fit)
+```
+
+### Manual Model-Trimming for Final Model
+
+```{r}
+trimmed_final_lasso_fit <- glm(low_qual_flag ~ volatile_acidity + poly(free_sulfur_dioxide,3) + alcohol + fixed_acidity,
+                 data = training,
+                 family = binomial)
+
+summary(trimmed_final_lasso_fit)
+```
+
+## Checking Model Performance of Trimmed Final Lasso Model
+
+```{r}
+# run predictions on testing set
+prediction_test <- predict(trimmed_final_lasso_fit, newdata = testing, type = "response" )
+predictions_test_full <- data.frame(prediction = prediction_test, low_qual_flag = testing$low_qual_flag)
+
+# user-defined costs for false negative and false positive to pinpoint where total cost is minimized
+cost_fp <- 10 # cost of false positive
+cost_fn <- 100 # cost of false negative
+# here the assumption I've made is that a false positive is 1/10th as costly as a false negative
+
+# creates the base data needed to visualize the ROC curves
+roc_info <- ROCInfo(data = predictions_test_full, 
+                    predict = "prediction", 
+                    actual = "low_qual_flag", 
+                    cost.fp = cost_fp, 
+                    cost.fn = cost_fn )
+
+```
+
+### ROC Curve for Trimmed Final Lasso
+
+```{r fig17, fig.height = 4, fig.width = 6, fig.align = "center"}
+# plot the roc / cutoff-selection plots
+# color on the chart is cost -- darker is higher cost / greener is lower cost
+grid.draw(roc_info$plot)
+```
+
+Looks like the recommended cutoff is at 0.10. 
+
+```{r}
+# getting model probabilities for our testing set 
+result_final_lasso_fit_probs <- predict(result_final_lasso_fit,
+                           newdata = testing,
+                           type = "response")
+
+# turning these probabilities into classifications using the cutoff determined above 
+result_final_lasso_fit_predictions <- factor(ifelse(result_final_lasso_fit_probs > 0.10, 1, 0),levels=c('0','1'))
+
+# builiding a confusion matrix 
+final_final_conmatrix <- caret::confusionMatrix(result_final_lasso_fit_predictions,testing$low_qual_flag, positive='1')
+final_final_conmatrix
+```
+
+## Documenting Performance of Trimmed Final Lasso Model
+
+```{r}
+trimmed_final_lasso_synopsis_info <- data.frame(
+  model_name = "Trimmed Final Lasso",
+  classification_cutoff = roc_info$cutoff,
+  sensitivity = percent(roc_info$sensitivity), 
+  specificity = percent(roc_info$specificity), 
+  number_of_model_terms = (length(colnames(trimmed_final_lasso_fit$qr$qr))-1),
+  total_cost = roc_info$totalcost,
+  stringsAsFactors=FALSE
+  )
+
+# adding the model at hand's metrics to our running table for continous comparison
+running_model_synopsis_table <- bind_rows(running_model_synopsis_table, trimmed_final_lasso_synopsis_info)
+running_model_synopsis_table
+```
+
+# Conclusions
+
+While this is a continual work-in-progress, much has been accomplished thus far. We started with a basic model using all variables in the dataset, and then, using more advanced methods like DBSMOTE sampling and Lasso regression, arrived at a model with relatively high sensitivity and specificity given our pre-selected cost preferences. Finally, we reduced the dimensionality and complexity of that most predictive model, rendering it more easy to explain and apply in practice. It appears as though, when it comes to classifiying bad white wines--the lower the levels of free sulfur dioxide, the higher the odds are that the wine in question is poor quality. 
+
+
+Yet to come:
+- Variable importance commentary
+
+## Summary of Chosen "Best" Model 
+
+```{r}
+summary(trimmed_final_lasso_fit)
+```
+
+```{r}
+
+```
 
 

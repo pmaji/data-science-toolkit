@@ -375,6 +375,7 @@ As we create different models over the course of this project, we'll want to kee
 running_model_synopsis_table <- data.frame(
   model_name = character(),
   classification_cutoff = numeric(),
+  auc = numeric(),
   sensitivity=character(), 
   specificity=character(), 
   number_of_model_terms=numeric(),
@@ -385,6 +386,7 @@ running_model_synopsis_table <- data.frame(
 simple_logit_synopsis_info <- data.frame(
   model_name = "Simple Logit (All Vars.)",
   classification_cutoff = roc_info$cutoff,
+  auc = roc_info$auc,
   sensitivity = percent(roc_info$sensitivity), 
   specificity = percent(roc_info$specificity), 
   number_of_model_terms = (length(colnames(simple_logit_fit$qr$qr))-1),
@@ -610,6 +612,7 @@ result_upsample_conmatrix
 upsample_lasso_synopsis_info <- data.frame(
   model_name = "Upsample Lasso",
   classification_cutoff = roc_info$cutoff,
+  auc = roc_info$auc,
   sensitivity = percent(roc_info$sensitivity), 
   specificity = percent(roc_info$specificity), 
   number_of_model_terms = (length(colnames(result_upsample_lasso_fit$qr$qr))-1),
@@ -802,6 +805,7 @@ result_dbsmote_conmatrix
 dbsmote_lasso_synopsis_info <- data.frame(
   model_name = "DBSMOTE Lasso",
   classification_cutoff = roc_info$cutoff,
+  auc = roc_info$auc,
   sensitivity = percent(roc_info$sensitivity), 
   specificity = percent(roc_info$specificity), 
   number_of_model_terms = (length(colnames(result_dbsmote_lasso_fit$qr$qr))-1),
@@ -923,6 +927,7 @@ final_final_conmatrix
 trimmed_final_lasso_synopsis_info <- data.frame(
   model_name = "Trimmed Final Lasso",
   classification_cutoff = roc_info$cutoff,
+  auc = roc_info$auc,
   sensitivity = percent(roc_info$sensitivity), 
   specificity = percent(roc_info$specificity), 
   number_of_model_terms = (length(colnames(trimmed_final_lasso_fit$qr$qr))-1),

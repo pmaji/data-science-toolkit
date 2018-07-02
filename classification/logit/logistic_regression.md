@@ -622,6 +622,7 @@ As we create different models over the course of this project, we'll want to kee
 running_model_synopsis_table <- data.frame(
   model_name = character(),
   classification_cutoff = numeric(),
+  auc = numeric(),
   sensitivity=character(), 
   specificity=character(), 
   number_of_model_terms=numeric(),
@@ -632,6 +633,7 @@ running_model_synopsis_table <- data.frame(
 simple_logit_synopsis_info <- data.frame(
   model_name = "Simple Logit (All Vars.)",
   classification_cutoff = roc_info$cutoff,
+  auc = roc_info$auc,
   sensitivity = percent(roc_info$sensitivity), 
   specificity = percent(roc_info$specificity), 
   number_of_model_terms = (length(colnames(simple_logit_fit$qr$qr))-1),
@@ -643,10 +645,10 @@ running_model_synopsis_table <- bind_rows(running_model_synopsis_table, simple_l
 running_model_synopsis_table
 ```
 
-    ##                 model_name classification_cutoff sensitivity specificity
-    ## 1 Simple Logit (All Vars.)            0.06734321         50%         89%
-    ##   number_of_model_terms total_cost
-    ## 1                    11       2840
+    ##                 model_name classification_cutoff     auc sensitivity
+    ## 1 Simple Logit (All Vars.)            0.06734321 0.72885         50%
+    ##   specificity number_of_model_terms total_cost
+    ## 1         89%                    11       2840
 
 Penalized Logistic Regression (Lasso)
 =====================================
@@ -1037,6 +1039,7 @@ Documenting Performance of Upsample Lasso Model
 upsample_lasso_synopsis_info <- data.frame(
   model_name = "Upsample Lasso",
   classification_cutoff = roc_info$cutoff,
+  auc = roc_info$auc,
   sensitivity = percent(roc_info$sensitivity), 
   specificity = percent(roc_info$specificity), 
   number_of_model_terms = (length(colnames(result_upsample_lasso_fit$qr$qr))-1),
@@ -1049,12 +1052,12 @@ running_model_synopsis_table <- bind_rows(running_model_synopsis_table, upsample
 running_model_synopsis_table
 ```
 
-    ##                 model_name classification_cutoff sensitivity specificity
-    ## 1 Simple Logit (All Vars.)            0.06734321         50%         89%
-    ## 2           Upsample Lasso            0.13501546       41.7%       93.7%
-    ##   number_of_model_terms total_cost
-    ## 1                    11       2840
-    ## 2                    77       2690
+    ##                 model_name classification_cutoff      auc sensitivity
+    ## 1 Simple Logit (All Vars.)            0.06734321 0.728850         50%
+    ## 2           Upsample Lasso            0.13501546 0.762254       41.7%
+    ##   specificity number_of_model_terms total_cost
+    ## 1         89%                    11       2840
+    ## 2       93.7%                    77       2690
 
 Sampling Methodology Explored -- DBSMOTE
 ----------------------------------------
@@ -1381,6 +1384,7 @@ Documenting Performance of DBSMOTE Lasso Model
 dbsmote_lasso_synopsis_info <- data.frame(
   model_name = "DBSMOTE Lasso",
   classification_cutoff = roc_info$cutoff,
+  auc = roc_info$auc,
   sensitivity = percent(roc_info$sensitivity), 
   specificity = percent(roc_info$specificity), 
   number_of_model_terms = (length(colnames(result_dbsmote_lasso_fit$qr$qr))-1),
@@ -1393,14 +1397,14 @@ running_model_synopsis_table <- bind_rows(running_model_synopsis_table, dbsmote_
 running_model_synopsis_table
 ```
 
-    ##                 model_name classification_cutoff sensitivity specificity
-    ## 1 Simple Logit (All Vars.)            0.06734321         50%         89%
-    ## 2           Upsample Lasso            0.13501546       41.7%       93.7%
-    ## 3            DBSMOTE Lasso            0.07360934       52.8%       89.1%
-    ##   number_of_model_terms total_cost
-    ## 1                    11       2840
-    ## 2                    77       2690
-    ## 3                    13       2730
+    ##                 model_name classification_cutoff       auc sensitivity
+    ## 1 Simple Logit (All Vars.)            0.06734321 0.7288500         50%
+    ## 2           Upsample Lasso            0.13501546 0.7622540       41.7%
+    ## 3            DBSMOTE Lasso            0.07360934 0.7791033       52.8%
+    ##   specificity number_of_model_terms total_cost
+    ## 1         89%                    11       2840
+    ## 2       93.7%                    77       2690
+    ## 3       89.1%                    13       2730
 
 Final Model Selection (Progress Thus Far)
 =========================================
@@ -1608,6 +1612,7 @@ Documenting Performance of Trimmed Final Lasso Model
 trimmed_final_lasso_synopsis_info <- data.frame(
   model_name = "Trimmed Final Lasso",
   classification_cutoff = roc_info$cutoff,
+  auc = roc_info$auc,
   sensitivity = percent(roc_info$sensitivity), 
   specificity = percent(roc_info$specificity), 
   number_of_model_terms = (length(colnames(trimmed_final_lasso_fit$qr$qr))-1),
@@ -1620,16 +1625,15 @@ running_model_synopsis_table <- bind_rows(running_model_synopsis_table, trimmed_
 running_model_synopsis_table
 ```
 
-    ##                 model_name classification_cutoff sensitivity specificity
-    ## 1 Simple Logit (All Vars.)            0.06734321         50%         89%
-    ## 2           Upsample Lasso            0.13501546       41.7%       93.7%
-    ## 3            DBSMOTE Lasso            0.07360934       52.8%       89.1%
-    ## 4      Trimmed Final Lasso            0.09834422       47.2%       91.9%
-    ##   number_of_model_terms total_cost
-    ## 1                    11       2840
-    ## 2                    77       2690
-    ## 3                    13       2730
-    ## 4                     6       2660
+    ##                 model_name classification_cutoff       auc sensitivity
+    ## 1 Simple Logit (All Vars.)            0.06734321 0.7288500         50%
+    ## 2           Upsample Lasso            0.13501546 0.7622540       41.7%
+    ## 3            DBSMOTE Lasso            0.07360934 0.7791033       52.8%
+    ##   specificity number_of_model_terms total_cost
+    ## 1         89%                    11       2840
+    ## 2       93.7%                    77       2690
+    ## 3       89.1%                    13       2730
+    ##  [ reached getOption("max.print") -- omitted 1 row ]
 
 Conclusions
 ===========

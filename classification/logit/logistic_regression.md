@@ -653,7 +653,8 @@ running_model_synopsis_table
 Penalized Logistic Regression (Lasso)
 =====================================
 
--   Now we'll move on to use a technique that makes use of an Objective Function that penalizes low-ROI variables. This is similar to ridge regression except variables with coefficients non-consequential enough will be zero'ed out of the model.
+-   Now we'll move on to use a technique that makes use of an Objective Function that penalizes low-ROI variables. This is similar to ridge regression except variables with coefficients non-consequential enough will be zero'ed out of the model. 
+-   One might reasonably ask why we don't instead choose to simply make use of stepwise variable selection. The answer to that is nuanced, but essentially has to do with bias in parameter estimation, inconsistencies among model selection algorithms, and an inappropriate focus or reliance on a single best model, where data are often inadequate to justify such confidence. For more information on the shortcomings inherent to stepwise methods, see the paper here: <https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2656.2006.01141.x/>
 -   Useful source: <http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/>
 
 Tuning the Hyperparameter for the Lasso Model w/ 2-Way Interactions and Polynomial Terms

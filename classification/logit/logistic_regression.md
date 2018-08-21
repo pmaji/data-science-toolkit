@@ -1,5 +1,35 @@
 Logistic Regression
 ================
+Paul Jeffries
+21 August, 2018
+
+-   [Introduction](#introduction)
+-   [Importing, Exploring, Cleaning, Normalizing / Centering, and Prepping the Data](#importing-exploring-cleaning-normalizing-centering-and-prepping-the-data)
+    -   [Importing the Data](#importing-the-data)
+    -   [Exploring the Data](#exploring-the-data)
+    -   [Centering and Normalizing the Data](#centering-and-normalizing-the-data)
+    -   [Checking for Variable Correlations](#checking-for-variable-correlations)
+    -   [Prepping Data for the Modeling Process](#prepping-data-for-the-modeling-process)
+-   [Building a Basic Logit](#building-a-basic-logit)
+    -   [Estimating the Model](#estimating-the-model)
+    -   [First Look at Model Predictions for Simple Logit](#first-look-at-model-predictions-for-simple-logit)
+    -   [Determining What Classification Cutoff is Appropriate (Simple Logit)](#determining-what-classification-cutoff-is-appropriate-simple-logit)
+    -   [Examining Model Performance for the Simple Logit](#examining-model-performance-for-the-simple-logit)
+    -   [Documenting Performance of Simple Logit Model](#documenting-performance-of-simple-logit-model)
+-   [Penalized Logistic Regression (Lasso)](#penalized-logistic-regression-lasso)
+    -   [Tuning the Hyperparameter for the Lasso Model w/ 2-Way Interactions and Polynomial Terms](#tuning-the-hyperparameter-for-the-lasso-model-w-2-way-interactions-and-polynomial-terms)
+    -   [Sampling Methodology Explored -- Upsampling](#sampling-methodology-explored----upsampling)
+    -   [Building the Model Formula (Upsampled Lasso)](#building-the-model-formula-upsampled-lasso)
+    -   [Documenting Performance of Upsample Lasso Model](#documenting-performance-of-upsample-lasso-model)
+    -   [Sampling Methodology Explored -- DBSMOTE](#sampling-methodology-explored----dbsmote)
+    -   [Building the Model Formula (DBSMOTE Lasso)](#building-the-model-formula-dbsmote-lasso)
+    -   [Documenting Performance of DBSMOTE Lasso Model](#documenting-performance-of-dbsmote-lasso-model)
+-   [Final Model Selection (Progress Thus Far)](#final-model-selection-progress-thus-far)
+    -   [Trimming the Best Model Found Thus Far](#trimming-the-best-model-found-thus-far)
+    -   [Checking Model Performance of Trimmed Final Lasso Model](#checking-model-performance-of-trimmed-final-lasso-model)
+    -   [Documenting Performance of Trimmed Final Lasso Model](#documenting-performance-of-trimmed-final-lasso-model)
+-   [Conclusions](#conclusions)
+    -   [Summary of Chosen "Best" Model](#summary-of-chosen-best-model)
 
 Introduction
 ============
@@ -300,8 +330,6 @@ For more on all the cool varieties of correlation plots that can be created, see
 library(corrplot)
 ```
 
-    ## corrplot 0.84 loaded
-
 ``` r
 # building a correlation matrix and ensuring that it only takes in variables that are numeric 
 # this is necessary because if there are any non-numeric elements in the matrix, this will break 
@@ -317,7 +345,7 @@ corrplot(corr_matrix, p.mat = res1$p, method = "color", type = "upper",
          insig = "label_sig", pch.col = "black", order = "AOE", na.label = "NA")
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-14-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-15-1.png)
 
 ``` r
 # and finally I'll build a simpler corrplot to get the strength of correlation numbers visualized
@@ -325,7 +353,7 @@ corrplot(corr_matrix, method = "number", type = "upper", pch.cex = .9,
          order = "AOE", number.cex = .7, na.label = "NA")
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-14-2.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-15-2.png)
 
 Takeways from these types of exploratory techniques can help us to create a more informed model. We may, depending on the circumstances, treat variables differently in our model-building process as a result of these types of charts. For example, we might discover a great degree of cross-correlation that allows us to delete duplicative variables, etc. We can notice a few interesting trends from our results above in this case:
 
@@ -338,11 +366,6 @@ Prepping Data for the Modeling Process
 # split the data into training and testing sets
 library(caret) # needed for createDataPartition function and other model-building staples
 ```
-
-    ## Loading required package: lattice
-
-    ## Warning in as.POSIXlt.POSIXct(Sys.time()): unknown timezone 'zone/tz/2018c.
-    ## 1.0/zoneinfo/America/New_York'
 
 ``` r
 # Partition data: 80 / 20 split : train / test (standard)
@@ -443,7 +466,7 @@ scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) +
 theme_economist()
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-17-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-19-1.png)
 
 ``` r
 # distribution of the prediction score grouped by known outcome (for testing set only)
@@ -454,7 +477,7 @@ scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) +
 theme_economist()
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-17-2.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-19-2.png)
 
 Determining What Classification Cutoff is Appropriate (Simple Logit)
 --------------------------------------------------------------------
@@ -472,37 +495,12 @@ In the coming sections, we'll look into some more helpful functions and techniqu
 library(RCurl) # Provides functions to allow one to compose general HTTP requests, etc. in R
 ```
 
-    ## Loading required package: bitops
-
 ``` r
 # grabbing the raw info from my GitHub to turn into a text object
 script <- getURL("https://raw.githubusercontent.com/pmaji/r-stats-and-modeling/master/classification/useful_classification_functions.R", ssl.verifypeer = FALSE)
 # sourcing that code just like you might source an R Script locally
 eval(parse(text = script))
 ```
-
-    ## Loading required package: gplots
-
-    ## 
-    ## Attaching package: 'gplots'
-
-    ## The following object is masked from 'package:stats':
-    ## 
-    ##     lowess
-
-    ## 
-    ## Attaching package: 'gridExtra'
-
-    ## The following object is masked from 'package:dplyr':
-    ## 
-    ##     combine
-
-    ## 
-    ## Attaching package: 'data.table'
-
-    ## The following objects are masked from 'package:dplyr':
-    ## 
-    ##     between, first, last
 
 ``` r
 # using newly-sourced function AccuracyCutoffInfo to test for optimal cutoff visually
@@ -520,7 +518,7 @@ accuracy_info <- AccuracyCutoffInfo(train = predictions_train_full,
 accuracy_info$plot
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-18-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-22-1.png)
 
 From the chart above we can begin to see where the optimal cutoff may be. That said, the metric we are using above is overall model accuracy. Next, we'll dive into some methods that make more sense when we are targetting a particular type of accuracy. For example, maybe we care more about catching every possible bad white wine, even at the risk of misclassifying a massive number of good wines. With the functions below, these model optimization tradeoffs become easier to control and visualize. They will vary according to the question at hand.
 
@@ -567,7 +565,7 @@ cm_info <- ConfusionMatrixInfo(data = predictions_test_full,
 cm_info$plot
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-20-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-24-1.png)
 
 Lastly, we'll use the cutoff we have arrived at from the work above to test the model's predictions; think of this section as the cross-tab version of the confusion matrix plot shown above.
 
@@ -653,8 +651,7 @@ running_model_synopsis_table
 Penalized Logistic Regression (Lasso)
 =====================================
 
--   Now we'll move on to use a technique that makes use of an Objective Function that penalizes low-ROI variables. This is similar to ridge regression except variables with coefficients non-consequential enough will be zero'ed out of the model. 
--   One might reasonably ask why we don't instead choose to simply make use of stepwise variable selection. The answer to that is nuanced, but essentially has to do with bias in parameter estimation, inconsistencies among model selection algorithms, and an inappropriate focus or reliance on a single best model, where data are often inadequate to justify such confidence. For more information on the shortcomings inherent to stepwise methods, see the paper here: <https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2656.2006.01141.x/>
+-   Now we'll move on to use a technique that makes use of an Objective Function that penalizes low-ROI variables. This is similar to ridge regression except variables with coefficients non-consequential enough will be zero'ed out of the model.
 -   Useful source: <http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/>
 
 Tuning the Hyperparameter for the Lasso Model w/ 2-Way Interactions and Polynomial Terms
@@ -738,15 +735,6 @@ y <- upsample_training$low_qual_flag
 ``` r
 # we're turning results off here because sometimes the output gets out of hand 
 library(glmnet) # package needed for ridge methods 
-```
-
-    ## Loading required package: Matrix
-
-    ## Loading required package: foreach
-
-    ## Loaded glmnet 2.0-13
-
-``` r
 # Next we move on to find the best lambda using cross-validation
 # Cross-validation is for tuning hyperparameters; not normally needed if model requires no hyperparameters
 set.seed(777) # set seed for reproduciblity
@@ -764,7 +752,7 @@ The ultimate goal with this hyperparameter-tuning exercise is to pick a lambda t
 plot(cv.lasso)
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-27-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-31-1.png)
 
 The two common choices are shown visually with dotted lines, in turn: - Lambda Min (the value that minimizes the prediction error) - Lambda LSE (gives the simplest model but also lies within one SE of the optimal value of lambda)
 
@@ -922,8 +910,6 @@ result_upsample_lasso_fit <- glm(result_upsample_lasso_formula,
                  data = training,
                  family = binomial)
 ```
-
-    ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ``` r
 summary(result_upsample_lasso_fit)
@@ -1141,7 +1127,7 @@ cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
 plot(cv.lasso)
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-40-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-45-1.png)
 
 ### First the Coefficients for the Lambda min DBSMOTE Lasso
 
@@ -1641,7 +1627,9 @@ Conclusions
 
 While this is a continual work-in-progress, much has been accomplished thus far. We started with a basic model using all variables in the dataset, and then, using more advanced methods like DBSMOTE sampling and Lasso regression, arrived at a model with relatively high sensitivity and specificity given our pre-selected cost preferences. Finally, we reduced the dimensionality and complexity of that most predictive model, rendering it more easy to explain and apply in practice. It appears as though, when it comes to classifiying bad white wines--the lower the levels of free sulfur dioxide, the higher the odds are that the wine in question is poor quality.
 
-Yet to come: - Variable importance commentary
+Yet to come:
+
+-   Variable importance commentary
 
 Summary of Chosen "Best" Model
 ------------------------------

@@ -1,6 +1,11 @@
 ---
 title: "Logistic Regression"
-output: github_document
+author: Paul Jeffries
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: TRUE
+    toc_depth: 2
 ---
 
 # Introduction
@@ -180,10 +185,12 @@ glimpse(white_final_df)
 For more on all the cool varieties of correlation plots that can be created, see below:
 - https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html
 
-```{r}
+```{r, results='hide', warning=F, message=F}
 # package needed for all varieties of correlation plots
 library(corrplot)
+```
 
+```{r}
 # building a correlation matrix and ensuring that it only takes in variables that are numeric 
 # this is necessary because if there are any non-numeric elements in the matrix, this will break 
 corr_matrix <- cor(white_final_df[, sapply(white_final_df, is.numeric)])
@@ -208,10 +215,12 @@ Residual sugar and density are highly positively correlated, while alcohol and d
 
 ## Prepping Data for the Modeling Process
 
-```{r}
+```{r, results='hide', warning=F, message=F}
 # split the data into training and testing sets
 library(caret) # needed for createDataPartition function and other model-building staples
+```
 
+```{r}
 # Partition data: 80 / 20 split : train / test (standard)
 # set seed to ensure reproducibility
 set.seed(777)
@@ -280,19 +289,23 @@ When actually using a logit to make classification predictions, the model does n
 
 In the coming sections, we'll look into some more helpful functions and techniques that assist in the selection of this cutoff. The norm one might expect is to use 50% as a cutoff, but this is a blunt methodology that suits few models well. One more intelligent rule-of-thumb is to select the population prevalence of the variable of interest and use that as the cutoff (i.e. if 4% of our wines are low quality, 4% should be the cutoff). This works as an effective rule of thumb, but as we'll see, there are more empirically-sound techniques that take into consideration the goals / priorities specific to the modeling problem at hand. 
 
-```{r}
+```{r, results='hide', warning=F, message=F}
 # some custom functions are sourced in, to reduce this document's length
 # the majority of these functions are from ethen8181's GitHub, with edits / improvements I added
 # more info on these custom functions here: http://ethen8181.github.io/machine-learning/unbalanced/unbalanced.html
 
 # sourcing my adopted version of the aforementioned functions directly from my GitHub
 library(RCurl) # Provides functions to allow one to compose general HTTP requests, etc. in R
+```
 
+```{r, results='hide', warning=F, message=F}
 # grabbing the raw info from my GitHub to turn into a text object
 script <- getURL("https://raw.githubusercontent.com/pmaji/r-stats-and-modeling/master/classification/useful_classification_functions.R", ssl.verifypeer = FALSE)
 # sourcing that code just like you might source an R Script locally
 eval(parse(text = script))
+```
 
+```{r}
 # using newly-sourced function AccuracyCutoffInfo to test for optimal cutoff visually
 accuracy_info <- AccuracyCutoffInfo(train = predictions_train_full, 
                                     test = predictions_test_full, 
@@ -470,7 +483,7 @@ y <- upsample_training$low_qual_flag
 
 ### Tuning Lambda for Upsampled Logit
 
-```{r echo=T, results='hide', warning=FALSE}
+```{r, echo=T, results='hide', message=F, warning=FALSE}
 # we're turning results off here because sometimes the output gets out of hand 
 library(glmnet) # package needed for ridge methods 
 # Next we move on to find the best lambda using cross-validation
@@ -550,12 +563,14 @@ result_upsample_lasso_formula
 
 ### Rebuilding Logit Based on Outcome of Upsample Lasso Selection Methodology
 
-```{r}
+```{r, results='hide', warning=F, message=F}
 # rebuilt logit based on info gained from lasso; thanks to formula we can simply plug in the coef list from above
 result_upsample_lasso_fit <- glm(result_upsample_lasso_formula,
                  data = training,
                  family = binomial)
+```
 
+```{r}
 summary(result_upsample_lasso_fit)
 ```
 
@@ -945,6 +960,7 @@ running_model_synopsis_table
 While this is a continual work-in-progress, much has been accomplished thus far. We started with a basic model using all variables in the dataset, and then, using more advanced methods like DBSMOTE sampling and Lasso regression, arrived at a model with relatively high sensitivity and specificity given our pre-selected cost preferences. Finally, we reduced the dimensionality and complexity of that most predictive model, rendering it more easy to explain and apply in practice. It appears as though, when it comes to classifiying bad white wines--the lower the levels of free sulfur dioxide, the higher the odds are that the wine in question is poor quality. 
 
 Yet to come:
+
 - Variable importance commentary
 
 ## Summary of Chosen "Best" Model 

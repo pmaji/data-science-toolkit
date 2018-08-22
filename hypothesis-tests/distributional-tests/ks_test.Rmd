@@ -1,0 +1,93 @@
+---
+title: "KS Test"
+author: Paul Jeffries
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: TRUE
+    toc_depth: 2
+---
+
+**NOTE: this is an early work in progress. Check back shortly for new additions**
+
+Sources:
+
+https://www.kaggle.com/kemical/kickstarter-projects/home
+
+https://flowingdata.com/2012/05/15/how-to-visualize-and-compare-distributions/
+
+http://www.sthda.com/english/wiki/ggplot2-density-plot-quick-start-guide-r-software-and-data-visualization
+
+
+```{r setup, echo = F}
+# setting the appropriate working directory
+knitr::opts_knit$set(root.dir = '~/Desktop/Personal/personal_code/distributional_tests/')
+```
+
+```{r results='hide', warning=FALSE, message=FALSE}
+# first a few general set-up items / housekeeping items
+# setting scipen options to kill all use of scientific notation
+options(scipen = 999)
+
+# basic packages needed throughout
+library(dplyr) # for piping
+library(ggplot2) # for visualization
+library(ggthemes) # for custom visualization
+library(broom) # needing for tidying model summary output into a df
+```
+
+```{r}
+# need to get the other newer portion of this dataset
+test_df <- read.csv("data/ks-projects-201612.csv")
+str(test_df)
+```
+
+```{r}
+head(test_df)
+```
+
+The distributional tests we can run here span a wide variety of options. Right now, I'm thinking the below:
+
+- How do the distributions of $ amount funded (dollar-denominated) differ by offering country?
+- Does this phenomenon vary based on the category or sub-category of the offering?
+
+```{r}
+# quick rounding up of the pledged amount
+library(plyr)
+round_any(132.1, 10)               # returns 130
+round_any(132.1, 10, f = ceiling)  # returns 140
+round_any(132.1, 5, f = ceiling)   # returns 135
+```
+
+Things to think about:
+
+- should I round to nearest high 10, as done below?
+- any other filters I'm leaving out?
+
+```{r}
+
+test_df_forviz <- test_df %>% 
+  # filters to just dollar or pound-denominated offerings
+  dplyr::filter(country %in% c('US','GB')) %>%
+  # filter to only the cases where the USD-denominated pledged amount was less than 5000
+  # this dampens the long tails problem in a non-fancy way that I'll change later
+  dplyr::filter(as.numeric(as.character(usd.pledged)) < 10000) %>%
+  mutate(rounded_usdpledged = plyr::round_any(as.numeric(as.character(usd.pledged)), 10, f=ceiling)) %>%
+  # exploratorily dropping instances where the funding amount is set to 0 
+  dplyr::filter(as.numeric(as.character(usd.pledged)) > 0)
+```
+
+```{r}
+ggplot(test_df_forviz, aes(x=as.numeric(as.character(usd.pledged)), color=country)) +
+  geom_density()
+
+```
+
+
+```{r}
+
+```
+
+
+
+

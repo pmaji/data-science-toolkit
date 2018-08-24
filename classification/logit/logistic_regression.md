@@ -1,7 +1,7 @@
 Logistic Regression
 ================
 Paul Jeffries
-21 August, 2018
+24 August, 2018
 
 -   [Introduction](#introduction)
 -   [Importing, Exploring, Cleaning, Normalizing / Centering, and Prepping the Data](#importing-exploring-cleaning-normalizing-centering-and-prepping-the-data)
@@ -17,6 +17,7 @@ Paul Jeffries
     -   [Examining Model Performance for the Simple Logit](#examining-model-performance-for-the-simple-logit)
     -   [Documenting Performance of Simple Logit Model](#documenting-performance-of-simple-logit-model)
 -   [Penalized Logistic Regression (Lasso)](#penalized-logistic-regression-lasso)
+    -   [Alternative Methods of Variable Selection](#alternative-methods-of-variable-selection)
     -   [Tuning the Hyperparameter for the Lasso Model w/ 2-Way Interactions and Polynomial Terms](#tuning-the-hyperparameter-for-the-lasso-model-w-2-way-interactions-and-polynomial-terms)
     -   [Sampling Methodology Explored -- Upsampling](#sampling-methodology-explored----upsampling)
     -   [Building the Model Formula (Upsampled Lasso)](#building-the-model-formula-upsampled-lasso)
@@ -651,8 +652,12 @@ running_model_synopsis_table
 Penalized Logistic Regression (Lasso)
 =====================================
 
--   Now we'll move on to use a technique that makes use of an Objective Function that penalizes low-ROI variables. This is similar to ridge regression except variables with coefficients non-consequential enough will be zero'ed out of the model.
--   Useful source: <http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/>
+Now we'll move on to use a technique that makes use of an Objective Function that penalizes low-ROI variables. This is similar to ridge regression except variables with coefficients non-consequential enough will be zero'ed out of the model. For a broad introduction to penalized logistic regression in R, see [this useful source from STHDA](http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/).
+
+Alternative Methods of Variable Selection
+-----------------------------------------
+
+It is worth briefly noting that one often-taught method of variable-selection that I do not cover here is stepwise varaible selection, and this omission is entirely purposeful. While seemingly helpful in principle, it is almost never benefitial to make use of stepwise variable selection as opposed to ridge or other penalized methods. The reason for this is perhaps best made clear by [this research paper here.](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2656.2006.01141.x)
 
 Tuning the Hyperparameter for the Lasso Model w/ 2-Way Interactions and Polynomial Terms
 ----------------------------------------------------------------------------------------

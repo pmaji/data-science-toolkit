@@ -136,34 +136,3 @@ gen_sidebyside_pdf_ecdf <-
     final_combined_viz <- ggdraw(sub1n2_titled_merged_plot)
     return(final_combined_viz)
   }
-  
-gen_sidebyside_pdf_ecdf(
-    dataset = "testtest",
-    continuous_variable = "usd_pledged",
-    categorical_variable = "country",
-    alpha_for_density = 0.4,
-    ref_line_thickness = 0.75,
-    size_of_legend_title = 12,
-    size_of_legend_text = 12,
-    main_title_text = "PDF and ECDF of Amount Pledged (Category: Theater)",
-    pdf_subtitle_text = "PDF",
-    ecdf_subtitle_text = "ECDF",
-    fill_text = "Country",
-    colour_text = "Country",
-    x_text = "Amount Pledged (converted to USD)",
-    y_pdf_text = "Concentration Density",
-    y_ecdf_text = "Cumulative Concentration Density",
-    decimal_place_for_agg_stats = 2,
-    size_bottom_annotation = 14
-  )
-
-
-
-
-
-
-
-
-testtest <- base_2018_df_forviz %>%
-  # build in the volume constraint
-  dplyr::filter(usd_pledged <= 10000) 

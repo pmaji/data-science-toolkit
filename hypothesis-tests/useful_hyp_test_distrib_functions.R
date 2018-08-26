@@ -1,3 +1,6 @@
+# libraries
+library(cowplot)
+
 # function to create side-by-side PDF and ECDF
 # requirements: dataframe with one categorical and one numeric variable
 # fill out all parameters below for best results

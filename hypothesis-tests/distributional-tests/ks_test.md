@@ -1,7 +1,7 @@
-KS Test
+KS Test Vignette
 ================
 Paul Jeffries
-25 August, 2018
+26 August, 2018
 
 -   [Introduction](#introduction)
     -   [Strengths of the KS Test](#strengths-of-the-ks-test)
@@ -11,7 +11,9 @@ Paul Jeffries
     -   [Importing the Data](#importing-the-data)
     -   [Exploring and Cleaning the Data](#exploring-and-cleaning-the-data)
 -   [Distributions Explored](#distributions-explored)
-    -   [Probability Density Functions (PDFs)](#probability-density-functions-pdfs)
+    -   [Probability Density Functions (PDF)](#probability-density-functions-pdf)
+    -   [Empirical Cumulative Distribution (ECDF)](#empirical-cumulative-distribution-ecdf)
+    -   [Combined View of PDF and ECDF](#combined-view-of-pdf-and-ecdf)
 
 **NOTE: this is an early work in progress. Check back shortly for new additions**
 
@@ -299,8 +301,8 @@ Now that we have adequately explored and cleaned our data, we can proceed to the
 Distributions Explored
 ======================
 
-Probability Density Functions (PDFs)
-------------------------------------
+Probability Density Functions (PDF)
+-----------------------------------
 
 For the construction of our [probability density functions](https://en.wikipedia.org/wiki/Probability_density_function), we'll make use primarily of the [geom\_density geom in R](http://www.sthda.com/english/wiki/ggplot2-density-plot-quick-start-guide-r-software-and-data-visualization), as demonstrated below. This is a helpful building block in understanding the KS test itself, which is predicated on an understanding of the commulative version of the PDF, which we'll get to shorty. See below for the PDF of the GB and US-based campaigns whose projects were Theater-related.
 
@@ -311,19 +313,19 @@ base_2018_df_forviz %>%
   geom_density(aes(fill=factor(country)),alpha = 0.4) +
   theme(legend.position = "top") +
   labs(
-    title = paste0("PDF for theater category kickstarters"),
-    y = "Concentration Density",
-    x = "Amount Pledged (converted to USD)",
-    fill = "Country of origin for kickstarter"
+    title = paste0("PDF of $ Pledged (Campaign Category = Theater)"),
+      y = "Concentration Density",
+      x = "Amount Pledged (converted to USD)",
+      fill = "Country of origin"
   )
 ```
 
 ![](ks_test_files/figure-markdown_github/unnamed-chunk-17-1.png)
 
-As can be seen from the above, these distributions are very heavily skewed, even when we filter to a category type and look only at GP and US based campaigns. That is to be expected given the nature of the projects, as previously discussed. That said, we want our visuals to be helfpul (which the above honeslty is not). As such, for the purpose of this analysis **let's focus on projects that raised at most $10,000**.
+As can be seen from the above, these distributions are very heavily skewed, even when we filter to a category type and look only at GP and US based campaigns. That is to be expected given the nature of the projects, as previously discussed. That said, we want our visuals to be helfpul (which the above honeslty is not). As such, for the purpose of this analysis **let's focus on projects that raised at most $10,000** (although this cutoff value is easy to parameterize and is largely an arbitrary judgement call.
 
 ``` r
-base_2018_df_forviz %>%
+full_base_pdf <- base_2018_df_forviz %>%
   # build in the volume constraint
   dplyr::filter(usd_pledged <= 10000) %>%
   # now we need to get mean and median by group for the viz 
@@ -346,19 +348,121 @@ base_2018_df_forviz %>%
     geom_vline(aes(xintercept=median_pledged, colour=factor(country)),
              linetype="dotted", size=0.75) +
     # puts the legend on top of the view
-    theme(legend.position = "top") +
+     theme(
+      legend.position = "top",
+      legend.title = element_text(size=12),
+      legend.text = element_text(size=12)
+      ) +
     # takes care of all labeling
     labs(
-      title = paste0("PDF for theater category kickstarters"),
+      title = paste0("PDF of $ Pledged (Category: Theater)"),
       y = "Concentration Density",
       x = "Amount Pledged (converted to USD)",
       fill = "Country of origin",
-      colour = "Mean (dashed) and median (dotted) lines"
+      colour = "Mean (dashed); Median (dotted)"
     ) +
     guides(
+      # ensures the country of origin is listed first in legends
       fill = guide_legend(order=1),
       color = guide_legend(order=2)
       )
+
+full_base_pdf
 ```
 
 ![](ks_test_files/figure-markdown_github/unnamed-chunk-18-1.png)
+
+Empirical Cumulative Distribution (ECDF)
+----------------------------------------
+
+Having been introduced in the previous section to the PDF, we can move on to the [ECDF (aka CDF)](https://en.wikipedia.org/wiki/Empirical_distribution_function), on which the KS test's statistic is actually based. The ECDF is simply a cumulative version of a PDF. For the construction of our ECDF, we'll make use primarily of the [state\_ecdf() function in R](https://ggplot2.tidyverse.org/reference/stat_ecdf.html), as demonstrated below.
+
+``` r
+full_base_ecdf <- base_2018_df_forviz %>%
+  # build in the volume constraint
+  dplyr::filter(usd_pledged <= 10000) %>%
+  # now we need to get mean and median by group for the viz 
+  dplyr::group_by(country) %>%
+  dplyr::mutate(
+    mean_pledged = mean(usd_pledged),
+    median_pledged = median(usd_pledged)
+    ) %>%
+  # ungroup prior to the viz code
+  ungroup() %>%
+    # begin creation of the GGPLOT here
+    # put continuous variable on the X, Y will be cumulative density by default
+    ggplot(data = ., aes(x=usd_pledged, colour=factor(country))) +
+    # color needs to always be a factor, although this is redundant here
+    stat_ecdf() +
+    # adding reference lines for the mean and the median
+    geom_vline(aes(xintercept=mean_pledged, colour=factor(country)),
+             linetype="dashed", size=0.75) +
+    geom_vline(aes(xintercept=median_pledged, colour=factor(country)),
+             linetype="dotted", size=0.75) +
+    # puts the legend on top of the view
+    theme(
+      legend.position = "top",
+      legend.title = element_text(size=12),
+      legend.text = element_text(size=12)
+      ) +
+    # takes care of all labeling
+    labs(
+      title = paste0("ECDF of $ Pledged (Category: Theater)"),
+      y = "Cumulative Concentration Density",
+      x = "Amount Pledged (converted to USD)",
+      fill = "Country of origin",
+      colour = "Mean (dashed); Median (dotted)"
+    )
+
+full_base_ecdf
+```
+
+![](ks_test_files/figure-markdown_github/unnamed-chunk-19-1.png)
+
+Above, we can see a similar story as that told by the PDF, here shown in a slightly different manner. As the PDF was skewed very heavily towards the left in its density, here we see a correspondingly steep slope at the beginning of the x-axis range.
+
+This chart is also helpful in understanding the KS test, as the KS test statistic is the [maximum vertical distance between the two curves](https://upload.wikimedia.org/wikipedia/commons/c/cf/KS_Example.png) shown above; the larger the vertical gap between the curves, the larger the test statistic, and presumably, the larger the distributional difference.
+
+Combined View of PDF and ECDF
+-----------------------------
+
+``` r
+# some custom functions are sourced in, to reduce this document's length
+library(RCurl) # Provides functions to allow one to compose general HTTP requests, etc. in R
+```
+
+``` r
+# grabbing the raw info from my GitHub to turn into a text object
+script <- getURL("https://raw.githubusercontent.com/pmaji/stats-and-modeling/master/hypothesis-tests/useful_hyp_test_distrib_functions.R", ssl.verifypeer = FALSE)
+# sourcing that code just like you might source an R Script locally
+eval(parse(text = script))
+```
+
+``` r
+# the function below is from my my useful functions file on GitHub to get this function
+pre_filtered_df <- base_2018_df_forviz %>%
+  # build in the volume constraint
+  dplyr::filter(usd_pledged <= 10000)
+
+gen_sidebyside_pdf_ecdf(
+    dataset = "pre_filtered_df",
+    continuous_variable = "usd_pledged",
+    categorical_variable = "country",
+    alpha_for_density = 0.4,
+    ref_line_thickness = 0.75,
+    size_of_legend_title = 12,
+    size_of_legend_text = 12,
+    main_title_text = "PDF and ECDF of Amount Pledged (Category: Theater)",
+    pdf_subtitle_text = "PDF",
+    ecdf_subtitle_text = "ECDF",
+    fill_text = "Country",
+    colour_text = "Country",
+    x_text = "Amount Pledged ($)",
+    y_pdf_text = "Concentration Density",
+    y_ecdf_text = "Cumulative Concentration Density",
+    decimal_place_for_agg_stats = 2,
+    size_bottom_annotation = 14
+  )
+```
+
+![](ks_test_files/figure-markdown_github/unnamed-chunk-22-1.png)

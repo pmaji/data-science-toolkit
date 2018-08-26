@@ -1,12 +1,13 @@
 Logistic Regression
 ================
 Paul Jeffries
-24 August, 2018
+26 August, 2018
 
 -   [Introduction](#introduction)
+    -   [Setup](#setup)
 -   [Importing, Exploring, Cleaning, Normalizing / Centering, and Prepping the Data](#importing-exploring-cleaning-normalizing-centering-and-prepping-the-data)
     -   [Importing the Data](#importing-the-data)
-    -   [Exploring the Data](#exploring-the-data)
+    -   [Exploring and Cleaning the Data](#exploring-and-cleaning-the-data)
     -   [Centering and Normalizing the Data](#centering-and-normalizing-the-data)
     -   [Checking for Variable Correlations](#checking-for-variable-correlations)
     -   [Prepping Data for the Modeling Process](#prepping-data-for-the-modeling-process)
@@ -40,6 +41,9 @@ Welcome! The purpose of this document is to demonstrate a variety of techniques 
 This project began as an extension of my study of the classifcation methods covered in the ISLR. From there, I wanted to find a public dataset that touched a domain that interested me, and that would present an intriguing classification problem. I stumbled onto [this academic paper by Cortez et al.](http://www3.dsi.uminho.pt/pcortez/wine5.pdf) while looking into support vector machines (SVMs), and was instantly intrigued. While their originally paper investigated methods of continous prediction, I sought to reshape the problem as a one of binary classification. More specifically, as someone who generally enjoys wine, I sought to create a model that could classify low-quality wines (so that I know which features are red flags to be avoided when picking out wine).
 
 While the code is extensively commented, with additional explanatory notes along the way, should you have any questions at all, feel free to reach out via the "Issues" tab for this repository. I answer all questions expeditiously.
+
+Setup
+-----
 
 ``` r
 # first a few general set-up items / housekeeping items
@@ -191,8 +195,8 @@ glimpse(white_main_df)
     ## $ alcohol              <dbl> 8.8, 9.5, 10.1, 9.9, 9.9, 10.1, 9.6, 8.8,...
     ## $ quality              <fct> 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5, 5, 7,...
 
-Exploring the Data
-------------------
+Exploring and Cleaning the Data
+-------------------------------
 
 ``` r
 # Even though we dropped any rows / cols that are entirely null, we need to check for NA problems
@@ -240,17 +244,19 @@ Here we can see that the quality of these wines are rougly normally distirbuted,
 ``` r
 # and then we can use janitor to see the exact cross-tab of our quality variable
 # this function below is, in my opinion, and better version of the base table function
-janitor::tabyl(white_main_df$quality)
+janitor::tabyl(white_main_df$quality) %>%
+  # tidys them up with some helpful functions from janitor
+  janitor::adorn_pct_formatting()
 ```
 
-    ##  white_main_df$quality    n     percent
-    ##                      3   20 0.004083299
-    ##                      4  163 0.033278889
-    ##                      5 1457 0.297468354
-    ##                      6 2198 0.448754594
-    ##                      7  880 0.179665169
-    ##                      8  175 0.035728869
-    ##                      9    5 0.001020825
+    ##  white_main_df$quality    n percent
+    ##                      3   20    0.4%
+    ##                      4  163    3.3%
+    ##                      5 1457   29.7%
+    ##                      6 2198   44.9%
+    ##                      7  880   18.0%
+    ##                      8  175    3.6%
+    ##                      9    5    0.1%
 
 It looks like wines with a rating &lt; 5 are exceptionally bad, so we'll use that as our benchmark. All together wines with a rating below 5 represent under 4% of the population--so we'll be dealing with a low incidence binary outcome left-hand side variable in this particular modeling scenario.
 
@@ -286,12 +292,14 @@ glimpse(white_final_df) # taking another look at the new dataset
 
 ``` r
 # And now we'll take one final look at the distribution of our outcome variable
-tabyl(white_final_df$low_qual_flag)
+tabyl(white_final_df$low_qual_flag) %>%
+  # tidys them up with some helpful functions from janitor
+  janitor::adorn_pct_formatting()
 ```
 
-    ##  white_final_df$low_qual_flag    n    percent
-    ##                             0 4715 0.96263781
-    ##                             1  183 0.03736219
+    ##  white_final_df$low_qual_flag    n percent
+    ##                             0 4715   96.3%
+    ##                             1  183    3.7%
 
 As can be seen above, a low quality white wine is a rare event, only occuring ~3.75% of the time.
 
@@ -691,16 +699,18 @@ upsample_training <- caret::upSample(training, (training$low_qual_flag))
 # as such, we have to do some minor clenaing
 upsample_training <- upsample_training %>%
   select(-low_qual_flag) %>%
-  rename(`low_qual_flag` = `Class`)
+  dplyr::rename(`low_qual_flag` = `Class`)
 
 # then we inspect the incidence rate of our left-hand-side variable in the new training set
 # the result should now be a 50 / 50 split 
-janitor::tabyl(upsample_training$low_qual_flag) 
+janitor::tabyl(upsample_training$low_qual_flag) %>%
+  # tidys results up with some helpful functions from janitor
+  janitor::adorn_pct_formatting() 
 ```
 
     ##  upsample_training$low_qual_flag    n percent
-    ##                                0 3772     0.5
-    ##                                1 3772     0.5
+    ##                                0 3772   50.0%
+    ##                                1 3772   50.0%
 
 Building the Model Formula (Upsampled Lasso)
 --------------------------------------------
@@ -1072,17 +1082,19 @@ dbsmote_training <- smotefamily::DBSMOTE(training[,-c(12)], as.numeric(as.charac
 # as with the upsampled dataset we created, the smote dataset requires some cleaning
 dbsmote_training <- dbsmote_training$data %>%
   as.data.frame() %>%
-  mutate(low_qual_flag = factor(class)) %>%
-  select(-class)
+  dplyr::mutate(low_qual_flag = factor(class)) %>%
+  dplyr::select(-class)
   
 # then we inspect the incidence rate of our left-hand-side variable in the new training set
 # the result should now be close to a 50 / 50 split 
-janitor::tabyl(dbsmote_training$low_qual_flag) 
+janitor::tabyl(dbsmote_training$low_qual_flag) %>%
+  # tidys them up with some helpful functions from janitor
+  janitor::adorn_pct_formatting()
 ```
 
-    ##  dbsmote_training$low_qual_flag    n   percent
-    ##                               0 3772 0.5027322
-    ##                               1 3731 0.4972678
+    ##  dbsmote_training$low_qual_flag    n percent
+    ##                               0 3772   50.3%
+    ##                               1 3731   49.7%
 
 Building the Model Formula (DBSMOTE Lasso)
 ------------------------------------------

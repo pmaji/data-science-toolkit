@@ -16,6 +16,8 @@ This project began as an extension of my study of the classifcation methods cove
 
 While the code is extensively commented, with additional explanatory notes along the way, should you have any questions at all, feel free to reach out via the "Issues" tab for this repository. I answer all questions expeditiously. 
 
+## Setup
+
 ```{r results='hide', warning=FALSE, message=FALSE}
 # first a few general set-up items / housekeeping items
 
@@ -101,7 +103,7 @@ white_main_df <- main_wine_df %>%
 glimpse(white_main_df)
 ```
 
-## Exploring the Data
+## Exploring and Cleaning the Data
 
 ```{r}
 # Even though we dropped any rows / cols that are entirely null, we need to check for NA problems
@@ -141,7 +143,9 @@ Here we can see that the quality of these wines are rougly normally distirbuted,
 ```{r}
 # and then we can use janitor to see the exact cross-tab of our quality variable
 # this function below is, in my opinion, and better version of the base table function
-janitor::tabyl(white_main_df$quality)
+janitor::tabyl(white_main_df$quality) %>%
+  # tidys them up with some helpful functions from janitor
+  janitor::adorn_pct_formatting()
 ```
 
 It looks like wines with a rating < 5 are exceptionally bad, so we'll use that as our benchmark. All together wines with a rating below 5 represent under 4% of the population--so we'll be dealing with a low incidence binary outcome left-hand side variable in this particular modeling scenario. 
@@ -163,7 +167,9 @@ glimpse(white_final_df) # taking another look at the new dataset
 
 ```{r}
 # And now we'll take one final look at the distribution of our outcome variable
-tabyl(white_final_df$low_qual_flag)
+tabyl(white_final_df$low_qual_flag) %>%
+  # tidys them up with some helpful functions from janitor
+  janitor::adorn_pct_formatting()
 ```
 
 As can be seen above, a low quality white wine is a rare event, only occuring ~3.75% of the time.
@@ -451,11 +457,13 @@ upsample_training <- caret::upSample(training, (training$low_qual_flag))
 # as such, we have to do some minor clenaing
 upsample_training <- upsample_training %>%
   select(-low_qual_flag) %>%
-  rename(`low_qual_flag` = `Class`)
+  dplyr::rename(`low_qual_flag` = `Class`)
 
 # then we inspect the incidence rate of our left-hand-side variable in the new training set
 # the result should now be a 50 / 50 split 
-janitor::tabyl(upsample_training$low_qual_flag) 
+janitor::tabyl(upsample_training$low_qual_flag) %>%
+  # tidys results up with some helpful functions from janitor
+  janitor::adorn_pct_formatting() 
 ```
 
 ## Building the Model Formula (Upsampled Lasso)
@@ -663,12 +671,14 @@ dbsmote_training <- smotefamily::DBSMOTE(training[,-c(12)], as.numeric(as.charac
 # as with the upsampled dataset we created, the smote dataset requires some cleaning
 dbsmote_training <- dbsmote_training$data %>%
   as.data.frame() %>%
-  mutate(low_qual_flag = factor(class)) %>%
-  select(-class)
+  dplyr::mutate(low_qual_flag = factor(class)) %>%
+  dplyr::select(-class)
   
 # then we inspect the incidence rate of our left-hand-side variable in the new training set
 # the result should now be close to a 50 / 50 split 
-janitor::tabyl(dbsmote_training$low_qual_flag) 
+janitor::tabyl(dbsmote_training$low_qual_flag) %>%
+  # tidys them up with some helpful functions from janitor
+  janitor::adorn_pct_formatting()
 ```
 
 ## Building the Model Formula (DBSMOTE Lasso)

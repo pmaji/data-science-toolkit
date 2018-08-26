@@ -104,21 +104,21 @@ gen_sidebyside_pdf_ecdf <-
     merged_plot <- cowplot::plot_grid(pdf_viz, ecdf_viz)
     
     # creating the master title
-    master_title <- ggdraw() + draw_label(main_title_text, fontface = 'bold')
+    master_title <- cowplot::ggdraw() + cowplot::draw_label(main_title_text, fontface = 'bold')
     
     # adding the title to the merged plot
     # rel_heights values control title margins
-    titled_merged_plot <- plot_grid(master_title, merged_plot, ncol = 1, rel_heights = c(0.1, 1)) 
+    titled_merged_plot <- cowplot::plot_grid(master_title, merged_plot, ncol = 1, rel_heights = c(0.1, 1)) 
     
     # adding first subtitle to explain reference line meaning
-    sub1_titled_merged_plot <- add_sub(
+    sub1_titled_merged_plot <- cowplot::add_sub(
       plot = titled_merged_plot, 
       label = "References lines: dashed = mean; dotted = median", 
       y  = 0, vjust = 0, size = size_bottom_annotation
       )
     
     # adding second subtitle to give aggregate metrics
-    sub1n2_titled_merged_plot <- add_sub(
+    sub1n2_titled_merged_plot <- cowplot::add_sub(
       plot = sub1_titled_merged_plot, 
       label = paste0(
         "Mean = ", 
@@ -133,6 +133,6 @@ gen_sidebyside_pdf_ecdf <-
       size = size_bottom_annotation)
     
     # drawing and returning the final combined viz
-    final_combined_viz <- ggdraw(sub1n2_titled_merged_plot)
+    final_combined_viz <- cowplot::ggdraw(sub1n2_titled_merged_plot)
     return(final_combined_viz)
   }

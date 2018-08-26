@@ -51,8 +51,9 @@ library(ggplot2) # for visualization
 library(ggthemes) # for custom visualization
 library(janitor) # for data cleaning and some utility functions
 library(DataExplorer) # allows for creation of missing values map
+library(RCurl) # Provides functions to allow one to compose general HTTP requests, etc. in R
 
-# if I reference functions that are more niche, I will call them explicitly in-line as well
+# If I reference functions that are more niche, I will call them explicitly in-line as well
 ```
 
 # Importing, Exploring, and Cleaning the Data
@@ -232,7 +233,7 @@ base_2018_df_forviz %>%
 
 ```
 
-As can be seen from the above, these distributions are very heavily skewed, even when we filter to a category type and look only at GP and US based campaigns. That is to be expected given the nature of the projects, as previously discussed. That said, we want our visuals to be helfpul (which the above honeslty is not). As such, for the purpose of this analysis **let's focus on projects that raised at most $10,000** (although this cutoff value is easy to parameterize and is largely an arbitrary judgement call.
+As can be seen above, these distributions are very heavily skewed, even when we filter to a category type and look only at GP and US based campaigns. That is to be expected given the nature of the project; that said, we want our visuals to be helfpul (which the above honestly is not). As such, for the purpose of this analysis **let's focus on projects that raised at most $10,000** (although this value is easy to parameterize and is largely an arbitrary judgement call).
 
 ```{r}
 full_base_pdf <- base_2018_df_forviz %>%
@@ -330,25 +331,25 @@ This chart is also helpful in understanding the KS test, as the KS test statisti
 
 ## Combined View of PDF and ECDF
 
+Now we can make use of one of the convenience functions I have created as part of my [repository of useful functions for hypothesis testing and distributional comparisons](https://github.com/pmaji/stats-and-modeling/blob/master/hypothesis-tests/useful_hyp_test_distrib_functions.R) in order to plot the above PDF and ECDF side by side, calling out the mean and median explicitly, and packing quite a bit of valuable information into a single view. 
 
-```{r, results='hide', warning=F, message=F}
-# some custom functions are sourced in, to reduce this document's length
-library(RCurl) # Provides functions to allow one to compose general HTTP requests, etc. in R
-```
+Below I first source my repository of useful functions (because the full function need is quite long and would take up a lot of space), and then use a function I created called **gen_sidebyside_pdf_ecdf()** to create the view below. 
 
 ```{r, results='hide', warning=F, message=F}
 # grabbing the raw info from my GitHub to turn into a text object
-script <- getURL("https://raw.githubusercontent.com/pmaji/stats-and-modeling/master/hypothesis-tests/useful_hyp_test_distrib_functions.R", ssl.verifypeer = FALSE)
+script <- RCurl::getURL("https://raw.githubusercontent.com/pmaji/stats-and-modeling/master/hypothesis-tests/useful_hyp_test_distrib_functions.R", ssl.verifypeer = FALSE)
 # sourcing that code just like you might source an R Script locally
 eval(parse(text = script))
 ```
 
 ```{r}
-# the function below is from my my useful functions file on GitHub to get this function
+# first creating the dataset needed for the viz
+# this shows that you can use my function on any dataframe with 1 continous and 1 categorical variable
 pre_filtered_df <- base_2018_df_forviz %>%
-  # build in the volume constraint
+  # build in the volume constraint 
   dplyr::filter(usd_pledged <= 10000)
 
+# generating the combined PDF / ECDF visualization 
 gen_sidebyside_pdf_ecdf(
     dataset = "pre_filtered_df",
     continuous_variable = "usd_pledged",

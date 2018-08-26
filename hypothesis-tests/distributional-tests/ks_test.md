@@ -20,7 +20,7 @@ Paul Jeffries
 Introduction
 ============
 
-The purpose of this document is to explore the utility and potential application of the [Kolmogorov-Smirnov Test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test), also known as the KS test. Additionally, I have included here a few custom visualizations that I have constructed to better communicate the purpose of and insights to be gained from the KS test.
+The purpose of this document is to explore the utility and potential application of the [Kolmogorov-Smirnov Test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test), also known as the KS test. Additionally, I have included here a few custom visualizations that I have constructed to better illustrate distributions and, in part, to communicate the purpose of and insights to be gained from the KS test.
 
 This vignette will follow the progression below:
 
@@ -181,29 +181,6 @@ DataExplorer::plot_bar(data = base_2018_df, order_bar = FALSE, title = "Categori
 
 ![](ks_test_files/figure-markdown_github/unnamed-chunk-10-1.png)
 
-``` r
-# and then we can use janitor to see the exact cross-tab of our quality variable
-# this function below is, in my opinion, and better version of the base table function
-janitor::tabyl(base_2018_df$main_category)
-```
-
-    ##  base_2018_df$main_category     n    percent
-    ##                         Art 28153 0.07510190
-    ##                      Comics 10819 0.02886113
-    ##                      Crafts  8809 0.02349919
-    ##                       Dance  3767 0.01004898
-    ##                      Design 30067 0.08020776
-    ##                     Fashion 22812 0.06085407
-    ##                Film & Video 62697 0.16725266
-    ##                        Food 24599 0.06562113
-    ##                       Games 35226 0.09397008
-    ##                  Journalism  4754 0.01268193
-    ##                       Music 49530 0.13212792
-    ##                 Photography 10778 0.02875176
-    ##                  Publishing 39379 0.10504876
-    ##                  Technology 32562 0.08686350
-    ##                     Theater 10912 0.02910922
-
 ### Any Remaining Cleaning Specific to our Research Purpose
 
 From the variables we have seen above, it is clear that there are many potentially interesting questions that can be asked of this data that focus on distributional comparisons. The one I will go with for the purpose of this vignette is as follows: **"How do the distributions of $ pledged differ between US and Great Britain-based projects across campaign categories?"**
@@ -222,16 +199,18 @@ I chose this for many reasons that should be obvious after a close examination o
 janitor::tabyl(base_2018_df$country) %>%
   # arranges countries in descending order of % of volume 
   arrange(desc(percent)) %>%
+  # tidys them up with some helpful functions from janitor
+  janitor::adorn_pct_formatting() %>%
   # displays just the first 5
   head(5)
 ```
 
-    ##   base_2018_df$country      n    percent
-    ## 1                   US 292627 0.78062177
-    ## 2                   GB  33672 0.08982458
-    ## 3                   CA  14756 0.03936361
-    ## 4                   AU   7839 0.02091158
-    ## 5                   DE   4171 0.01112670
+    ##   base_2018_df$country      n percent
+    ## 1                   US 292627   78.1%
+    ## 2                   GB  33672    9.0%
+    ## 3                   CA  14756    3.9%
+    ## 4                   AU   7839    2.1%
+    ## 5                   DE   4171    1.1%
 
 ``` r
 # displaying the exact number of unique categories depending on the variable used
@@ -250,25 +229,27 @@ paste0(
 # showing the volume breakdown by main_category
 janitor::tabyl(base_2018_df$main_category) %>%
   # arranges countries in descending order of % of volume 
-  arrange(desc(percent))
+  arrange(desc(percent)) %>%
+  # tidys them up with some helpful functions from janitor
+  janitor::adorn_pct_formatting() 
 ```
 
-    ##    base_2018_df$main_category     n    percent
-    ## 1                Film & Video 62697 0.16725266
-    ## 2                       Music 49530 0.13212792
-    ## 3                  Publishing 39379 0.10504876
-    ## 4                       Games 35226 0.09397008
-    ## 5                  Technology 32562 0.08686350
-    ## 6                      Design 30067 0.08020776
-    ## 7                         Art 28153 0.07510190
-    ## 8                        Food 24599 0.06562113
-    ## 9                     Fashion 22812 0.06085407
-    ## 10                    Theater 10912 0.02910922
-    ## 11                     Comics 10819 0.02886113
-    ## 12                Photography 10778 0.02875176
-    ## 13                     Crafts  8809 0.02349919
-    ## 14                 Journalism  4754 0.01268193
-    ## 15                      Dance  3767 0.01004898
+    ##    base_2018_df$main_category     n percent
+    ## 1                Film & Video 62697   16.7%
+    ## 2                       Music 49530   13.2%
+    ## 3                  Publishing 39379   10.5%
+    ## 4                       Games 35226    9.4%
+    ## 5                  Technology 32562    8.7%
+    ## 6                      Design 30067    8.0%
+    ## 7                         Art 28153    7.5%
+    ## 8                        Food 24599    6.6%
+    ## 9                     Fashion 22812    6.1%
+    ## 10                    Theater 10912    2.9%
+    ## 11                     Comics 10819    2.9%
+    ## 12                Photography 10778    2.9%
+    ## 13                     Crafts  8809    2.3%
+    ## 14                 Journalism  4754    1.3%
+    ## 15                      Dance  3767    1.0%
 
 In light of the above information, we'll perform one last step and trim down to only the variables we absolutely need for this distributional analysis. Below is a quick explanation for each variable dropped
 
@@ -321,7 +302,7 @@ base_2018_df_forviz %>%
   )
 ```
 
-![](ks_test_files/figure-markdown_github/unnamed-chunk-17-1.png)
+![](ks_test_files/figure-markdown_github/unnamed-chunk-16-1.png)
 
 As can be seen above, these distributions are very heavily skewed, even when we filter to a category type and look only at GP and US based campaigns. That is to be expected given the nature of the project; that said, we want our visuals to be helfpul (which the above honestly is not). As such, for the purpose of this analysis **let's focus on projects that raised at most $10,000** (although this value is easy to parameterize and is largely an arbitrary judgement call).
 
@@ -371,7 +352,7 @@ full_base_pdf <- base_2018_df_forviz %>%
 full_base_pdf
 ```
 
-![](ks_test_files/figure-markdown_github/unnamed-chunk-18-1.png)
+![](ks_test_files/figure-markdown_github/unnamed-chunk-17-1.png)
 
 Empirical Cumulative Distribution (ECDF)
 ----------------------------------------
@@ -418,7 +399,7 @@ full_base_ecdf <- base_2018_df_forviz %>%
 full_base_ecdf
 ```
 
-![](ks_test_files/figure-markdown_github/unnamed-chunk-19-1.png)
+![](ks_test_files/figure-markdown_github/unnamed-chunk-18-1.png)
 
 Above, we can see a similar story as that told by the PDF, here shown in a slightly different manner. As the PDF was skewed very heavily towards the left in its density, here we see a correspondingly steep slope at the beginning of the x-axis range.
 
@@ -467,4 +448,4 @@ gen_sidebyside_pdf_ecdf(
   )
 ```
 
-![](ks_test_files/figure-markdown_github/unnamed-chunk-21-1.png)
+![](ks_test_files/figure-markdown_github/unnamed-chunk-20-1.png)

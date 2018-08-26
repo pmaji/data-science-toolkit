@@ -12,7 +12,7 @@ output:
 
 # Introduction
 
-The purpose of this document is to explore the utility and potential application of the [Kolmogorov-Smirnov Test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test), also known as the KS test. Additionally, I have included here a few custom visualizations that I have constructed to better communicate the purpose of and insights to be gained from the KS test. 
+The purpose of this document is to explore the utility and potential application of the [Kolmogorov-Smirnov Test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test), also known as the KS test. Additionally, I have included here a few custom visualizations that I have constructed to better illustrate distributions and, in part, to communicate the purpose of and insights to be gained from the KS test. 
 
 This vignette will follow the progression below:
 
@@ -135,12 +135,6 @@ As can be seen above, there is massive skew in this variable. Its mean is ```{r}
 DataExplorer::plot_bar(data = base_2018_df, order_bar = FALSE, title = "Categorical Variables Explored")
 ```
 
-```{r}
-# and then we can use janitor to see the exact cross-tab of our quality variable
-# this function below is, in my opinion, and better version of the base table function
-janitor::tabyl(base_2018_df$main_category)
-```
-
 ### Any Remaining Cleaning Specific to our Research Purpose
 
 From the variables we have seen above, it is clear that there are many potentially interesting questions that can be asked of this data that focus on distributional comparisons. The one I will go with for the purpose of this vignette is as follows: **"How do the distributions of $ pledged differ between US and Great Britain-based projects across campaign categories?"** 
@@ -159,6 +153,8 @@ I chose this for many reasons that should be obvious after a close examination o
 janitor::tabyl(base_2018_df$country) %>%
   # arranges countries in descending order of % of volume 
   arrange(desc(percent)) %>%
+  # tidys them up with some helpful functions from janitor
+  janitor::adorn_pct_formatting() %>%
   # displays just the first 5
   head(5)
 ```
@@ -178,7 +174,9 @@ paste0(
 # showing the volume breakdown by main_category
 janitor::tabyl(base_2018_df$main_category) %>%
   # arranges countries in descending order of % of volume 
-  arrange(desc(percent))
+  arrange(desc(percent)) %>%
+  # tidys them up with some helpful functions from janitor
+  janitor::adorn_pct_formatting() 
 ```
 
 In light of the above information, we'll perform one last step and trim down to only the variables we absolutely need for this distributional analysis. Below is a quick explanation for each variable dropped

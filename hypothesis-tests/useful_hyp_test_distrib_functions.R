@@ -372,7 +372,7 @@ gen_ks_test_viz_and_results <-
     sub4_merged_plot <- cowplot::add_sub(
       plot = sub3_titled_merged_plot,
       label = paste0(
-        "Stat=",
+        "stat=",
         round(
           ks_test_stat,
           digits = decimal_place_for_test_stat

@@ -199,7 +199,6 @@ gen_ks_test_viz_and_results <-
     label_for_numeric_vector_1 = "var1",
     numeric_vector_2,
     label_for_numeric_vector_2 = "var2",
-    # label_for_category_split = "category",
     # options within ks.test()
     alternative_for_test = "two.sided",
     pval_calctype_for_test = NULL,

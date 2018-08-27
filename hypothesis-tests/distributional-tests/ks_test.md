@@ -1,7 +1,7 @@
 KS Test Vignette
 ================
 Paul Jeffries
-26 August, 2018
+27 August, 2018
 
 -   [Introduction](#introduction)
     -   [Strengths of the KS Test](#strengths-of-the-ks-test)
@@ -14,6 +14,9 @@ Paul Jeffries
     -   [Probability Density Functions (PDF)](#probability-density-functions-pdf)
     -   [Empirical Cumulative Distribution (ECDF)](#empirical-cumulative-distribution-ecdf)
     -   [Combined View of PDF and ECDF](#combined-view-of-pdf-and-ecdf)
+-   [Performing the KS Test](#performing-the-ks-test)
+    -   [Basic KS Test](#basic-ks-test)
+    -   [Visualizing the KS Test](#visualizing-the-ks-test)
 
 **NOTE: this is an early work in progress. Check back shortly for new additions**
 
@@ -58,6 +61,7 @@ library(ggthemes) # for custom visualization
 library(janitor) # for data cleaning and some utility functions
 library(DataExplorer) # allows for creation of missing values map
 library(RCurl) # Provides functions to allow one to compose general HTTP requests, etc. in R
+library(broom) # for tidy modeling and displaying of model / test results 
 
 # If I reference functions that are more niche, I will call them explicitly in-line as well
 ```
@@ -428,24 +432,136 @@ pre_filtered_df <- base_2018_df_forviz %>%
 
 # generating the combined PDF / ECDF visualization 
 gen_sidebyside_pdf_ecdf(
-    dataset = "pre_filtered_df",
-    continuous_variable = "usd_pledged",
-    categorical_variable = "country",
+  dataset = "pre_filtered_df",
+  continuous_variable = "usd_pledged",
+  categorical_variable = "country",
+  alpha_for_density = 0.4,
+  ref_line_thickness = 0.75,
+  size_of_legend_title = 12,
+  size_of_legend_text = 12,
+  main_title_text = "PDF and ECDF of Amount Pledged (Category: Theater)",
+  pdf_subtitle_text = "PDF",
+  ecdf_subtitle_text = "ECDF",
+  fill_text = "Country",
+  colour_text = "Country",
+  x_text = "Amount Pledged ($)",
+  y_pdf_text = "Concentration Density",
+  y_ecdf_text = "Cumulative Concentration Density",
+  decimal_place_for_agg_stats = 2,
+  size_bottom_annotation = 14
+)
+```
+
+![](ks_test_files/figure-markdown_github/unnamed-chunk-20-1.png)
+
+Performing the KS Test
+======================
+
+Now that we have learned a bit about what the KS test actually measures--the max vertical distance between the ECDFs of the compared populations--as well as having explored some visualizations of the key distributions, we can proceed to code up the test itself.
+
+Luckily, performing a ks test in R is quite simple, thanks to the [ks.test() function](https://www.rdocumentation.org/packages/dgof/versions/1.2/topics/ks.test). All **it requires is two numeric vectors** that will be treated as the two distributions to be compared.
+
+Basic KS Test
+-------------
+
+As our basic KS test examplar, we'll use the same populations visualized in the previous section, asking the question: **does the distribution of amount pledged ($) for GB-based Theater campaigns differ from that of US-based Theater campaigns to a statistically significant degree?**
+
+As one can tell, the phrasing of this quesiton lends itself to a two-sided hypothesis test. This is important because the type of hypothesis test--two-sided, less than, or greater than--is one of the parameters of the ks.test() function.
+
+### Preparing the KS Test Inputs
+
+We'll start by building the two numeric vectors needed for the KS test: one for GB campaigns, and one for US campaigns.
+
+``` r
+# reminder: the base dataset used below is filtered to Theater only
+
+# building the GB-specific vector
+gb_theater_amount_raised <- base_2018_df_forviz %>%
+  dplyr::filter(
+    # build in the standard volume constraint we've been using
+    usd_pledged <= 10000,
+    # filters to just GB campaigns
+    country == "GB"
+    ) %>%
+  dplyr::select(usd_pledged)
+
+# building the US-specific vector
+us_theater_amount_raised <- base_2018_df_forviz %>%
+  dplyr::filter(
+    # build in the standard volume constraint we've been using
+    usd_pledged <= 10000,
+    # filters to just GB campaigns
+    country == "US"
+    ) %>%
+  dplyr::select(usd_pledged)
+```
+
+### Running the KS Test
+
+Now that we have the two numeric vectors that represent the distributions to be compared, we can run the KS test on them as shown below. There are a variety of nuances of which to be aware when it comes to the parameters of the ks.test() function; some of them are described below, but one should read the docs thoroughly for a complete understanding of all default settings as well as the actual meaning of the various parameters (some of which may be unintuitive).
+
+``` r
+# running the ks test itself
+ks.test(
+  # x and y are the two vectors that compose the distributions to be compared
+  # order does matter here but only when the alternative hypothesis chosen is not two-sided
+  x = gb_theater_amount_raised[[1]],
+  y = us_theater_amount_raised[[1]],
+  # specifies the null hypothesis that the true distribution function of x is equal to
+  # this can be a bit tricky and should be catered to the problem at hand; read the docs for more info
+  alternative = "two.sided",
+  # parameter to decide whether or not to compute exact p-values
+  # NULL here doesn't mean no; it is instead conditional upon sample size as described in the docs 
+  exact = NULL
+) %>%
+  # uses the broom package to tidy up the output of the test 
+  broom::tidy()
+```
+
+    ## Warning in ks.test(x = gb_theater_amount_raised[[1]], y =
+    ## us_theater_amount_raised[[1]], : p-value will be approximate in the
+    ## presence of ties
+
+    ##    statistic          p.value                             method
+    ## 1 0.08396408 0.00000001638526 Two-sample Kolmogorov-Smirnov test
+    ##   alternative
+    ## 1   two-sided
+
+### Interpreting the KS Test Results
+
+As shown above, **our p-value is quite low**, which would lead us in this particular case to reject the null hypothesis that the two distributions are identical. That said, we cannot simply stop there. Given that this test is [a non-parametric](http://sphweb.bumc.bu.edu/otlt/MPH-Modules/BS/BS704_Nonparametric/BS704_Nonparametric_print.html) [omnibus test](https://en.wikipedia.org/wiki/Omnibus_test), it can cover a wide variety of test cases, but also has its downfalls when it comes to the extent of the conclusions that it allows us to make, as described in the strenghts and weakness section of this document. Beyond the simple p-value, it is important to look at the test statistic as well, which is the measure of the magnitude of the distributional difference. Put simply, the **larger the test statistic, the larger the difference between the two distributions** as measured by the maximum vertical distance betweent the ECDFs.
+
+Visualizing the KS Test
+-----------------------
+
+Now we can wrap all of the information we have gleaned from the KS test into one easy-to-digest visualization thanks to another custom function I built, sourced from the [aforementioned package](https://github.com/pmaji/stats-and-modeling/blob/master/hypothesis-tests/useful_hyp_test_distrib_functions.R). We won't re-load the script from GitHub as it has already been done previously in this Markdown.
+
+``` r
+gen_ks_test_viz_and_results(
+    # parameters for function:
+    # inputs for KS Test
+    numeric_vector_1 = gb_theater_amount_raised[[1]],
+    label_for_numeric_vector_1 = "GB",
+    numeric_vector_2 = us_theater_amount_raised[[1]],
+    label_for_numeric_vector_2 = "US",
+    # options within ks.test()
+    alternative_for_test = "two.sided",
+    pval_calctype_for_test = NULL,
+    # options for visuals
     alpha_for_density = 0.4,
     ref_line_thickness = 0.75,
     size_of_legend_title = 12,
     size_of_legend_text = 12,
-    main_title_text = "PDF and ECDF of Amount Pledged (Category: Theater)",
-    pdf_subtitle_text = "PDF",
-    ecdf_subtitle_text = "ECDF",
-    fill_text = "Country",
+    main_title_text = "KS Test Results",
+    ecdf_subtitle_text = NULL,
     colour_text = "Country",
-    x_text = "Amount Pledged ($)",
-    y_pdf_text = "Concentration Density",
-    y_ecdf_text = "Cumulative Concentration Density",
+    x_text = "Pledged Amount",
+    y_text = "Cumulative Concentration Density",
     decimal_place_for_agg_stats = 2,
+    decimal_place_for_p_value = 5,
+    decimal_place_for_test_stat = 3,
     size_bottom_annotation = 14
   )
 ```
 
-![](ks_test_files/figure-markdown_github/unnamed-chunk-20-1.png)
+![](ks_test_files/figure-markdown_github/unnamed-chunk-23-1.png)

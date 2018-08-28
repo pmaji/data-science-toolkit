@@ -9,7 +9,7 @@ gen_sidebyside_pdf_ecdf <-
     # parameters for function:
     dataset,
     continuous_variable,
-    categorical_variable,
+    categorical_variable, #should be a factor as an input
     alpha_for_density = 0.4,
     ref_line_thickness = 0.75,
     size_of_legend_title = 12,
@@ -135,7 +135,7 @@ gen_sidebyside_pdf_ecdf <-
             dplyr::group_by(eval(as.symbol(categorical_variable))) %>%
             dplyr::select(noquote(continuous_variable)) %>%
             dplyr::summarise_all(mean) %>%
-            dplyr::filter(.[[1]]==category_names[[1,1]]) %>%
+            dplyr::filter(.[[1]]==category_names[1]) %>%
             dplyr::select(2),
           digits = decimal_place_for_agg_stats),
         "    Median for  ",
@@ -146,7 +146,7 @@ gen_sidebyside_pdf_ecdf <-
             dplyr::group_by(eval(as.symbol(categorical_variable))) %>%
             dplyr::select(noquote(continuous_variable)) %>%
             dplyr::summarise_all(median) %>%
-            dplyr::filter(.[[1]]==category_names[[1,1]]) %>%
+            dplyr::filter(.[[1]]==category_names[1]) %>%
             dplyr::select(2),
           digits = decimal_place_for_agg_stats)
       ),
@@ -164,7 +164,7 @@ gen_sidebyside_pdf_ecdf <-
             dplyr::group_by(eval(as.symbol(categorical_variable))) %>%
             dplyr::select(noquote(continuous_variable)) %>%
             dplyr::summarise_all(mean) %>%
-            dplyr::filter(.[[1]]==category_names[[2,1]]) %>%
+            dplyr::filter(.[[1]]==category_names[2]) %>%
             dplyr::select(2),
           digits = decimal_place_for_agg_stats),
         "    Median for  ",
@@ -175,7 +175,7 @@ gen_sidebyside_pdf_ecdf <-
             dplyr::group_by(eval(as.symbol(categorical_variable))) %>%
             dplyr::select(noquote(continuous_variable)) %>%
             dplyr::summarise_all(median) %>%
-            dplyr::filter(.[[1]]==category_names[[2,1]]) %>%
+            dplyr::filter(.[[1]]==category_names[2]) %>%
             dplyr::select(2),
           digits = decimal_place_for_agg_stats)
       ),

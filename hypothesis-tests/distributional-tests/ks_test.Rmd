@@ -1,5 +1,5 @@
 ---
-title: "KS Test Vignette"
+title: "2-Sample KS Test Vignette"
 author: Paul Jeffries
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
@@ -12,7 +12,7 @@ output:
 
 # Introduction
 
-The purpose of this document is to explore the utility and potential application of the [Kolmogorov-Smirnov Test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test), also known as the KS test. Additionally, I have included here a few custom visualizations that I have constructed to better illustrate distributions and, in part, to communicate the purpose of and insights to be gained from the KS test. 
+The purpose of this document is to explore the utility and potential application of the [Kolmogorov-Smirnov Test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test), also known as the KS test. Specifically, I will be focused on the 2-sample KS test. Additionally, I have included here a few custom visualizations that I have constructed to better illustrate distributions and, in part, to communicate the purpose of and insights to be gained from the KS test. 
 
 This vignette will follow the progression below:
 
@@ -45,10 +45,8 @@ knitr::opts_knit$set(root.dir = '~/Desktop/Personal/personal_code/distributional
 options(scipen = 999)
 
 # basic packages needed throughout:
-library(plyr) # always load prior to dplyr if needed
-library(dplyr) # for piping
-library(ggplot2) # for visualization
-library(ggthemes) # for custom visualization
+library(plyr) # always load prior to dplyr / tidyverse if needed
+library(tidyverse) # for all things tidy 
 library(janitor) # for data cleaning and some utility functions
 library(DataExplorer) # allows for creation of missing values map
 library(RCurl) # Provides functions to allow one to compose general HTTP requests, etc. in R
@@ -415,7 +413,7 @@ us_theater_amount_raised <- base_2018_df_forviz %>%
 
 Now that we have the two numeric vectors that represent the distributions to be compared, we can run the KS test on them as shown below. There are a variety of nuances of which to be aware when it comes to the parameters of the ks.test() function; some of them are described below, but one should read the docs thoroughly for a complete understanding of all default settings as well as the actual meaning of the various parameters (some of which may be unintuitive). 
 
-```{r}
+```{r, warning=F, message=F}
 # running the ks test itself
 ks.test(
   # x and y are the two vectors that compose the distributions to be compared

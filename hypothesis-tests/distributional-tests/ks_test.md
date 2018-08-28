@@ -1,4 +1,4 @@
-KS Test Vignette
+2-Sample KS Test Vignette
 ================
 Paul Jeffries
 27 August, 2018
@@ -23,7 +23,7 @@ Paul Jeffries
 Introduction
 ============
 
-The purpose of this document is to explore the utility and potential application of the [Kolmogorov-Smirnov Test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test), also known as the KS test. Additionally, I have included here a few custom visualizations that I have constructed to better illustrate distributions and, in part, to communicate the purpose of and insights to be gained from the KS test.
+The purpose of this document is to explore the utility and potential application of the [Kolmogorov-Smirnov Test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test), also known as the KS test. Specifically, I will be focused on the 2-sample KS test. Additionally, I have included here a few custom visualizations that I have constructed to better illustrate distributions and, in part, to communicate the purpose of and insights to be gained from the KS test.
 
 This vignette will follow the progression below:
 
@@ -54,10 +54,8 @@ Setup
 options(scipen = 999)
 
 # basic packages needed throughout:
-library(plyr) # always load prior to dplyr if needed
-library(dplyr) # for piping
-library(ggplot2) # for visualization
-library(ggthemes) # for custom visualization
+library(plyr) # always load prior to dplyr / tidyverse if needed
+library(tidyverse) # for all things tidy 
 library(janitor) # for data cleaning and some utility functions
 library(DataExplorer) # allows for creation of missing values map
 library(RCurl) # Provides functions to allow one to compose general HTTP requests, etc. in R
@@ -164,7 +162,7 @@ summary(base_2018_df$backers)
 ```
 
     ##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-    ##      0.0      2.0     12.0    106.7     57.0 219400.0
+    ##      0.0      2.0     12.0    106.7     57.0 219382.0
 
 As can be seen above, there is massive skew in this variable. Its mean is `{r} mean(base_2018_df$backers)` while its median is substantially lower, at `{r} median(base_2018_df$backers)`, which hints at the large skew. We can see as well there are obviously some massive outliers pulling up the mean, as that max number of backers is `{r} max(base_2018_df$backers)`.
 
@@ -518,14 +516,10 @@ ks.test(
   broom::tidy()
 ```
 
-    ## Warning in ks.test(x = gb_theater_amount_raised[[1]], y =
-    ## us_theater_amount_raised[[1]], : p-value will be approximate in the
-    ## presence of ties
-
-    ##    statistic          p.value                             method
-    ## 1 0.08396408 0.00000001638526 Two-sample Kolmogorov-Smirnov test
-    ##   alternative
-    ## 1   two-sided
+    ## # A tibble: 1 x 4
+    ##   statistic      p.value method                             alternative
+    ##       <dbl>        <dbl> <chr>                              <chr>      
+    ## 1    0.0840 0.0000000164 Two-sample Kolmogorov-Smirnov test two-sided
 
 ### Interpreting the KS Test Results
 

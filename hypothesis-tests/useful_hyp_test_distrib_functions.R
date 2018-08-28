@@ -1,5 +1,6 @@
-# libraries
+# libraries / dependenices:
 # library(cowplot)
+# library(tidyverse)
 
 # function to create side-by-side PDF and ECDF
 # requirements: dataframe with one categorical and one numeric variable
@@ -9,7 +10,7 @@ gen_sidebyside_pdf_ecdf <-
     # parameters for function:
     dataset,
     continuous_variable,
-    categorical_variable, #should be a factor as an input
+    categorical_variable,
     alpha_for_density = 0.4,
     ref_line_thickness = 0.75,
     size_of_legend_title = 12,

@@ -1,4 +1,4 @@
-Paul's ISLR Notebook
+ISLR Notebook
 ================
 Paul Jeffries
 2018-03-05

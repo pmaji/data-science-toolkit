@@ -1,10 +1,16 @@
-# stats-playground
+# Introduction
 
-Welcome! This is the repository that I will use to build out my stockpile of statistical methods and modeling techniques. I began my self-teaching of all things modeling-related with the ISLR, and I have included some of my notes and practice code from those readings and videos under the "ISLR" folder.
+Welcome! The purpose of this repository is to serve as stockpile of statistical methods and modeling techniques, involving everything from educational vignettes on specific topics to tailored functions built to enhance and optimize analyses. 
 
-After going through the entire ISLR, I wanted to jump into some deeper-dives into particular modeling techniques. I began with classification techniques, and in each folder--for example /r-stats-and-modeling/classifcation/logit--click on the .md file to read the rendered markdown document that will display all relevant code and output.
+# Table of Contents
 
-Finally, I have collected some useful custom functions for tests and visualizations into a series of scripts that can be sourced like a package, and this can be found at /r-stats-and-modeling/classifcation/useful_classification_functions.R
+1. Hypothesis Testing
+..1. [Kolmogorov-Smirnov Test (KS Test)](https://github.com/pmaji/stats-and-modeling/blob/master/hypothesis-tests/ks_test.md)
+2. ISLR
+..1. [Rough Notes from ISLR Exercises](https://github.com/pmaji/stats-and-modeling/blob/master/ISLR/islr_notebook.md)
+3. Classification
+..1. [Logistic Regression (Ridge and Lasso Methods Included](https://github.com/pmaji/stats-and-modeling/blob/master/classification/logit/logistic_regression.md)
+..2. [Basic Tree Models](https://github.com/pmaji/stats-and-modeling/blob/master/classification/tree-methods/tree_methods.md)
+4. Regression
 
-I welcome all feedback and contributions to this codebase as I seek to build this out further! Don't hesitate to contact me via the opening of an Issue in the tab above. 
 

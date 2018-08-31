@@ -1,0 +1,162 @@
+---
+title: "Exploratory Data Analysis (EDA) and Visualization"
+author: Paul Jeffries
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  github_document:
+    toc: TRUE
+    toc_depth: 2
+---
+
+**NOTE: this is an early work in progress. Check back shortly for new additions**
+
+# Introduction
+
+The purpose of this document is to serve as a smorgasbord of EDA techniques and visualization tools. 
+
+## Setup
+
+```{r setup, echo = F}
+# setting the appropriate working directory
+knitr::opts_knit$set(root.dir = '~/Desktop/Personal/personal_code/stats_and_modeling/')
+```
+
+```{r results='hide', warning=FALSE, message=FALSE}
+# first a few general setup / housekeeping items
+# setting scipen options to kill all use of scientific notation
+options(scipen = 999)
+
+# basic packages needed throughout:
+library(plyr) # always load prior to dplyr / tidyverse if needed
+library(tidyverse) # for all things tidy 
+library(janitor) # for data cleaning and some utility functions
+library(DataExplorer) # allows for creation of missing values map
+library(RCurl) # Provides functions to allow one to compose general HTTP requests, etc. in R
+library(broom) # for tidy modeling and displaying of model / test results 
+library(ggthemes) # for more custom ggplot themes
+
+# If I reference functions that are more niche, I will call them explicitly in-line as well
+```
+
+# Importing, Exploring, and Cleaning the Data
+
+## Importing the Data
+
+The data used in this document come from a [Kaggle post](https://www.kaggle.com/kemical/kickstarter-projects/home) focused on Kickstarter campaigns. If unfamiliar with the notion of a Kickstarter campaign (henceforth just campaign), I would recommend reading [this FAQ here](https://help.kickstarter.com/hc/en-us/categories/115000499013-Kickstarter-basics). I will not spend a great deal of time explaining the data, so for more information on the data specifically, I recommend reading the detailed exploration on the [data page for this Kaggle](https://www.kaggle.com/kemical/kickstarter-projects).
+
+```{r}
+# importing the dataset from the CSV
+base_df <- read.csv("./hypothesis_tests/data/ks-projects-201801.csv")
+```
+
+```{r}
+# taking a preliminary look at the structure of the dataset
+glimpse(base_df)
+```
+
+## Exploring and Cleaning the Data
+
+### Dealing with NULLs 
+
+First, we'll conduct some broad cleaning. Using the [janitor package](https://github.com/sfirke/janitor) I will clean up the variable names (in this case not necssarily because the CSV is pristinely formatted), and drop any rows or columns where all observations all null.
+
+```{r}
+# tidying variable names and dropping any useless rows / columns
+base_df <- base_df %>%
+  # converts to underscore case and cleans up column names
+  janitor::clean_names() %>% 
+  # drops all rows and columns that are entirely empty
+  janitor::remove_empty(which = c("rows","cols")) 
+```
+
+Next, we'll move on to dealing with the trickier instances of NULLs: cases where there are singular NULL observations scattered in our data. In order to deal with these, we'll first plot out their occurence, and thereafter decide what to do with them. 
+
+```{r}
+DataExplorer::plot_missing(base_df) # shows % of NAs within each variable
+```
+
+From the chart above, we can see that there is only one variable--"usd_pledged"--that has missing data. It has a missing rate of 1%, which isn't terrible, but given that we have a large amount of data (as shown via the row count returned by the previous glimpse() call), **we'll drop any instances of nulls entirely** to ensure we have the cleanest of data. This is by no means necessary in all cases, and the treatment of nulls should be decided on a case-by-case basis pursuant to the requirements of the project and quality / size of the data at hand. 
+
+```{r}
+# dropping any and all NULLs entirely, and rechecking our missing map to double check
+base_df <- base_df[complete.cases(base_df),]
+DataExplorer::plot_missing(base_df) # shows % of NAs within each variable
+```
+
+# Summary Statistics
+
+```{r}
+psych::describe(base_df)
+Hmisc::describe(base_df)
+```
+
+
+# Histograms
+
+```{r}
+base_df %>%
+  dplyr::select(goal, country) %>%
+  dplyr::filter(
+    country %in% c("AU","DE","FR"),
+    goal <= 100000
+    ) %>%
+  # base ggplot call
+  ggplot(., aes(x=goal, fill=country)) +
+    # specifying the histogram
+    geom_histogram(color = "black", position="dodge", bins=20) +
+    # picking a colorblind-friendly color scheme and theme
+    ggthemes::scale_fill_tableau() +
+    ggthemes::theme_economist() +
+    theme(
+      legend.position = "top",
+      legend.title = element_text(size=12),
+      legend.text = element_text(size=12)
+      ) +
+    # takes care of all labeling
+    labs(
+      title = paste0("Histogram of Selected Countries' Goal Distribution"),
+      y = "Number of Campaigns",
+      x = "Campaign Fundraising Goal (USD)",
+      fill = "Country of Origin"
+    )
+
+```
+
+# Density Plots
+
+```{r}
+base_df %>%
+  dplyr::select(goal, country) %>%
+  dplyr::filter(
+    country %in% c("GB","FR"),
+    goal <= 25000
+    ) %>%
+  # base ggplot call
+  ggplot(., aes(x=goal, fill=country)) +
+    # specifying the histogram
+    geom_density(color = "black", alpha = 0.8) +
+    # picking a colorblind-friendly color scheme and theme
+    ggthemes::scale_fill_tableau() +
+    ggthemes::theme_economist() +
+    theme(
+      legend.position = "top",
+      legend.title = element_text(size=12),
+      legend.text = element_text(size=12)
+      ) +
+    # takes care of all labeling
+    labs(
+      title = paste0("Density Plot of Selected Countries' Goal Distribution"),
+      y = "Concentration Density",
+      x = "Campaign Fundraising Goal (USD)",
+      fill = "Country of Origin"
+    )
+
+```
+
+
+
+
+```{r}
+
+```
+

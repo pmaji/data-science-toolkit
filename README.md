@@ -1,8 +1,8 @@
-# Introduction
+## Introduction
 
 Welcome! The purpose of this repository is to serve as stockpile of statistical methods and modeling techniques, involving everything from educational vignettes on specific topics to tailored functions built to enhance and optimize analyses. 
 
-# Table of Contents
+## Table of Contents
 
 1. Exploratory Data Analysis (EDA) and Visualization
     1. [EDA and Visualization -- R](https://github.com/pmaji/stats-and-modeling/blob/master/eda-and-visualization/eda_and_visualization.md)
@@ -18,5 +18,7 @@ Welcome! The purpose of this repository is to serve as stockpile of statistical 
 5. Regression
 6. Reinforcement Learning 
 
+## Contribution Rules
 
+All are welcome and encouraged to contribute to this repository. All I ask is that you include a detailed description of your contribution, that your code be thoroughly-commented, and that you test your contribution locally with the most recent version of the Master branch integrated prior to submitting the PR.
 

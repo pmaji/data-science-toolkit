@@ -1,7 +1,7 @@
 Exploratory Data Analysis (EDA) and Visualization
 ================
 Paul Jeffries
-30 August, 2018
+02 September, 2018
 
 -   [Introduction](#introduction)
     -   [Setup](#setup)
@@ -11,6 +11,8 @@ Paul Jeffries
 -   [Summary Statistics](#summary-statistics)
 -   [Histograms](#histograms)
 -   [Density Plots](#density-plots)
+    -   [2 PDFs Compared](#pdfs-compared)
+    -   [3 PDFs Compared w/ Facets](#pdfs-compared-w-facets)
 
 **NOTE: this is an early work in progress. Check back shortly for new additions**
 
@@ -35,8 +37,7 @@ library(DataExplorer) # allows for creation of missing values map
 library(RCurl) # Provides functions to allow one to compose general HTTP requests, etc. in R
 library(broom) # for tidy modeling and displaying of model / test results 
 library(ggthemes) # for more custom ggplot themes
-
-# If I reference functions that are more niche, I will call them explicitly in-line as well
+# if I reference functions that are more niche, I will call them explicitly in-line as well
 ```
 
 Importing, Exploring, and Cleaning the Data
@@ -339,6 +340,9 @@ base_df %>%
 Density Plots
 =============
 
+2 PDFs Compared
+---------------
+
 ``` r
 base_df %>%
   dplyr::select(goal, country) %>%
@@ -368,3 +372,38 @@ base_df %>%
 ```
 
 ![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-9-1.png)
+
+3 PDFs Compared w/ Facets
+-------------------------
+
+``` r
+base_df %>%
+  dplyr::select(goal, country, state) %>%
+  dplyr::filter(
+    country %in% c("GB","FR"),
+    goal <= 25000,
+    state %in% c("failed","successful")
+    ) %>%
+  # base ggplot call
+  ggplot(., aes(x=goal, fill=country)) +
+    # specifying the histogram
+    geom_density(color = "black", alpha = 0.8) +
+    facet_wrap(~state) +
+    # picking a colorblind-friendly color scheme and theme
+    ggthemes::scale_fill_tableau() +
+    ggthemes::theme_economist() +
+    theme(
+      legend.position = "top",
+      legend.title = element_text(size=12),
+      legend.text = element_text(size=12)
+      ) +
+    # takes care of all labeling
+    labs(
+      title = paste0("Density Plot of Selected Countries' Goal Distribution"),
+      y = "Concentration Density",
+      x = "Campaign Fundraising Goal (USD)",
+      fill = "Country of Origin"
+    )
+```
+
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-10-1.png)

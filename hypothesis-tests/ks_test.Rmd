@@ -36,7 +36,7 @@ This vignette will follow the progression below:
 
 ```{r setup, echo = F}
 # setting the appropriate working directory
-knitr::opts_knit$set(root.dir = '~/Desktop/Personal/personal_code/distributional_tests/')
+knitr::opts_knit$set(root.dir = '~/Desktop/Personal/personal_code/data_science_toolkit/')
 ```
 
 ```{r results='hide', warning=FALSE, message=FALSE}
@@ -63,7 +63,7 @@ The data used in this document come from a [Kaggle post](https://www.kaggle.com/
 
 ```{r}
 # importing the dataset from the CSV
-base_2018_df <- read.csv("data/ks-projects-201801.csv")
+base_2018_df <- read.csv("hypothesis_tests/data/ks-projects-201801.csv")
 ```
 
 ```{r}
@@ -334,7 +334,7 @@ Below I first source my repository of useful functions (because the full functio
 
 ```{r, results='hide', warning=F, message=F}
 # grabbing the raw info from my GitHub to turn into a text object
-script <- RCurl::getURL("https://raw.githubusercontent.com/pmaji/stats-and-modeling/master/hypothesis-tests/useful_hyp_test_distrib_functions.R", ssl.verifypeer = FALSE)
+script <- RCurl::getURL("https://raw.githubusercontent.com/pmaji/data-science-toolkit/master/hypothesis-tests/useful_hyp_test_functions.R", ssl.verifypeer = FALSE)
 # sourcing that code just like you might source an R Script locally
 eval(parse(text = script))
 ```
@@ -435,7 +435,7 @@ ks.test(
 
 As shown above, **our p-value is quite low**, which would lead us in this particular case to reject the null hypothesis that the two distributions are identical. That said, we cannot simply stop there. Given that this test is [a non-parametric](http://sphweb.bumc.bu.edu/otlt/MPH-Modules/BS/BS704_Nonparametric/BS704_Nonparametric_print.html) [omnibus test](https://en.wikipedia.org/wiki/Omnibus_test), it can cover a wide variety of test cases, but also has its downfalls when it comes to the extent of the conclusions that it allows us to make, as described in the strenghts and weakness section of this document. Beyond the simple p-value, it is important to look at the test statistic as well, which is the measure of the magnitude of the distributional difference. Put simply, the **larger the test statistic, the larger the difference between the two distributions** as measured by the maximum vertical distance betweent the ECDFs. 
 
-## Visualizing the KS Test 
+## Visualizing the KS Test Results
 
 Now we can wrap all of the information we have gleaned from the KS test into one easy-to-digest visualization thanks to another custom function I built, sourced from the [aforementioned package](https://github.com/pmaji/stats-and-modeling/blob/master/hypothesis-tests/useful_hyp_test_distrib_functions.R). We won't re-load the script from GitHub as it has already been done previously in this Markdown.
 
@@ -471,6 +471,8 @@ gen_ks_test_viz_and_results(
 
 ```
 
+## Scaling KS Test to Many Samples
 
+**Section under construction and coming soon**
 
 

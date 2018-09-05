@@ -20,5 +20,5 @@ Welcome! The purpose of this repository is to serve as stockpile of statistical 
 
 ## Contribution Rules
 
-All are welcome and encouraged to contribute to this repository. All I ask is that you include a detailed description of your contribution, that your code be thoroughly-commented, and that you test your contribution locally with the most recent version of the Master branch integrated prior to submitting the PR.
+All are welcome and encouraged to contribute to this repository. My only request is that you include a detailed description of your contribution, that your code be thoroughly-commented, and that you test your contribution locally with the most recent version of the Master branch integrated prior to submitting the PR.
 

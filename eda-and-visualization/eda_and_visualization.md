@@ -1,7 +1,7 @@
 Exploratory Data Analysis (EDA) and Visualization
 ================
 Paul Jeffries
-03 September, 2018
+05 September, 2018
 
 -   [Introduction](#introduction)
     -   [Setup](#setup)
@@ -12,6 +12,7 @@ Paul Jeffries
     -   [High-Level Summary Stats](#high-level-summary-stats)
 -   [Histograms](#histograms)
     -   [Simple Multi-Category Histogram](#simple-multi-category-histogram)
+    -   [Multi-Category Histogram with Custom-Delimited-Buckets](#multi-category-histogram-with-custom-delimited-buckets)
 -   [Density Plots](#density-plots)
     -   [2 Probability Density Functions (PDFs) Compared](#probability-density-functions-pdfs-compared)
     -   [3 PDFs Compared w/ Facets](#pdfs-compared-w-facets)
@@ -172,7 +173,7 @@ base_df %>%
   # filter to just 3 countries and set a goal cap
   # this is mostly just arbitrary for the purpose of an easy-to-read exemplar 
   dplyr::filter(
-    country %in% c("AU","DE","FR"),
+    country %in% c("IT","DE","FR"),
     goal <= 100000
     ) %>%
   # base ggplot call
@@ -198,6 +199,60 @@ base_df %>%
 ```
 
 ![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-8-1.png)
+
+Multi-Category Histogram with Custom-Delimited-Buckets
+------------------------------------------------------
+
+Perhaps we are now beginning to develop an intuition as to which buckets are most key. We might then wish to build a histogram with custom-delimited-buckets, as done below.
+
+``` r
+base_df %>%
+  # select only our variables of interest 
+  dplyr::select(goal, country) %>%
+  # filter to just 3 countries and set a goal cap
+  # this is mostly just arbitrary for the purpose of an easy-to-read exemplar 
+  dplyr::filter(
+    country %in% c("IT","DE","FR")
+    ) %>%
+  dplyr::mutate(
+    custom_buckets = cut(
+      x = goal,
+      # sets the break points for cuts; see options for inclusion/exclusion details
+      breaks = c(0, 1000, 5000, 10000, 25000, 50000, 100000, Inf),
+      # ensures no use of scientific notation in labeling
+      dig.lab = 10
+      )
+  ) %>%
+  dplyr::group_by(country, custom_buckets) %>%
+  # gets the grouped by within-categor counts
+  dplyr::tally() %>%
+    # base ggplot call
+    ggplot(., aes(custom_buckets, n)) +
+      geom_bar(aes(fill = country), color = "black", position = "dodge", stat="identity") +
+      # takes care of the precise labeling; hjust/vjust and angle need to be set visually
+      geom_text(aes(label=n, group=country), hjust=-0.20, angle=90, position = position_dodge(width=1)) +
+      # picking a colorblind-friendly color scheme and theme
+      ggthemes::scale_fill_tableau() +
+      ggthemes::theme_economist() +
+      # custom axis limits; for this kind of chart I prefer to set these manually
+      scale_y_continuous(limits = c(0, 1250)) +
+      # setting legend and axis aesthetic details
+      theme(
+        legend.position = "top",
+        legend.title = element_text(size=12),
+        legend.text = element_text(size=12),
+        axis.text.x = element_text(size=8)
+        ) +
+      # takes care of all labeling
+      labs(
+        title = paste0("Count of Campagins by Goal Amount Bucket"),
+        y = "Number of Campaigns",
+        x = "Campaign Fundraising Goal Bucket (USD)",
+        fill = "Country of Origin"
+      )
+```
+
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-9-1.png)
 
 Density Plots
 =============
@@ -239,7 +294,7 @@ base_df %>%
     )
 ```
 
-![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-9-1.png)
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-10-1.png)
 
 3 PDFs Compared w/ Facets
 -------------------------
@@ -279,4 +334,4 @@ base_df %>%
     )
 ```
 
-![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-10-1.png)
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-11-1.png)

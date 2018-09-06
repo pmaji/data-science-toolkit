@@ -184,7 +184,7 @@ base_df %>%
         ) +
       # takes care of all labeling
       labs(
-        title = paste0("Count of Campagins by Goal Amount Bucket"),
+        title = paste0("Count of Campaigns by Goal Amount Bucket"),
         y = "Number of Campaigns",
         x = "Campaign Fundraising Goal Bucket (USD)",
         fill = "Country of Origin"

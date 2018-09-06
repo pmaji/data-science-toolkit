@@ -1,7 +1,7 @@
 Exploratory Data Analysis (EDA) and Visualization
 ================
 Paul Jeffries
-05 September, 2018
+06 September, 2018
 
 -   [Introduction](#introduction)
     -   [Setup](#setup)
@@ -10,12 +10,10 @@ Paul Jeffries
     -   [Exploring and Cleaning the Data](#exploring-and-cleaning-the-data)
 -   [Summary Statistics](#summary-statistics)
     -   [High-Level Summary Stats](#high-level-summary-stats)
--   [Histograms](#histograms)
-    -   [Simple Multi-Category Histogram](#simple-multi-category-histogram)
-    -   [Multi-Category Histogram with Custom-Delimited-Buckets](#multi-category-histogram-with-custom-delimited-buckets)
--   [Density Plots](#density-plots)
-    -   [2 Probability Density Functions (PDFs) Compared](#probability-density-functions-pdfs-compared)
-    -   [3 PDFs Compared w/ Facets](#pdfs-compared-w-facets)
+-   [Bespoke Visualizations](#bespoke-visualizations)
+    -   [General Comments and Best Practices](#general-comments-and-best-practices)
+    -   [Histograms](#histograms)
+    -   [Density Plots](#density-plots)
 
 **NOTE: this is an early work in progress. Check back shortly for new additions**
 
@@ -156,15 +154,24 @@ psych::describe(x = base_df, IQR = TRUE, omit = TRUE)
     ## usd_pledged_real  82.00 11733.81     149.15       4019.82
     ## usd_goal_real     77.83  7011.92    1892.59      14000.00
 
+Bespoke Visualizations
+======================
+
+General Comments and Best Practices
+-----------------------------------
+
+### Dealing with Color-Blindness
+
+It is helpful to remember when crafting any visualization that one's audience might have some form of color blindness. Luckily, there are many handy ways to deal with this when working with the creation of custom graphics. In the various ggplots below, you will notice my use of the [viridis packages](https://cran.r-project.org/web/packages/viridis/vignettes/intro-to-viridis.html), which is a visually appealing set of color palettes that have the added benefit of being easier to read for those who are color blind. While this is my personally preferred method of dealing with color-blindness when creating visuals, one might also consider options like **scale\_color\_tableau()** and **scale\_color\_colorblind()**, both of which are from the [ggthemes package](https://cran.r-project.org/web/packages/ggthemes/ggthemes.pdf).
+
 Histograms
-==========
+----------
 
 Having gone through the basic EDA steps above, by this point one might have a variety of variables, relationships, or trends worthy of further exploration. The sections below walk through some visualizations that may prove useful in drilling down deeper into the data once the highest-level EDA is already taken care of.
 
 For the histogram exemplars below, imagine that our basic EDA lead us to want to dive deeper into the question of **"what sort or relationships, trends, and/or distributional intricacies, if any, can we observe by examining campaign fundraising goals by country of origin?"**
 
-Simple Multi-Category Histogram
--------------------------------
+### Simple Multi-Category Histogram
 
 ``` r
 base_df %>%
@@ -181,7 +188,7 @@ base_df %>%
     # specifying the histogram and the bin count
     geom_histogram(color = "black", position="dodge", bins=20) +
     # picking a colorblind-friendly color scheme and theme
-    ggthemes::scale_fill_tableau() +
+    viridis::scale_fill_viridis(discrete=TRUE, option="plasma") +
     ggthemes::theme_economist() +
     # setting legend aesthetic details 
     theme(
@@ -200,8 +207,7 @@ base_df %>%
 
 ![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-8-1.png)
 
-Multi-Category Histogram with Custom-Delimited-Buckets
-------------------------------------------------------
+### Multi-Category Histogram with Custom-Delimited-Buckets
 
 Perhaps we are now beginning to develop an intuition as to which buckets are most key. We might then wish to build a histogram with custom-delimited-buckets, as done below.
 
@@ -232,7 +238,7 @@ base_df %>%
       # takes care of the precise labeling; hjust/vjust and angle need to be set visually
       geom_text(aes(label=n, group=country), hjust=-0.20, angle=90, position = position_dodge(width=1)) +
       # picking a colorblind-friendly color scheme and theme
-      ggthemes::scale_fill_tableau() +
+      viridis::scale_fill_viridis(discrete=TRUE, option="plasma") +
       ggthemes::theme_economist() +
       # custom axis limits; for this kind of chart I prefer to set these manually
       scale_y_continuous(limits = c(0, 1250)) +
@@ -255,12 +261,11 @@ base_df %>%
 ![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-9-1.png)
 
 Density Plots
-=============
+-------------
 
 There are times when visually one might prefer a density plot to a histogram, but in almost all cases they serve as substitutionary visualizatins. I find the one use case where density charts are particularly marginally useful as compared to histograms is when you want to compare distributional overlapping or deviation.
 
-2 Probability Density Functions (PDFs) Compared
------------------------------------------------
+### 2 Probability Density Functions (PDFs) Compared
 
 ``` r
 base_df %>%
@@ -277,7 +282,7 @@ base_df %>%
     # specifying the density plot, alpha modulates translucency 
     geom_density(color = "black", alpha = 0.8) +
     # picking a colorblind-friendly color scheme and theme
-    ggthemes::scale_fill_tableau() +
+    viridis::scale_fill_viridis(discrete=TRUE, option="plasma") +
     ggthemes::theme_economist() +
     # setting legend aesthetic details
     theme(
@@ -296,8 +301,7 @@ base_df %>%
 
 ![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-10-1.png)
 
-3 PDFs Compared w/ Facets
--------------------------
+### 3 PDFs Compared w/ Facets
 
 ``` r
 base_df %>%
@@ -317,7 +321,7 @@ base_df %>%
     # facet wraps to show one pane per state
     facet_wrap(~state) +
     # picking a colorblind-friendly color scheme and theme
-    ggthemes::scale_fill_tableau() +
+    viridis::scale_fill_viridis(discrete=TRUE, option="plasma") +
     ggthemes::theme_economist() +
     # setting legend aesthetic details
     theme(

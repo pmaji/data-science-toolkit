@@ -148,7 +148,7 @@ base_df %>%
 
 ```
 
-### Multi-Category Histogram with Custom-Delimited-Buckets
+### Multi-Category Histogram with Custom-Delimited-Buckets (Count-Based)
 
 Perhaps we are now beginning to develop an intuition as to which buckets are most key. We might then wish to build a histogram with custom-delimited-buckets, as done below. 
 
@@ -199,6 +199,57 @@ base_df %>%
       )
 ```
 
+### Multi-Category Histogram with Custom-Delimited-Buckets (Percent-Based)
+
+Then we might want to take the previous view and, particularly when the counts get too large to be helpful in label form, transform the view into one that is percentage-based, which we can do as shown below.
+
+```{r}
+base_df %>%
+  # select only our variables of interest 
+  dplyr::select(goal, country) %>%
+  # filter to just 3 countries and set a goal cap
+  # this is mostly just arbitrary for the purpose of an easy-to-read exemplar 
+  dplyr::filter(
+    country %in% c("IT","DE","FR")
+    ) %>%
+  dplyr::mutate(
+    custom_buckets = cut(
+      x = goal,
+      # sets the break points for cuts; see options for inclusion/exclusion details
+      breaks = c(0, 1000, 5000, 10000, 25000, 50000, 100000, Inf),
+      # ensures no use of scientific notation in labeling
+      dig.lab = 10
+      )
+  ) %>%
+  dplyr::group_by(country, custom_buckets) %>%
+  # gets teh grouped by within-category percent
+  summarise(n = n()) %>%
+  mutate(freq = n / sum(n)) %>%
+    # base ggplot call
+    ggplot(., aes(custom_buckets, freq)) +
+      geom_bar(aes(fill = country), color = "black", position = "dodge", stat="identity") +
+      # takes care of the precise labeling; hjust/vjust and angle need to be set visually
+      geom_text(aes(label=scales::percent(freq), group=country), hjust=-0.20, angle=90, position = position_dodge(width=1)) +
+      # picking a colorblind-friendly color scheme and theme
+      viridis::scale_fill_viridis(discrete=TRUE, option="plasma") +
+      ggthemes::theme_economist() +
+      # custom axis limits; for this kind of chart I prefer to set these manually
+      scale_y_continuous(labels = scales::percent, limits = c(0, 0.3)) +
+      # setting legend and axis aesthetic details
+      theme(
+        legend.position = "top",
+        legend.title = element_text(size=12),
+        legend.text = element_text(size=12),
+        axis.text.x = element_text(size=8)
+        ) +
+      # takes care of all labeling
+      labs(
+        title = paste0("Count of Campaigns by Goal Amount Bucket"),
+        y = "Number of Campaigns",
+        x = "Campaign Fundraising Goal Bucket (USD)",
+        fill = "Country of Origin"
+      )
+```
 
 ## Density Plots
 

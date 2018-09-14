@@ -1,4 +1,4 @@
-Exploratory Data Analysis (EDA) and Visualization
+Exploratory Data Analysis (EDA) and Visualization in R
 ================
 Paul Jeffries
 13 September, 2018

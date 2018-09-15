@@ -1,5 +1,5 @@
 ---
-title: "Logistic Regression"
+title: "Logistic Regression in R"
 author: Paul Jeffries
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
@@ -18,12 +18,12 @@ While the code is extensively commented, with additional explanatory notes along
 
 ## Setup
 
-```{r results='hide', warning=FALSE, message=FALSE}
-# first a few general set-up items / housekeeping items
-
+```{r setup}
 # setting the appropriate working directory
-setwd("~/Desktop/Personal/personal_code/classification/")
+knitr::opts_knit$set(root.dir = '~/Desktop/Personal/personal_code/classification/')
+```
 
+```{r results='hide', warning=FALSE, message=FALSE}
 # setting scipen options to kill all use of scientific notation
 options(scipen = 999)
 
@@ -417,13 +417,18 @@ running_model_synopsis_table <- bind_rows(running_model_synopsis_table, simple_l
 running_model_synopsis_table
 ```
 
+## Alternative Methods of Variable Selection
+
+It is worth briefly noting that one often-taught method of variable-selection that I do not cover here is stepwise varaible selection, and this omission is entirely purposeful. While seemingly helpful in principle, it is almost never benefitial to make use of stepwise variable selection as opposed to ridge or other penalized methods. The reason for this is perhaps best made clear by [this research paper here.](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2656.2006.01141.x)
+
 # Penalized Logistic Regression (Lasso)
 
 Now we'll move on to use a technique that makes use of an Objective Function that penalizes low-ROI variables. This is similar to ridge regression except variables with coefficients non-consequential enough will be zero'ed out of the model. For a broad introduction to penalized logistic regression in R, see [this useful source from STHDA](http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/).
 
-## Alternative Methods of Variable Selection
-
-It is worth briefly noting that one often-taught method of variable-selection that I do not cover here is stepwise varaible selection, and this omission is entirely purposeful. While seemingly helpful in principle, it is almost never benefitial to make use of stepwise variable selection as opposed to ridge or other penalized methods. The reason for this is perhaps best made clear by [this research paper here.](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2656.2006.01141.x)
+For a more piecemeal approach to learning about ridge regression methods--and lasso in particular--check out the selected links below:
+- [Stanford slides on ridge regression and lasso](http://statweb.stanford.edu/~tibs/sta305files/Rudyregularization.pdf)
+- [Helpful explanation with difference between ridge and lasso](https://codingstartups.com/practical-machine-learning-ridge-regression-vs-lasso/)
+- [Short and sweet tl;dr of lasso's utility](https://stats.stackexchange.com/questions/17251/what-is-the-lasso-in-regression-analysis)
 
 ## Tuning the Hyperparameter for the Lasso Model w/ 2-Way Interactions and Polynomial Terms
 
@@ -660,6 +665,7 @@ Having explored he upsampling method of selective sampling to increase model per
 ```{r echo=T, results='hide', warning=FALSE}
 # likewise hiding the output here because of the annoying output of the DBSMOTE function
 library(smotefamily) # main SMOTE variety package
+library(FNN) # needed for dbsmote prereq
 library(dbscan) #needed for dbsmote type of SMOTE to function
 
 # first we construct a SMOTE-built training dataset that is more well-balanced than our actual pop. 

@@ -1,7 +1,7 @@
-Logistic Regression
+Logistic Regression in R
 ================
 Paul Jeffries
-26 August, 2018
+15 September, 2018
 
 -   [Introduction](#introduction)
     -   [Setup](#setup)
@@ -17,8 +17,8 @@ Paul Jeffries
     -   [Determining What Classification Cutoff is Appropriate (Simple Logit)](#determining-what-classification-cutoff-is-appropriate-simple-logit)
     -   [Examining Model Performance for the Simple Logit](#examining-model-performance-for-the-simple-logit)
     -   [Documenting Performance of Simple Logit Model](#documenting-performance-of-simple-logit-model)
--   [Penalized Logistic Regression (Lasso)](#penalized-logistic-regression-lasso)
     -   [Alternative Methods of Variable Selection](#alternative-methods-of-variable-selection)
+-   [Penalized Logistic Regression (Lasso)](#penalized-logistic-regression-lasso)
     -   [Tuning the Hyperparameter for the Lasso Model w/ 2-Way Interactions and Polynomial Terms](#tuning-the-hyperparameter-for-the-lasso-model-w-2-way-interactions-and-polynomial-terms)
     -   [Sampling Methodology Explored -- Upsampling](#sampling-methodology-explored----upsampling)
     -   [Building the Model Formula (Upsampled Lasso)](#building-the-model-formula-upsampled-lasso)
@@ -46,11 +46,11 @@ Setup
 -----
 
 ``` r
-# first a few general set-up items / housekeeping items
-
 # setting the appropriate working directory
-setwd("~/Desktop/Personal/personal_code/classification/")
+knitr::opts_knit$set(root.dir = '~/Desktop/Personal/personal_code/classification/')
+```
 
+``` r
 # setting scipen options to kill all use of scientific notation
 options(scipen = 999)
 
@@ -653,19 +653,21 @@ running_model_synopsis_table
 ```
 
     ##                 model_name classification_cutoff     auc sensitivity
-    ## 1 Simple Logit (All Vars.)            0.06734321 0.72885         50%
+    ## 1 Simple Logit (All Vars.)            0.06734321 0.72885       50.0%
     ##   specificity number_of_model_terms total_cost
-    ## 1         89%                    11       2840
+    ## 1       89.0%                    11       2840
+
+Alternative Methods of Variable Selection
+-----------------------------------------
+
+It is worth briefly noting that one often-taught method of variable-selection that I do not cover here is stepwise varaible selection, and this omission is entirely purposeful. While seemingly helpful in principle, it is almost never benefitial to make use of stepwise variable selection as opposed to ridge or other penalized methods. The reason for this is perhaps best made clear by [this research paper here.](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2656.2006.01141.x)
 
 Penalized Logistic Regression (Lasso)
 =====================================
 
 Now we'll move on to use a technique that makes use of an Objective Function that penalizes low-ROI variables. This is similar to ridge regression except variables with coefficients non-consequential enough will be zero'ed out of the model. For a broad introduction to penalized logistic regression in R, see [this useful source from STHDA](http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/).
 
-Alternative Methods of Variable Selection
------------------------------------------
-
-It is worth briefly noting that one often-taught method of variable-selection that I do not cover here is stepwise varaible selection, and this omission is entirely purposeful. While seemingly helpful in principle, it is almost never benefitial to make use of stepwise variable selection as opposed to ridge or other penalized methods. The reason for this is perhaps best made clear by [this research paper here.](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2656.2006.01141.x)
+For a more piecemeal approach to learning about ridge regression methods--and lasso in particular--check out the selected links below: - [Stanford slides on ridge regression and lasso](http://statweb.stanford.edu/~tibs/sta305files/Rudyregularization.pdf) - [Helpful explanation with difference between ridge and lasso](https://codingstartups.com/practical-machine-learning-ridge-regression-vs-lasso/) - [Short and sweet tl;dr of lasso's utility](https://stats.stackexchange.com/questions/17251/what-is-the-lasso-in-regression-analysis)
 
 Tuning the Hyperparameter for the Lasso Model w/ 2-Way Interactions and Polynomial Terms
 ----------------------------------------------------------------------------------------
@@ -820,7 +822,7 @@ coef(cv.lasso, cv.lasso$lambda.min)
     ## density:alcohol                -2.9007490
     ## p_h:sulphates                  -0.4598622
     ## p_h:alcohol                     0.1431797
-    ## sulphates:alcohol               0.9436665
+    ## sulphates:alcohol               0.9436664
 
 ### Second the Coefficients for the Lambda LSE Upsampled Lasso
 
@@ -834,16 +836,16 @@ coef(cv.lasso, cv.lasso$lambda.1se)
     ##                                      1
     ## (Intercept)                 -0.5010227
     ## (Intercept)                  .        
-    ## poly(fixed_acidity, 3)1     21.8233032
+    ## poly(fixed_acidity, 3)1     21.8233033
     ## poly(fixed_acidity, 3)2     -4.2289369
-    ## poly(fixed_acidity, 3)3      5.9609610
+    ## poly(fixed_acidity, 3)3      5.9609609
     ## poly(volatile_acidity, 3)1  78.9314389
     ## poly(volatile_acidity, 3)2   .        
-    ## poly(volatile_acidity, 3)3  27.3990601
+    ## poly(volatile_acidity, 3)3  27.3990600
     ## poly(citric_acid, 3)1       -5.6796910
     ## poly(citric_acid, 3)2       32.1831538
     ## poly(citric_acid, 3)3      -18.6586829
-    ## poly(residual_sugar, 3)1   -40.7154674
+    ## poly(residual_sugar, 3)1   -40.7154675
     ## poly(residual_sugar, 3)2     .        
     ## 
     ##  ..............................
@@ -851,14 +853,14 @@ coef(cv.lasso, cv.lasso$lambda.1se)
     ##  ..............................
     ## 
     ##                                           1
-    ## free_sulfur_dioxide:sulphates   0.147836997
-    ## free_sulfur_dioxide:alcohol    -0.829249038
+    ## free_sulfur_dioxide:sulphates   0.147836996
+    ## free_sulfur_dioxide:alcohol    -0.829249037
     ## total_sulfur_dioxide:density    .          
     ## total_sulfur_dioxide:p_h        0.358809496
     ## total_sulfur_dioxide:sulphates  0.484912148
-    ## total_sulfur_dioxide:alcohol   -0.476430413
+    ## total_sulfur_dioxide:alcohol   -0.476430412
     ## density:p_h                     .          
-    ## density:sulphates               0.005845615
+    ## density:sulphates               0.005845614
     ## density:alcohol                 .          
     ## p_h:sulphates                  -0.097822274
     ## p_h:alcohol                    -0.352265344
@@ -869,6 +871,12 @@ coef(cv.lasso, cv.lasso$lambda.1se)
 # this is based on a judgement call and my desire in this case for simplicity over predictive potential
 upsample_lambda_coefs <- broom::tidy(coef(cv.lasso, cv.lasso$lambda.1se))
 ```
+
+    ## Warning: 'tidy.dgCMatrix' is deprecated.
+    ## See help("Deprecated")
+
+    ## Warning: 'tidy.dgTMatrix' is deprecated.
+    ## See help("Deprecated")
 
 ### Building the Upsampled Lasso Logit Formula Based on Coefficient List
 
@@ -1055,10 +1063,10 @@ running_model_synopsis_table
 ```
 
     ##                 model_name classification_cutoff      auc sensitivity
-    ## 1 Simple Logit (All Vars.)            0.06734321 0.728850         50%
+    ## 1 Simple Logit (All Vars.)            0.06734321 0.728850       50.0%
     ## 2           Upsample Lasso            0.13501546 0.762254       41.7%
     ##   specificity number_of_model_terms total_cost
-    ## 1         89%                    11       2840
+    ## 1       89.0%                    11       2840
     ## 2       93.7%                    77       2690
 
 Sampling Methodology Explored -- DBSMOTE
@@ -1071,6 +1079,7 @@ Having explored he upsampling method of selective sampling to increase model per
 ``` r
 # likewise hiding the output here because of the annoying output of the DBSMOTE function
 library(smotefamily) # main SMOTE variety package
+library(FNN) # needed for dbsmote prereq
 library(dbscan) #needed for dbsmote type of SMOTE to function
 
 # first we construct a SMOTE-built training dataset that is more well-balanced than our actual pop. 
@@ -1164,7 +1173,7 @@ coef(cv.lasso, cv.lasso$lambda.min)
     ## poly(fixed_acidity, 3)2     .        
     ## poly(fixed_acidity, 3)3     .        
     ## poly(volatile_acidity, 3)1 65.5845383
-    ## poly(volatile_acidity, 3)2 -8.6083087
+    ## poly(volatile_acidity, 3)2 -8.6083086
     ## poly(volatile_acidity, 3)3  .        
     ## poly(citric_acid, 3)1       .        
     ## poly(citric_acid, 3)2       .        
@@ -1206,7 +1215,7 @@ coef(cv.lasso, cv.lasso$lambda.1se)
     ## poly(fixed_acidity, 3)2     .        
     ## poly(fixed_acidity, 3)3     .        
     ## poly(volatile_acidity, 3)1 65.5845383
-    ## poly(volatile_acidity, 3)2 -8.6083087
+    ## poly(volatile_acidity, 3)2 -8.6083086
     ## poly(volatile_acidity, 3)3  .        
     ## poly(citric_acid, 3)1       .        
     ## poly(citric_acid, 3)2       .        
@@ -1236,6 +1245,12 @@ coef(cv.lasso, cv.lasso$lambda.1se)
 # storing the coefficients for later use
 dbsmote_lambda_coefs <- broom::tidy(coef(cv.lasso, cv.lasso$lambda.1se))
 ```
+
+    ## Warning: 'tidy.dgCMatrix' is deprecated.
+    ## See help("Deprecated")
+
+    ## Warning: 'tidy.dgTMatrix' is deprecated.
+    ## See help("Deprecated")
 
 ### Building the DBSMOTE Lasso Logit Formula Based on Coefficient List
 
@@ -1402,11 +1417,11 @@ running_model_synopsis_table
 ```
 
     ##                 model_name classification_cutoff       auc sensitivity
-    ## 1 Simple Logit (All Vars.)            0.06734321 0.7288500         50%
+    ## 1 Simple Logit (All Vars.)            0.06734321 0.7288500       50.0%
     ## 2           Upsample Lasso            0.13501546 0.7622540       41.7%
     ## 3            DBSMOTE Lasso            0.07360934 0.7791033       52.8%
     ##   specificity number_of_model_terms total_cost
-    ## 1         89%                    11       2840
+    ## 1       89.0%                    11       2840
     ## 2       93.7%                    77       2690
     ## 3       89.1%                    13       2730
 
@@ -1630,11 +1645,11 @@ running_model_synopsis_table
 ```
 
     ##                 model_name classification_cutoff       auc sensitivity
-    ## 1 Simple Logit (All Vars.)            0.06734321 0.7288500         50%
+    ## 1 Simple Logit (All Vars.)            0.06734321 0.7288500       50.0%
     ## 2           Upsample Lasso            0.13501546 0.7622540       41.7%
     ## 3            DBSMOTE Lasso            0.07360934 0.7791033       52.8%
     ##   specificity number_of_model_terms total_cost
-    ## 1         89%                    11       2840
+    ## 1       89.0%                    11       2840
     ## 2       93.7%                    77       2690
     ## 3       89.1%                    13       2730
     ##  [ reached getOption("max.print") -- omitted 1 row ]

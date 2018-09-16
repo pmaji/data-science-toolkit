@@ -14,7 +14,8 @@ Welcome! The purpose of this repository is to serve as stockpile of statistical 
 4. Classification
     1. [Logistic Regression (Ridge and Lasso Methods Included) -- R](https://github.com/pmaji/stats-and-modeling/blob/master/classification/logit/logistic_regression.md)
     2. [Useful Classification Functions -- R](https://github.com/pmaji/stats-and-modeling/blob/master/classification/useful_classification_functions.R)
-    2. [Basic Tree Models -- R](https://github.com/pmaji/stats-and-modeling/blob/master/classification/tree-methods/tree_methods.md)
+    3. [Basic Tree Models -- R](https://github.com/pmaji/stats-and-modeling/blob/master/classification/tree-methods/tree_methods.md)
+    4. [KNN -- R](https://github.com/pmaji/data-science-toolkit/tree/master/classification/knn)
 5. Regression
 6. Reinforcement Learning 
 

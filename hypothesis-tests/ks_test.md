@@ -1,11 +1,9 @@
-2-Sample KS Test Vignette
+2-Sample KS Test Vignette in R
 ================
 Paul Jeffries
-15 September, 2018
+16 September, 2018
 
 -   [Introduction](#introduction)
-    -   [Strengths of the KS Test](#strengths-of-the-ks-test)
-    -   [Weaknesses of the KS Test](#weaknesses-of-the-ks-test)
     -   [Setup](#setup)
 -   [Importing, Exploring, and Cleaning the Data](#importing-exploring-and-cleaning-the-data)
     -   [Importing the Data](#importing-the-data)
@@ -18,8 +16,7 @@ Paul Jeffries
     -   [Basic KS Test](#basic-ks-test)
     -   [Visualizing the KS Test Results](#visualizing-the-ks-test-results)
     -   [Scaling KS Test to Many Samples](#scaling-ks-test-to-many-samples)
-
-**NOTE: this is an early work in progress. Check back shortly for new additions**
+    -   [Conclusionss and Other Extensions of KS Test](#conclusionss-and-other-extensions-of-ks-test)
 
 Introduction
 ============
@@ -28,23 +25,13 @@ The purpose of this document is to explore the utility and potential application
 
 This vignette will follow the progression below:
 
-1.  High level exploration of strenghts and weaknesses of the test, and brief setup info
+1.  High level exploration of strengths and weaknesses of the test, and brief setup info
 2.  Walkthrough of data preparation, and exposition of Kickstarter data to be used as our test case
 3.  Exploration of PDF and ECDF distributions (both integral to KS test)
-4.  Application of KS test itself.
-5.  Functionalized / parameterized application of KS test.
-6.  Aggregation of KS test results.
-7.  Other extensions of the KS test? (TBD)
-
-Strengths of the KS Test
-------------------------
-
--   Will come back to this one at the end
-
-Weaknesses of the KS Test
--------------------------
-
--   Will come back to this one at the end
+4.  Application of KS test itself
+5.  Functionalized / parameterized application of KS test
+6.  Aggregation of KS test results and scalable functions
+7.  Other extensions of the KS test and conclusions
 
 Setup
 -----
@@ -61,8 +48,6 @@ library(janitor) # for data cleaning and some utility functions
 library(DataExplorer) # allows for creation of missing values map
 library(RCurl) # Provides functions to allow one to compose general HTTP requests, etc. in R
 library(broom) # for tidy modeling and displaying of model / test results 
-
-# If I reference functions that are more niche, I will call them explicitly in-line as well
 ```
 
 Importing, Exploring, and Cleaning the Data
@@ -71,7 +56,7 @@ Importing, Exploring, and Cleaning the Data
 Importing the Data
 ------------------
 
-The data used in this document come from a [Kaggle post](https://www.kaggle.com/kemical/kickstarter-projects/home) focused on Kickstarter campaigns. If unfamiliar with the notion of a Kickstarter campaign (henceforth just campaign), I would recommend reading [this FAQ here](https://help.kickstarter.com/hc/en-us/categories/115000499013-Kickstarter-basics). Finally, it is worthwhile noting that while I will conduct some basic EDA prior to delving into the KS test-specfic code, I will not spend a great deal of time explaining the data, so for more information on the data specifically, I recommend reading the detailed exploration on the [data page for this Kaggle](https://www.kaggle.com/kemical/kickstarter-projects).
+The data used in this document come from a [Kaggle post](https://www.kaggle.com/kemical/kickstarter-projects/home) focused on Kickstarter campaigns. If unfamiliar with the notion of a Kickstarter campaign (henceforth just campaign), I would recommend reading [this FAQ here](https://help.kickstarter.com/hc/en-us/categories/115000499013-Kickstarter-basics). Finally, it is worthwhile noting that while I will conduct [some basic EDA](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/eda_and_visualization.md) prior to delving into the KS test-specfic code, I will not spend a great deal of time explaining the data, so for more information on the data specifically, I recommend reading the detailed exploration on the [data page for this Kaggle](https://www.kaggle.com/kemical/kickstarter-projects).
 
 ``` r
 # importing the dataset from the CSV
@@ -106,7 +91,7 @@ Exploring and Cleaning the Data
 
 ### Dealing with NULLs
 
-First, we'll conduct some broad cleaning. Using the [janitor package](https://github.com/sfirke/janitor) I will clean up the variable names (in this case not necssarily because the CSV is pristinely formatted), and drop any rows or columns where all observations all null.
+First, we'll conduct some broad cleaning. Using the [janitor package](https://github.com/sfirke/janitor) I will clean up the variable names (in this case not necssary because the CSV is pristinely formatted), and drop any rows or columns where all observations all null.
 
 ``` r
 # tidying variable names and dropping any useless rows / columns
@@ -153,9 +138,9 @@ DataExplorer::plot_density(data = base_2018_df, title = "Continuous Variables Ex
 
 ![](ks_test_files/figure-markdown_github/unnamed-chunk-8-1.png)
 
-As can be seen above, the continuous distributions here for most variables are very skewed, which is partly to be expected; one would reasonably anticipate, for example, that there would be very few campaigns that are massively successful, wheres most would fall within some average range of success.
+As can be seen above, **the continuous distributions here for most variables are very skewed,** which is partly to be expected; one would reasonably anticipate, for example, that there would be very few campaigns that are massively successful, wheres most would fall within some average range of success.
 
-When we get to the section on distributional exploration later in the document, we'll look into how we can clean up these distributions to make them more useful for both visualization and statistical testing, but for now, we can prove the aforementioned with a quick example--using the variable "backers" as our test case.
+When we get to the section on distributional exploration later in the document, we'll look into how we can clean up these distributions to make them more useful for both visualization and statistical testing, but for now, we can prove the aforementioned skewness with a quick example--using the variable "backers" as our test case.
 
 ``` r
 # pull summary stats for the backers variable
@@ -222,11 +207,11 @@ paste0(
   length(unique(base_2018_df$main_category)), 
   ", whereas the number of unique categories when we use the category variable is ", 
   length(unique(base_2018_df$category)), 
-  ", which is too large to be useful in this case. "
+  ", which is too large to be useful in this case."
   )
 ```
 
-    ## [1] "The number of unique categories when we use the main_category variable is 15, whereas the number of unique categories when we use the category variable is 159, which is too large to be useful in this case. "
+    ## [1] "The number of unique categories when we use the main_category variable is 15, whereas the number of unique categories when we use the category variable is 159, which is too large to be useful in this case."
 
 ``` r
 # showing the volume breakdown by main_category
@@ -266,13 +251,13 @@ In light of the above information, we'll perform one last step and trim down to 
 ``` r
 # creating trimmed final main dataset
 final_df <- base_2018_df %>%
-  # dropping some ariables as outlined above
+  # dropping some variables as outlined above
   dplyr::select(-c(id,name,category,currency,pledged,backers,usd_pledged_real,usd_goal_real)) %>%
   # trimming to US and GB as described in my research question above
   dplyr::filter(country %in% c('US','GB'))
 ```
 
-To start out with, it's also helpful to have a dataset filtered to just one category. The end goal would be to have processes and functions that could iterate over all categories, but picking one to use as our initial test case will allow for a smaller sample size and thus faster rendering as we test different functions.
+To start out with, it's also helpful to have a dataset filtered to just one category. The end goal would be to have processes and functions that could iterate over all categories (you'll see this in a later section), but picking one to use as our initial test case will allow for a smaller sample size and thus faster rendering as we test different functions.
 
 ``` r
 # creating a dataset filtered to just one category for speed of exploration and view-building
@@ -289,7 +274,7 @@ Distributions Explored
 Probability Density Functions (PDF)
 -----------------------------------
 
-For the construction of our [probability density functions](https://en.wikipedia.org/wiki/Probability_density_function), we'll make use primarily of the [geom\_density geom in R](http://www.sthda.com/english/wiki/ggplot2-density-plot-quick-start-guide-r-software-and-data-visualization), as demonstrated below. This is a helpful building block in understanding the KS test itself, which is predicated on an understanding of the commulative version of the PDF, which we'll get to shorty. See below for the PDF of the GB and US-based campaigns whose projects were Theater-related.
+For the construction of our [probability density functions](https://en.wikipedia.org/wiki/Probability_density_function), we'll make use primarily of the [geom\_density geom in R](http://www.sthda.com/english/wiki/ggplot2-density-plot-quick-start-guide-r-software-and-data-visualization), as demonstrated below. This is a helpful building block in understanding the KS test itself, which is predicated on an understanding of the cumulative version of the PDF, which we'll get to shorty. See below for the PDF of the GB and US-based campaigns whose projects were Theater-related.
 
 ``` r
 # ggplot code for the basid density plot
@@ -298,7 +283,7 @@ base_2018_df_forviz %>%
   geom_density(aes(fill=factor(country)),alpha = 0.4) +
   theme(legend.position = "top") +
   labs(
-    title = paste0("PDF of $ Pledged (Campaign Category = Theater)"),
+      title = paste0("PDF of $ Pledged (Campaign Category = Theater)"),
       y = "Concentration Density",
       x = "Amount Pledged (converted to USD)",
       fill = "Country of origin"
@@ -307,7 +292,7 @@ base_2018_df_forviz %>%
 
 ![](ks_test_files/figure-markdown_github/unnamed-chunk-16-1.png)
 
-As can be seen above, these distributions are very heavily skewed, even when we filter to a category type and look only at GP and US based campaigns. That is to be expected given the nature of the project; that said, we want our visuals to be helfpul (which the above honestly is not). As such, for the purpose of this analysis **let's focus on projects that raised at most $10,000** (although this value is easy to parameterize and is largely an arbitrary judgement call).
+As can be seen above, these distributions are very heavily skewed, even when we filter to a category type and look only at GP and US-based campaigns. That is to be expected given the nature of the project; that said, we want our visuals to be helfpul (which the above honestly is not). As such, for the purpose of this analysis **let's focus on projects that raised at most $10,000** (although this value is easy to parameterize and is largely an arbitrary judgement call).
 
 ``` r
 full_base_pdf <- base_2018_df_forviz %>%
@@ -458,7 +443,7 @@ Performing the KS Test
 
 Now that we have learned a bit about what the KS test actually measures--the max vertical distance between the ECDFs of the compared populations--as well as having explored some visualizations of the key distributions, we can proceed to code up the test itself.
 
-Luckily, performing a ks test in R is quite simple, thanks to the [ks.test() function](https://www.rdocumentation.org/packages/dgof/versions/1.2/topics/ks.test). All **it requires is two numeric vectors** that will be treated as the two distributions to be compared.
+Luckily, performing a KS test in R is quite simple, thanks to the [ks.test() function](https://www.rdocumentation.org/packages/dgof/versions/1.2/topics/ks.test). All **it requires is two numeric vectors** that will be treated as the two distributions to be compared.
 
 Basic KS Test
 -------------
@@ -472,7 +457,7 @@ As one can tell, the phrasing of this quesiton lends itself to a two-sided hypot
 We'll start by building the two numeric vectors needed for the KS test: one for GB campaigns, and one for US campaigns.
 
 ``` r
-# reminder: the base dataset used below is filtered to Theater only
+# reminder: the base dataset used below is pre-filtered to Theater only
 
 # building the GB-specific vector
 gb_theater_amount_raised <- base_2018_df_forviz %>%
@@ -489,7 +474,7 @@ us_theater_amount_raised <- base_2018_df_forviz %>%
   dplyr::filter(
     # build in the standard volume constraint we've been using
     usd_pledged <= 10000,
-    # filters to just GB campaigns
+    # filters to just US campaigns
     country == "US"
     ) %>%
   dplyr::select(usd_pledged)
@@ -564,13 +549,13 @@ gen_ks_test_viz_and_results(
 Scaling KS Test to Many Samples
 -------------------------------
 
-Imagine now that after having conducted a few one-off KS tests, we wanted to dig deeper into the impact that campaign types has on distributional differences between GB and US-based campagins. To operationalize this question in a manner better suited for the KS test, we could thus ask the question: **out of all campaign categories, which types exhibited the largest distributional differences in pledged amount between US and GB-based campaigns?**
+Imagine now that after having conducted a few one-off KS tests, we wanted to dig deeper into the impact that campaign types has on distributional differences between GB and US-based campaigns. To operationalize this question in a manner better suited for the KS test, we could thus ask the question: **out of all campaign categories, which types exhibited the largest distributional differences in pledged amount between US and GB-based campaigns?**
 
-In terms of how we can go about answering this question, we already have the framework--the KS test--so it's just a matter of scaling the test up over all categories. This will be done by iteratively performing the KS test on each pertinent sub-population.
+In terms of how we can go about answering this question, we already have the framework--the KS test--so it's just a matter of scaling the test up over all categories, and then comparing the results. This will be done by iteratively performing the KS test on each pertinent sub-population.
 
 ### Examining the Variable on Which Samples Will Be Stratified
 
-When performing the KS test, it's important that both of the two samples being compared during an individual test have enough volume to be consequential and not have distortionary effects. Questions about [how exactly to arrive at a minimum sample size](https://www.researchgate.net/post/What_is_the_minimal_number_of_observations_needed_for_normal_distribution) for each test can get a bit tricky, so our examiniation below is rather arbitrary. We just want to see that there aren't any categories (after filtering by US vs. GB) that have an obviously low count. We'll use the [still-arbitrary but often-used threshold of 30](https://stats.stackexchange.com/questions/2541/what-references-should-be-cited-to-support-using-30-as-a-large-enough-sample-siz) as the minimum count by category that we want to see in order to proceed.
+When performing the KS test, it's important that both of the two samples being compared during an individual test have enough volume to be consequential and not produce distortionary effects. Questions about [how exactly to arrive at a minimum sample size](https://www.researchgate.net/post/What_is_the_minimal_number_of_observations_needed_for_normal_distribution) for each test can get a bit tricky, so our examination below is rather arbitrary. We just want to see that there aren't any categories (after filtering by US vs. GB) that have an obviously low count. We'll use the [still-arbitrary but often-used threshold of 30](https://stats.stackexchange.com/questions/2541/what-references-should-be-cited-to-support-using-30-as-a-large-enough-sample-siz) as the minimum count by category that we want to see in order to proceed.
 
 ``` r
 # first we'll create subsets filtered to just US and GB campaigns 
@@ -580,7 +565,7 @@ final_us_df <- final_df %>%
 final_gb_df <- final_df %>%
   dplyr::filter(country == 'GB')
 
-# setting maxprint options so the lists we show next will print full
+# setting maxprint options so the lists we show next will print in full
 options(max.print=50)
 
 # then we print out the crosstab for each country's campaigns by category
@@ -633,7 +618,7 @@ janitor::tabyl(final_gb_df$main_category) %>%
     ## 14                Journalism  451    1.3%
     ## 15                     Dance  280    0.8%
 
-As can be seen from above, we appear to be perfectly fine on sample size, given that the smallest bucket--GB's Dance category--stil has 280 observations (well over our minimum of 30). As such, we can proceed to constructing the scalable KS test.
+As can be seen from above, **we appear to be perfectly fine on sample size**, given that the smallest bucket--GB's Dance category--stil has 280 observations (well over our minimum of 30). As such, we can proceed to constructing the scalable KS test.
 
 ### Creating Function to Run KS Test and Return Tidy Result
 
@@ -644,10 +629,10 @@ Given the specific use case we're targetting here, we'll build in a few paramete
 -   2 input datasets we'll feed the KS test
     -   For now we're going with US and GB's data, but this method can be used with any two numeric vectors
 -   Name of category to compare:
-    -   We'll start with Theater as the default but will scale to iterate over all categories
+    -   We'll start with Theater as the default but we'll scale to iterate over all categories
 -   Name of numeric column within the input datasets
 -   Type of hypothesis test
-    -   Two-sided, greater than, or less than (see ks.test docs for details)
+    -   Two-sided, greater than, or less than (see ks.test() docs for details)
     -   Default is broadest test: two-sided
 
 ``` r
@@ -684,13 +669,13 @@ get_tidy_ks_test_results <- function(
     dplyr::select(noquote_var)
   
   op <- options(warn = (-1)) # suppress warnings that always come when running ks test at scale
-  # in this case the warnings mean there is tie somewhere in the distro, which is expected
-  # running the KS test and assigning the tidy output to varaible
+  # in this case the warnings mean there is a tie somewhere in the distro, which is expected
+  # running the KS test and assigning the tidy output to variable
   ks_test_results <- broom::tidy(
     ks.test(
       x = vector_1[[1]],
       y = vector_2[[1]],
-      # paramterized alternative tested
+      # parameterized alternative tested
       altenative = type_of_hypothesis_test
       )
     )
@@ -702,7 +687,7 @@ get_tidy_ks_test_results <- function(
   
   }
   
-# run an example test--by default, 2-sided for Theater campaign types
+# run an example test: by default, 2-sided for Theater campaign types
 get_tidy_ks_test_results()
 ```
 
@@ -719,16 +704,19 @@ get_tidy_ks_test_results()
 
 Now that we have a function with all the necessary parameters, we need to create another function that loops over all categories of interest, performing the test for each category, storing the result, and then trimming based on some chosen p-value threshold for statistical significance.
 
-A quick note here seems pertinent on the use of the p-value for multiple hypothesis tests. When scaling the utilization of a hypothesis test--as we are doing here--it makes sense to sometimes adjust the p-value to better avoid Type 1 errors. There is a lot of literature out there on this question, but for the purpose of this excericse, the correction we'll be using the [Bonferroni Correction](http://www.statisticssolutions.com/bonferroni-correction/). It is a pretty simple correction, and involves only dividing the chosen p-value threshold by the number of tests to be run. This is visible in the code below.
+A quick note here seems pertinent on the use of the p-value for multiple hypothesis tests. When scaling the utilization of a hypothesis test--as we are doing here--it makes sense to sometimes adjust the p-value to better avoid [Type 1 errors](https://en.wikipedia.org/wiki/Type_I_and_type_II_errors). There is a lot of literature out there on this question, but for the purpose of this excercise, the correction we'll be using is the [Bonferroni Correction](http://www.statisticssolutions.com/bonferroni-correction/). It is a pretty simple correction, and involves **dividing the chosen p-value threshold by the number of tests to be run**. This is visible in the code below.
 
 ``` r
 build_ks_table_for_all <- function(
-  # p-values above this will result in the difference being deemed insignificant 
+  # p-values above this threshold will result in the difference being deemed insignificant 
   p_value_cutoff = 0.05 
 ){
   # run ks test over all categories
   ks_test_all_categories <- lapply(
+    # gets all categories to loop over
     unique(as.character(final_df$main_category)),
+    # applies previously-constructed function to run KS test
+    # defaults to only one parameter, although more could be passed through
     FUN = get_tidy_ks_test_results
     )
   
@@ -753,12 +741,13 @@ build_ks_table_for_all <- function(
     # order results by highest ks statistic (i.e. largest distributional difference)
     arrange(desc(ks_test_stat))
   
-  # returns ordered table of largest statistically signficant distributional differences
+  # returns ordered table of largest statistically significant distributional differences
   return(cleaned_ks_results_for_all)
   
 }
 
-ks_test_results_for_all_cats <- build_ks_table_for_all()
+# runs the function and prints its output
+ks_test_results_for_all_cats <- build_ks_table_for_all(p_value_cutoff = 0.05)
 ks_test_results_for_all_cats
 ```
 
@@ -775,10 +764,13 @@ ks_test_results_for_all_cats
 
 ### Visualizing the Result of the Many KS Tests
 
+Now that we have a rank-ordered list of statistically significant categories by magnitude of the distributional difference between GB and US campaign pledged amounts, we can visualize the list to easily spot the categories with the most marked differences. The color and the size of the bars below are redundant, and are both included simply to demonstrate two ways of communicating / reinforcing magnitude in these kinds of visualizations.
+
 ``` r
 ggplot(data = ks_test_results_for_all_cats, 
        aes(x=reorder(category, ks_test_stat), y=ks_test_stat, fill = ks_test_stat)) +
   geom_bar(stat="identity") +
+  # flip axes for ease of viewing (purely aesthetic choice)
   coord_flip() +
   # picking a colorblind-friendly color scheme and theme
   viridis::scale_fill_viridis() +
@@ -801,13 +793,13 @@ ggplot(data = ks_test_results_for_all_cats,
   )
 ```
 
-![](ks_test_files/figure-markdown_github/unnamed-chunk-28-1.png)
+![](ks_test_files/figure-markdown_github/unnamed-chunk-27-1.png)
 
 This then leads us to believe that the largest distributional difference between GB and US campaigns in terms of amount pledged comes among kickstarters in the dance category. We can re-use one of our graphics from before to test this assumption visually.
 
 ``` r
 dance_pdf <- final_df %>% 
-  # filters to just kickstarters under a certain category
+  # filters to just kickstarters under the Dance category
   dplyr::filter(main_category == 'Dance') %>%
   # build in the volume constraint
   dplyr::filter(usd_pledged <= 10000) %>%
@@ -830,9 +822,7 @@ dance_pdf <- final_df %>%
              linetype="dashed", size=0.75) +
     geom_vline(aes(xintercept=median_pledged, colour=factor(country)),
              linetype="dotted", size=0.75) +
-    # picking a colorblind-friendly color scheme and theme
-    viridis::scale_fill_viridis(discrete=TRUE, option="plasma") +
-    viridis::scale_color_viridis(discrete=TRUE, option="plasma") +
+    # picking a colorblind-friendly theme
     ggthemes::theme_economist() +
     # puts the legend on top of the view
      theme(
@@ -854,7 +844,15 @@ dance_pdf <- final_df %>%
       color = guide_legend(order=2)
       )
 
+# display the PDF
 dance_pdf
 ```
 
-![](ks_test_files/figure-markdown_github/unnamed-chunk-29-1.png)
+![](ks_test_files/figure-markdown_github/unnamed-chunk-28-1.png)
+
+Conclusionss and Other Extensions of KS Test
+--------------------------------------------
+
+One next step to potentially consider--which I may build out in the future if I have the time--is to include an element of temporality in our testing. What we have done here is a purely cross-sectional analysis of the distributional differences between two countries' kick starter campaigns, including sub-cuts by category. One could presumable incorporate the date fiels as well, stratify based on month or quarter, and then ask questions such as: **"how has the distributional difference between US and GB dance campaign pledged amounts varied over time?"** This would allow us to see whether or not the large distributional difference seen in the chart above--with GB Dance campaigns having a lot more low-amount-pledged campaigns than US Dance campaigns--is a consistent trend, or driven more by an outlier month(s), for example.
+
+All in all, the non-parametric nature of the KS test makes it a very broad but effective brush to use when hunting for distributional differences. It is likely best to follow this test up--if it pops as significant--with more tailored statistical tests that would help to better elucidate precisely why the two distributions differ with a greater degree of specificity than that offered by the KS test alone.

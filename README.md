@@ -19,7 +19,7 @@ Welcome! The purpose of this repository is to serve as stockpile of statistical 
 5. Regression
 6. Reinforcement Learning 
 7. Text Mining and Natural Language Processing (NLP)
-    1. Basic Texting Mining and NLP -- R
+    1. [Basic Texting Mining and NLP -- R](https://github.com/pmaji/data-science-toolkit/blob/master/text-mining-and-nlp/nlp_and_text_mining.md)
 
 ## Contribution Rules
 

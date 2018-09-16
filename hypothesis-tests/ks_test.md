@@ -1,7 +1,7 @@
 2-Sample KS Test Vignette
 ================
 Paul Jeffries
-02 September, 2018
+15 September, 2018
 
 -   [Introduction](#introduction)
     -   [Strengths of the KS Test](#strengths-of-the-ks-test)
@@ -547,7 +547,7 @@ gen_ks_test_viz_and_results(
     ref_line_thickness = 0.75,
     size_of_legend_title = 12,
     size_of_legend_text = 12,
-    main_title_text = "KS Test Results",
+    main_title_text = "KS Test Results (Theater)",
     ecdf_subtitle_text = NULL,
     colour_text = "Country",
     x_text = "Pledged Amount",
@@ -564,4 +564,297 @@ gen_ks_test_viz_and_results(
 Scaling KS Test to Many Samples
 -------------------------------
 
-**Section under construction and coming soon**
+Imagine now that after having conducted a few one-off KS tests, we wanted to dig deeper into the impact that campaign types has on distributional differences between GB and US-based campagins. To operationalize this question in a manner better suited for the KS test, we could thus ask the question: **out of all campaign categories, which types exhibited the largest distributional differences in pledged amount between US and GB-based campaigns?**
+
+In terms of how we can go about answering this question, we already have the framework--the KS test--so it's just a matter of scaling the test up over all categories. This will be done by iteratively performing the KS test on each pertinent sub-population.
+
+### Examining the Variable on Which Samples Will Be Stratified
+
+When performing the KS test, it's important that both of the two samples being compared during an individual test have enough volume to be consequential and not have distortionary effects. Questions about [how exactly to arrive at a minimum sample size](https://www.researchgate.net/post/What_is_the_minimal_number_of_observations_needed_for_normal_distribution) for each test can get a bit tricky, so our examiniation below is rather arbitrary. We just want to see that there aren't any categories (after filtering by US vs. GB) that have an obviously low count. We'll use the [still-arbitrary but often-used threshold of 30](https://stats.stackexchange.com/questions/2541/what-references-should-be-cited-to-support-using-30-as-a-large-enough-sample-siz) as the minimum count by category that we want to see in order to proceed.
+
+``` r
+# first we'll create subsets filtered to just US and GB campaigns 
+final_us_df <- final_df %>%
+  dplyr::filter(country == 'US')
+
+final_gb_df <- final_df %>%
+  dplyr::filter(country == 'GB')
+
+# setting maxprint options so the lists we show next will print full
+options(max.print=50)
+
+# then we print out the crosstab for each country's campaigns by category
+janitor::tabyl(final_us_df$main_category) %>%
+  # arranges categories in descending order of % of volume 
+  arrange(desc(percent)) %>%
+  # tidys them up with some helpful functions from janitor
+  janitor::adorn_pct_formatting()
+```
+
+    ##    final_us_df$main_category     n percent
+    ## 1               Film & Video 51922   17.7%
+    ## 2                      Music 43238   14.8%
+    ## 3                 Publishing 31726   10.8%
+    ## 4                      Games 24636    8.4%
+    ## 5                        Art 22311    7.6%
+    ## 6                     Design 21690    7.4%
+    ## 7                 Technology 21556    7.4%
+    ## 8                       Food 19941    6.8%
+    ## 9                    Fashion 16584    5.7%
+    ## 10                    Comics  8910    3.0%
+    ## 11                   Theater  8709    3.0%
+    ## 12               Photography  7988    2.7%
+    ## 13                    Crafts  6648    2.3%
+    ## 14                Journalism  3540    1.2%
+    ## 15                     Dance  3228    1.1%
+
+``` r
+janitor::tabyl(final_gb_df$main_category) %>%
+  # arranges categories in descending order of % of volume 
+  arrange(desc(percent)) %>%
+  # tidys them up with some helpful functions from janitor
+  janitor::adorn_pct_formatting()
+```
+
+    ##    final_gb_df$main_category    n percent
+    ## 1               Film & Video 5782   17.2%
+    ## 2                      Games 4012   11.9%
+    ## 3                 Publishing 3271    9.7%
+    ## 4                 Technology 3068    9.1%
+    ## 5                      Music 2772    8.2%
+    ## 6                     Design 2706    8.0%
+    ## 7                        Art 2667    7.9%
+    ## 8                    Fashion 2372    7.0%
+    ## 9                       Food 1649    4.9%
+    ## 10                   Theater 1641    4.9%
+    ## 11               Photography 1230    3.7%
+    ## 12                    Crafts  904    2.7%
+    ## 13                    Comics  867    2.6%
+    ## 14                Journalism  451    1.3%
+    ## 15                     Dance  280    0.8%
+
+As can be seen from above, we appear to be perfectly fine on sample size, given that the smallest bucket--GB's Dance category--stil has 280 observations (well over our minimum of 30). As such, we can proceed to constructing the scalable KS test.
+
+### Creating Function to Run KS Test and Return Tidy Result
+
+Given the specific use case we're targetting here, we'll build in a few parameters that we might wish to change from test-to-test:
+
+-   Max pledged amount considered
+    -   Previously we limited ourselves to amounts &lt;$10,000 because of the long tail, but that might change
+-   2 input datasets we'll feed the KS test
+    -   For now we're going with US and GB's data, but this method can be used with any two numeric vectors
+-   Name of category to compare:
+    -   We'll start with Theater as the default but will scale to iterate over all categories
+-   Name of numeric column within the input datasets
+-   Type of hypothesis test
+    -   Two-sided, greater than, or less than (see ks.test docs for details)
+    -   Default is broadest test: two-sided
+
+``` r
+get_tidy_ks_test_results <- function(
+  name_of_category_to_compare = 'Theater',
+  max_pledge_considered = 10000, 
+  input_df_1 = final_us_df, 
+  input_df_2 = final_gb_df,
+  numeric_column_name = 'usd_pledged',
+  type_of_hypothesis_test = 'two.sided'
+) {
+  # dropping quotes from key column for use in dplyr chains
+  noquote_var <- noquote(numeric_column_name)
+  as_symbol_var <- as.symbol(numeric_column_name)
+  
+  # creating first numeric vector for ks test input
+  vector_1 <- input_df_1 %>%
+    dplyr::filter(
+      # build in parameterized volume constraint
+      eval(as_symbol_var) <= max_pledge_considered,
+      # filtering to campaign type of interest
+      main_category == name_of_category_to_compare
+    ) %>%
+    dplyr::select(noquote_var)
+  
+  # creating second numeric vector for ks test input
+  vector_2 <- input_df_2 %>%
+    dplyr::filter(
+      # build in parameterized volume constraint
+      eval(as_symbol_var) <= max_pledge_considered,
+      # filtering to campaign type of interest
+      main_category == name_of_category_to_compare
+    ) %>%
+    dplyr::select(noquote_var)
+  
+  op <- options(warn = (-1)) # suppress warnings that always come when running ks test at scale
+  # in this case the warnings mean there is tie somewhere in the distro, which is expected
+  # running the KS test and assigning the tidy output to varaible
+  ks_test_results <- broom::tidy(
+    ks.test(
+      x = vector_1[[1]],
+      y = vector_2[[1]],
+      # paramterized alternative tested
+      altenative = type_of_hypothesis_test
+      )
+    )
+  options(op) # reset to default value for warnings-handling post ks test eval
+  
+  # creating final output of the function
+  final_results <- list(name_of_category_to_compare, ks_test_results$statistic, ks_test_results$p.value)
+  return(final_results)
+  
+  }
+  
+# run an example test--by default, 2-sided for Theater campaign types
+get_tidy_ks_test_results()
+```
+
+    ## [[1]]
+    ## [1] "Theater"
+    ## 
+    ## [[2]]
+    ## [1] 0.08396408
+    ## 
+    ## [[3]]
+    ## [1] 0.00000001638526
+
+### Looping Over All Categories and Performing the KS Test
+
+Now that we have a function with all the necessary parameters, we need to create another function that loops over all categories of interest, performing the test for each category, storing the result, and then trimming based on some chosen p-value threshold for statistical significance.
+
+A quick note here seems pertinent on the use of the p-value for multiple hypothesis tests. When scaling the utilization of a hypothesis test--as we are doing here--it makes sense to sometimes adjust the p-value to better avoid Type 1 errors. There is a lot of literature out there on this question, but for the purpose of this excericse, the correction we'll be using the [Bonferroni Correction](http://www.statisticssolutions.com/bonferroni-correction/). It is a pretty simple correction, and involves only dividing the chosen p-value threshold by the number of tests to be run. This is visible in the code below.
+
+``` r
+build_ks_table_for_all <- function(
+  # p-values above this will result in the difference being deemed insignificant 
+  p_value_cutoff = 0.05 
+){
+  # run ks test over all categories
+  ks_test_all_categories <- lapply(
+    unique(as.character(final_df$main_category)),
+    FUN = get_tidy_ks_test_results
+    )
+  
+  # get number of tests run for use in Bonferroni correction mentioned above
+  n_tests <- length(unique(as.character(final_df$main_category)))
+  # uses the number of tests to derive our corrected p-value
+  p_value_for_use <- (p_value_cutoff/n_tests)
+  
+  cleaned_ks_results_for_all <- ks_test_all_categories %>%
+    # queue data.table magic to deal with nested list of lists
+    data.table::rbindlist() %>%
+    # rename the artificially renamed columns that result from the data.table call (order preserved)
+    dplyr::rename(
+      category = `V1`,
+      ks_test_stat = `V2`,
+      ks_test_pval = `V3`
+    ) %>%
+    # using bonferonni-adjusted parameterized p-value for cutoff
+    dplyr::filter(
+      ks_test_pval <= p_value_for_use
+    ) %>%
+    # order results by highest ks statistic (i.e. largest distributional difference)
+    arrange(desc(ks_test_stat))
+  
+  # returns ordered table of largest statistically signficant distributional differences
+  return(cleaned_ks_results_for_all)
+  
+}
+
+ks_test_results_for_all_cats <- build_ks_table_for_all()
+ks_test_results_for_all_cats
+```
+
+    ##       category ks_test_stat        ks_test_pval
+    ## 1        Dance   0.22428212 0.00000000003271072
+    ## 2        Music   0.14744361 0.00000000000000000
+    ## 3         Food   0.13005356 0.00000000000000000
+    ## 4          Art   0.09216067 0.00000000000000000
+    ## 5      Theater   0.08396408 0.00000001638526370
+    ## 6 Film & Video   0.07714238 0.00000000000000000
+    ## 7   Technology   0.07248634 0.00000000007058931
+    ## 8  Photography   0.06260837 0.00083743958408267
+    ## 9        Games   0.06196038 0.00000000041862680
+
+### Visualizing the Result of the Many KS Tests
+
+``` r
+ggplot(data = ks_test_results_for_all_cats, 
+       aes(x=reorder(category, ks_test_stat), y=ks_test_stat, fill = ks_test_stat)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  # picking a colorblind-friendly color scheme and theme
+  viridis::scale_fill_viridis() +
+  ggthemes::theme_economist() +
+  # setting legend and axis aesthetic details
+  theme(
+    legend.position = "top",
+    legend.title = element_text(size=10),
+    legend.text = element_text(size=10),
+    axis.text.x = element_text(size=10),
+    axis.text.y = element_text(size=10),
+    plot.title = element_text(size=10)
+    ) +
+  # takes care of all labeling
+  labs(
+    title = "Categories w/ Largest Distributional Difference in Pledged Amount Between US & GB",
+    y = "KS Test Statistic (magnitude of distributional difference)",
+    x = "Campaign Category",
+    fill = "KS Test Statistic"
+  )
+```
+
+![](ks_test_files/figure-markdown_github/unnamed-chunk-28-1.png)
+
+This then leads us to believe that the largest distributional difference between GB and US campaigns in terms of amount pledged comes among kickstarters in the dance category. We can re-use one of our graphics from before to test this assumption visually.
+
+``` r
+dance_pdf <- final_df %>% 
+  # filters to just kickstarters under a certain category
+  dplyr::filter(main_category == 'Dance') %>%
+  # build in the volume constraint
+  dplyr::filter(usd_pledged <= 10000) %>%
+  # now we need to get mean and median by group for the viz 
+  dplyr::group_by(country) %>%
+  dplyr::mutate(
+    mean_pledged = mean(usd_pledged),
+    median_pledged = median(usd_pledged)
+    ) %>%
+  # ungroup prior to the viz code
+  ungroup() %>%
+    # begin creation of the GGPLOT here
+    # put continuous variable on the X, Y will be density by default
+    ggplot(data = ., aes(x=usd_pledged)) +
+    # color needs to always be a factor, although this is redundant here
+    # alpha moderates the opacity of the color
+    geom_density(aes(fill=factor(country)),alpha = 0.4) +
+    # adding reference lines for the mean and the median
+    geom_vline(aes(xintercept=mean_pledged, colour=factor(country)),
+             linetype="dashed", size=0.75) +
+    geom_vline(aes(xintercept=median_pledged, colour=factor(country)),
+             linetype="dotted", size=0.75) +
+    # picking a colorblind-friendly color scheme and theme
+    viridis::scale_fill_viridis(discrete=TRUE, option="plasma") +
+    viridis::scale_color_viridis(discrete=TRUE, option="plasma") +
+    ggthemes::theme_economist() +
+    # puts the legend on top of the view
+     theme(
+      legend.position = "top",
+      legend.title = element_text(size=12),
+      legend.text = element_text(size=12)
+      ) +
+    # takes care of all labeling
+    labs(
+      title = paste0("PDF of $ Pledged (Category: Dance)"),
+      y = "Concentration Density",
+      x = "Amount Pledged (converted to USD)",
+      fill = "Country of origin",
+      colour = "Mean (dashed); Median (dotted)"
+    ) +
+    guides(
+      # ensures the country of origin is listed first in legends
+      fill = guide_legend(order=1),
+      color = guide_legend(order=2)
+      )
+
+dance_pdf
+```
+
+![](ks_test_files/figure-markdown_github/unnamed-chunk-29-1.png)

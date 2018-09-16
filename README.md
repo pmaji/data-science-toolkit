@@ -1,6 +1,6 @@
 ## Introduction
 
-Welcome! The purpose of this repository is to serve as stockpile of statistical methods, modeling techniques, and data science tools. The content itself includes everything from educational vignettes on specific topics to tailored functions built to enhance and optimize analyses. This is and will remain a work in progress, and I welcome all contributions and constructive criticism. If you have a suggestion or request, please make use of the "Issues" tab and I will respond expeditiously. 
+Welcome! The purpose of this repository is to serve as stockpile of statistical methods, modeling techniques, and data science tools. The content itself includes everything from educational vignettes on specific topics to tailored functions built to enhance and optimize analyses. This is and will remain a work in progress, and I welcome all contributions and constructive criticism. If you have a suggestion or request, please [make use of the "Issues" tab](https://github.com/pmaji/data-science-toolkit/issues) and I will respond expeditiously. 
 
 ## Table of Contents
 
@@ -18,6 +18,8 @@ Welcome! The purpose of this repository is to serve as stockpile of statistical 
     4. [KNN -- R](https://github.com/pmaji/data-science-toolkit/tree/master/classification/knn)
 5. Regression
 6. Reinforcement Learning 
+7. Text Mining and Natural Language Processing (NLP)
+    1. Basic Texting Mining and NLP -- R
 
 ## Contribution Rules
 

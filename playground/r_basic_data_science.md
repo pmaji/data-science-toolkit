@@ -1,7 +1,7 @@
 Basic Data Science Playground (in R)
 ================
 Paul Jeffries
-18 September, 2018
+19 September, 2018
 
 -   [Introduction](#introduction)
 -   [Simple Linear Regression](#simple-linear-regression)
@@ -80,7 +80,7 @@ par(mfrow=c(1,1)) #ensures only one chart is plotted per page.
 plot(medv~lstat,Boston) #plots medv modeled by lstat
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-2-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-2-1.png)
 
 ``` r
 fit1 <- lm(medv~lstat,Boston) #fits the linear model 'lm' with same variables as above
@@ -111,7 +111,7 @@ par(mfrow=c(2,2)) #sets display back to default
 plot(fit1) # plots all standard regression plots
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-4-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-4-1.png)
 
 ``` r
 names(fit1) #shows elements of model summary that can be called indvidually
@@ -222,7 +222,7 @@ par(mfrow=c(2,2)) #ensures the graphical layout is as we want for our window
 plot (fit3) #show our summary regression plots for the all-variable model
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-11-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-11-1.png)
 
 ``` r
 # Now we can update the model to remove variables with low explanatory power
@@ -328,7 +328,7 @@ par(mfrow=c(2,2))
 plot(fit6)
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-15-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-15-1.png)
 
 ``` r
 par(mfrow=c(1,1)) # makes it so that all four charts produced next output to same window
@@ -339,7 +339,7 @@ plot(Boston$medv~Boston$lstat)
 points(Boston$lstat,fitted(fit6),col="red",pch=20)
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-16-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-16-1.png)
 
 ``` r
 # there are easier ways to fit higher degree polynomial models
@@ -489,7 +489,7 @@ regplot <- function(x,y,...){
 regplot(Carseats$Price,Carseats$Sales,xlab="Price",ylab="Sales",col="blue",pch=20)
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-22-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-22-1.png)
 
 ``` r
 # we can change up the various plot point types for our charts easily, a sample is below
@@ -497,7 +497,7 @@ regplot(Carseats$Price,Carseats$Sales,xlab="Price",ylab="Sales",col="blue",pch=2
 plot(1:20,1:20,pch=1:20,cex=2)
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-23-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-23-1.png)
 
 <br>
 
@@ -803,7 +803,7 @@ lda_fit <- lda(Direction~Lag1+Lag2,data=Smarket,subset=train)
 plot(lda_fit)
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-43-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-43-1.png)
 
 ``` r
 lda_pred <- predict(lda_fit, smarket_2005) # uses LDA to predict for test set of 2005
@@ -985,7 +985,7 @@ require(boot)
 plot(mpg~horsepower, data=Auto)
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-56-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-56-1.png)
 
 <br>
 
@@ -1050,7 +1050,7 @@ for(d in degree){
 plot(degree,cv_error,type="b", main = "LOOCV Error by Degree of Polynomial in Model")
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-59-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-59-1.png)
 
 ``` r
 # In this case we can see that the model prediction error drops off at poly=2
@@ -1071,7 +1071,7 @@ plot(degree,cv_error,type="b", main = "LOOCV Error by Degree of Polynomial in Mo
 lines(degree,cv_error10,type="b",col="red")
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-60-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-60-1.png)
 
 ``` r
 # we can see that the two methods track almost identically in term of their error
@@ -1165,7 +1165,7 @@ boot_out
 plot(boot_out)
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-65-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-65-1.png)
 
 **Estimating the Accuracy of a Linear Regression Model via Bootstrapping**
 
@@ -1238,7 +1238,7 @@ attach(Carseats)
 hist(Sales)
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-70-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-70-1.png)
 
 ``` r
 High=ifelse(Carseats$Sales<=8,"No","Yes")
@@ -1268,7 +1268,7 @@ plot(tree.carseats)
 text(tree.carseats,pretty = 0) # enables tree annotations
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-72-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-72-1.png)
 
 ``` r
 tree.carseats #gives more detailed print out of all terminal nodes
@@ -1327,7 +1327,7 @@ tree.carseats=tree(High~CompPrice+Income+Advertising+Population+Price,Carseats,s
 plot(tree.carseats);text(tree.carseats,pretty=0)
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-74-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-74-1.png)
 
 ``` r
 tree.pred=predict(tree.carseats,Carseats[-train,],type="class")
@@ -1365,14 +1365,14 @@ cv.carseats
 plot(cv.carseats)
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-77-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-77-1.png)
 
 ``` r
 prune.carseats=prune.misclass(tree.carseats,best=13)
 plot(prune.carseats);text(prune.carseats,pretty=0)
 ```
 
-![](r_basic_data_science_playground_files/figure-markdown_github/unnamed-chunk-78-1.png)
+![](r_basic_data_science_files/figure-markdown_github/unnamed-chunk-78-1.png)
 
 Finally, we can evaluate this pruned tree on the test data.
 

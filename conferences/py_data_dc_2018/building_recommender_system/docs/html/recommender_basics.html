@@ -1,0 +1,267 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>What is a recommender system? &mdash; pydata-workshop  documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Building a Recommender System from Scratch" href="tutorial.html" />
+    <link rel="prev" title="PyDataDC Recommender System Workshop" href="index.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> pydata-workshop
+          
+
+          
+            
+            <img src="_static/pydata.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Recommender Basics:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">What is a recommender system?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#collaborative-filtering">Collaborative Filtering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#content-based-filtering">Content-based Filtering</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Workshop Material:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Building a Recommender System from Scratch</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pydata-workshop</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>What is a recommender system?</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/recommender_basics.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast,
+.nboutput.nblast {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast + .nbinput {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+</style>
+<div class="section" id="what-is-a-recommender-system">
+<span id="what-is-a-recommender-system"></span><h1>What is a recommender system?<a class="headerlink" href="#what-is-a-recommender-system" title="Permalink to this headline">¶</a></h1>
+<p>A recommender system is an application of machine learning that predicts  future behavior based on our historical preferences. In the context of e-commerce, a recommender will predict a person’s preferences toward a set of items, which effectively filters ou the most relevant items for that particular user.</p>
+<p><strong>Examples of recommender include:</strong></p>
+<ul class="simple">
+<li>recommending products based on past purchases or product searches (Amazon)</li>
+<li>suggesting TV shows or movies based on prediction of a user’s interests (Netflix)</li>
+<li>creating personalized playlists based on song listening history (Spotify)</li>
+<li>personalized ads based on “liked” posts or previous websites visited (Facebook)</li>
+</ul>
+<p>The two most common recommender system techniques are: 1) collaborative filtering, and 2) content-based filtering.</p>
+<div class="section" id="collaborative-filtering">
+<span id="collaborative-filtering"></span><h2>Collaborative Filtering<a class="headerlink" href="#collaborative-filtering" title="Permalink to this headline">¶</a></h2>
+<p>Collaborative filering (CF) is based on the concept of <code class="docutils literal notranslate"><span class="pre">homophily</span></code> - similar people like similar things. It predicts which item a user will like best based on the item preferences of other similar users. Collaborative filtering uses a user-item (utility) matrix to generate recommendations. This matrix is populated with values that indicate a user’s degree of preference towards a given item. These values can represent either explicit feedback (direct user ratings) or implicit feedback (indirect user behaviour such as listening, purchasing, watching). It’s extremely unlikely that a user will have interacted with every item in the matrix. In most cases, the user-item matrix is very sparse.</p>
+<p>Having a very sparse and high-dimensional matrix can lead to poor results. To overcome this problem, you can convert your original user-item matrix to a lower-dimensionality space using dimensionality reduction techniques such as Singular Value Decomposition (SVD) and Alternating Least Squares (ALS). These techniques work by factorizing the original user-item matrix into two factor matrices:</p>
+<ul class="simple">
+<li>user-factor matrix</li>
+<li>item-factor matrix</li>
+</ul>
+<p>These factor matrices have latent features that represent the underlying interactions between users and items. Though we are not able to interpret what a latent feature represents, we can imagine that one latent feature may explain for users who like romance comedies from the 1990s, while another latent feature may symbolize independent foreign language films.</p>
+</div>
+<div class="section" id="content-based-filtering">
+<span id="content-based-filtering"></span><h2>Content-based Filtering<a class="headerlink" href="#content-based-filtering" title="Permalink to this headline">¶</a></h2>
+<p>A major disadvantage of collaborative filtering is the <strong>cold-start problem</strong>. You can only get recommendations for users and items that already have “interactions” in the user-item matrix. Collaborative filtering fails to provide personalized recommendations for brand new users or newly released items.</p>
+<p>Content-based filtering handles the cold-start problem because it can generate recommendations for users based on their features and the features of the items. Given a set of item features (movie genre, release date, country, language, etc.), it predicts how a user will rate an item based on their ratings of previous movies.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="tutorial.html" class="btn btn-neutral float-right" title="Building a Recommender System from Scratch" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="PyDataDC Recommender System Workshop" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Jill Cates
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

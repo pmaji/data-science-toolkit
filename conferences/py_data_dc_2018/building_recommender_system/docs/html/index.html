@@ -1,0 +1,284 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PyDataDC Recommender System Workshop &mdash; pydata-workshop  documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="What is a recommender system?" href="recommender_basics.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="#" class="icon icon-home"> pydata-workshop
+          
+
+          
+            
+            <img src="_static/pydata.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Recommender Basics:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="recommender_basics.html">What is a recommender system?</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Workshop Material:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Building a Recommender System from Scratch</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">pydata-workshop</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#">Docs</a> &raquo;</li>
+        
+      <li>PyDataDC Recommender System Workshop</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast,
+.nboutput.nblast {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast + .nbinput {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+</style>
+<div class="section" id="pydatadc-recommender-system-workshop">
+<h1>PyDataDC Recommender System Workshop<a class="headerlink" href="#pydatadc-recommender-system-workshop" title="Permalink to this headline">¶</a></h1>
+<p>The recommender system is a classic application of machine learning that aims to predict which item a user will like best. Personalized recommendations play an integral role for e-commerce platforms, with the goal of driving user engagement through item recommendations.</p>
+<p>In this workshop, we will build two types of recommender systems using the <a class="reference external" href="https://grouplens.org/datasets/movielens/">MovieLens dataset</a>:</p>
+<ol class="arabic simple">
+<li>an item-item recommender using k Nearest Neighbors (kNN) and cosine similarity</li>
+<li>a top N recommender using matrix factorization</li>
+</ol>
+<p>We will also cover the following topics on recommendations:</p>
+<ul class="simple">
+<li>collaborative vs. content-based filtering</li>
+<li>implicit vs. explicit feedback</li>
+<li>handling the cold start problem</li>
+<li>evaluation metrics</li>
+</ul>
+<p>By the end of this workshop, you will have a better understanding of the different techniques and tools used to build recommendation systems in real-life scenarios.</p>
+<p>See slides for this workshop <a class="reference external" href="https://topspinj.github.io/presentations/recommender-tutorial-pydatadc.pdf/">here</a>.</p>
+<div class="section" id="environment-setup-instructions">
+<h2>Environment Setup Instructions:<a class="headerlink" href="#environment-setup-instructions" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Option 1: Running Jupyter notebook locally</li>
+<li>Option 2: Running Jupyter notebook via Google Colab</li>
+</ul>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Recommender Basics:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="recommender_basics.html">What is a recommender system?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="recommender_basics.html#collaborative-filtering">Collaborative Filtering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="recommender_basics.html#content-based-filtering">Content-based Filtering</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Workshop Material:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Building a Recommender System from Scratch</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Step-1:-Import-Dependencies">Step 1: Import Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Step-2:-Load-Data">Step 2: Load Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Step-3:-Exploratory-Data-Analysis">Step 3: Exploratory Data Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Step-4:-Data-Pre-processing">Step 4: Data Pre-processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Step-5:-Item-item-Recommendations-with-k-Nearest-Neighbors">Step 5: Item-item Recommendations with k-Nearest Neighbors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Step-6:-Handling-the-cold-start-problem">Step 6: Handling the cold-start problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Step-7:-Dimensionality-Reduction-with-Matrix-Factorization-(advanced)">Step 7: Dimensionality Reduction with Matrix Factorization (advanced)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#Step-8:-Evaluation">Step 8: Evaluation</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="recommender_basics.html" class="btn btn-neutral float-right" title="What is a recommender system?" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Jill Cates
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

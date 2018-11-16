@@ -1,6 +1,6 @@
 ## Introduction
 
-Welcome! The purpose of this repository is to serve as stockpile of statistical methods, modeling techniques, and data science tools. The content itself includes everything from educational vignettes on specific topics to tailored functions built to enhance and optimize analyses. This is and will remain a work in progress, and I welcome all contributions and constructive criticism. If you have a suggestion or request, please [make use of the "Issues" tab](https://github.com/pmaji/data-science-toolkit/issues) and I will respond expeditiously. 
+Welcome! The purpose of this repository is to serve as stockpile of statistical methods, modeling techniques, and data science tools. The content itself includes everything from educational vignettes on specific topics, to tailored functions built to enhance and optimize analyses, to notes and code from various data science conferences. This is and will remain a work in progress, and I welcome all contributions and constructive criticism. If you have a suggestion or request, please [make use of the "Issues" tab](https://github.com/pmaji/data-science-toolkit/issues) and I will respond expeditiously. 
 
 ## Table of Contents
 
@@ -21,8 +21,10 @@ Welcome! The purpose of this repository is to serve as stockpile of statistical 
 6. Reinforcement Learning 
 7. Text Mining and Natural Language Processing (NLP)
     1. [Basic Texting Mining and NLP -- R](https://github.com/pmaji/data-science-toolkit/blob/master/text-mining-and-nlp/nlp_and_text_mining.md)
+8. Notes and Material from Data Science Conferences
+    1. [PyData 2018 DC Conferences (Notes and Tutorial Code)](https://github.com/pmaji/data-science-toolkit/blob/master/conferences/py_data_dc_2018/pydata_conference_notes.ipynb)
 
-## Contribution Rules
+## Contribution Info
 
 All are welcome and encouraged to contribute to this repository. My only request is that you include a detailed description of your contribution, that your code be thoroughly-commented, and that you test your contribution locally with the most recent version of the Master branch integrated prior to submitting the PR.
 

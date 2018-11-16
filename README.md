@@ -22,7 +22,7 @@ Welcome! The purpose of this repository is to serve as stockpile of statistical 
 7. Text Mining and Natural Language Processing (NLP)
     1. [Basic Texting Mining and NLP -- R](https://github.com/pmaji/data-science-toolkit/blob/master/text-mining-and-nlp/nlp_and_text_mining.md)
 8. Notes and Material from Data Science Conferences
-    1. [PyData 2018 DC Conferences (Notes and Tutorial Code)](https://github.com/pmaji/data-science-toolkit/blob/master/conferences/py_data_dc_2018/pydata_conference_notes.ipynb)
+    1. [PyData 2018 DC Conferences (Notes and Tutorial Code) -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/conferences/py_data_dc_2018/pydata_conference_notes.ipynb)
 
 ## Contribution Info
 

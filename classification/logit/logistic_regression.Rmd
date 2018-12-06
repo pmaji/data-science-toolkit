@@ -1,5 +1,5 @@
 ---
-title: "Logistic Regression"
+title: "Logistic Regression in R"
 author: Paul Jeffries
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
@@ -22,7 +22,7 @@ While the code is extensively commented, with additional explanatory notes along
 # first a few general set-up items / housekeeping items
 
 # setting the appropriate working directory
-setwd("~/Desktop/Personal/personal_code/classification/")
+knitr::opts_knit$set(root.dir = '~/Desktop/Personal/personal_code/classification/')
 
 # setting scipen options to kill all use of scientific notation
 options(scipen = 999)
@@ -420,6 +420,12 @@ running_model_synopsis_table
 # Penalized Logistic Regression (Lasso)
 
 Now we'll move on to use a technique that makes use of an Objective Function that penalizes low-ROI variables. This is similar to ridge regression except variables with coefficients non-consequential enough will be zero'ed out of the model. For a broad introduction to penalized logistic regression in R, see [this useful source from STHDA](http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/).
+
+For a more piecemeal approach to learning about ridge regression methods--and lasso in particular--check out the selected links below:
+
+- [Stanford slides on ridge regression and lasso](http://statweb.stanford.edu/~tibs/sta305files/Rudyregularization.pdf)
+- [Helpful explanation with difference between ridge and lasso](https://codingstartups.com/practical-machine-learning-ridge-regression-vs-lasso/)
+- [Short and sweet tl;dr of lasso's utility](https://stats.stackexchange.com/questions/17251/what-is-the-lasso-in-regression-analysis)
 
 ## Notes and Warning on Model Matrix Construction and Dummy Variables
 

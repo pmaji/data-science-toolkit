@@ -1,7 +1,7 @@
-Logistic Regression in R
+Logistic Regression
 ================
 Paul Jeffries
-15 September, 2018
+05 December, 2018
 
 -   [Introduction](#introduction)
     -   [Setup](#setup)
@@ -17,8 +17,9 @@ Paul Jeffries
     -   [Determining What Classification Cutoff is Appropriate (Simple Logit)](#determining-what-classification-cutoff-is-appropriate-simple-logit)
     -   [Examining Model Performance for the Simple Logit](#examining-model-performance-for-the-simple-logit)
     -   [Documenting Performance of Simple Logit Model](#documenting-performance-of-simple-logit-model)
-    -   [Alternative Methods of Variable Selection](#alternative-methods-of-variable-selection)
 -   [Penalized Logistic Regression (Lasso)](#penalized-logistic-regression-lasso)
+    -   [Notes and Warning on Model Matrix Construction and Dummy Variables](#notes-and-warning-on-model-matrix-construction-and-dummy-variables)
+    -   [Alternative Methods of Variable Selection](#alternative-methods-of-variable-selection)
     -   [Tuning the Hyperparameter for the Lasso Model w/ 2-Way Interactions and Polynomial Terms](#tuning-the-hyperparameter-for-the-lasso-model-w-2-way-interactions-and-polynomial-terms)
     -   [Sampling Methodology Explored -- Upsampling](#sampling-methodology-explored----upsampling)
     -   [Building the Model Formula (Upsampled Lasso)](#building-the-model-formula-upsampled-lasso)
@@ -46,11 +47,11 @@ Setup
 -----
 
 ``` r
-# setting the appropriate working directory
-knitr::opts_knit$set(root.dir = '~/Desktop/Personal/personal_code/classification/')
-```
+# first a few general set-up items / housekeeping items
 
-``` r
+# setting the appropriate working directory
+setwd("~/Desktop/Personal/personal_code/classification/")
+
 # setting scipen options to kill all use of scientific notation
 options(scipen = 999)
 
@@ -657,21 +658,27 @@ running_model_synopsis_table
     ##   specificity number_of_model_terms total_cost
     ## 1       89.0%                    11       2840
 
-Alternative Methods of Variable Selection
------------------------------------------
-
-It is worth briefly noting that one often-taught method of variable-selection that I do not cover here is stepwise varaible selection, and this omission is entirely purposeful. While seemingly helpful in principle, it is almost never benefitial to make use of stepwise variable selection as opposed to ridge or other penalized methods. The reason for this is perhaps best made clear by [this research paper here.](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2656.2006.01141.x)
-
 Penalized Logistic Regression (Lasso)
 =====================================
 
 Now we'll move on to use a technique that makes use of an Objective Function that penalizes low-ROI variables. This is similar to ridge regression except variables with coefficients non-consequential enough will be zero'ed out of the model. For a broad introduction to penalized logistic regression in R, see [this useful source from STHDA](http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/).
 
-For a more piecemeal approach to learning about ridge regression methods--and lasso in particular--check out the selected links below:
+Notes and Warning on Model Matrix Construction and Dummy Variables
+------------------------------------------------------------------
 
--   [Stanford slides on ridge regression and lasso](http://statweb.stanford.edu/~tibs/sta305files/Rudyregularization.pdf)
--   [Helpful explanation with difference between ridge and lasso](https://codingstartups.com/practical-machine-learning-ridge-regression-vs-lasso/)
--   [Short and sweet tl;dr of lasso's utility](https://stats.stackexchange.com/questions/17251/what-is-the-lasso-in-regression-analysis)
+The process by which one [creates a model matrix (as will be shown in the code below)](https://www.rdocumentation.org/packages/stats/versions/3.5.1/topics/model.matrix) when dealing with categorical variables is more complicated than what one needs to do if all features are numeric (as is our case here). The reason for this is that when modeling with categorical features, we must transform them such that they become numeric, otherwise our algorithms won't know how to model the data. The process by which this is taken care of is called [dummy variable creation](https://stats.stackexchange.com/questions/115049/why-do-we-need-to-dummy-code-categorical-variables). If you are unfamiliar with what this means, read up on this prior to proceeding to read the rest of this sub-section.
+
+As part of the dummy variable creation process, it is important to remember that if your categorical variable can take on *n* possible values, you must create *n-1* dummy variables. There are many good explainers for why this is the case--[like this brief one here](http://www.algosome.com/articles/dummy-variable-trap-regression.html)--but I particularly like the [succinct explanation](https://www.quora.com/What-happens-to-the-regression-model-when-you-create-n-dummy-variables-instead-of-n-1-dummy-variables-for-an-n-level-categorical-variable) that using *n* dummy variables (instead of *n-1*) will make it so that "you will not be able to invert the [covariance matrix](https://www.quora.com/What-is-the-inverse-covariance-matrix-What-is-its-statistical-meaning)."
+
+Finally, there are a few **quick tips** that I'd like to share given experiences in both R and Python. First, **[regularization](https://en.wikipedia.org/wiki/Regularization_(mathematics)) is never a robust suitable replacement for careful *n-1* dummy variable creation.** What I mean by this is that the fact that using a method like lasso for regularization will likely result in some variables' coefficients being dampenned to 0 does *not* allow us to include *n* dummy variables. Second, it is key to note that **the method of arriving at *n-1* dummies in our model matrix is different in R than it is in Python.** As of the writing of this document, [scikit-learn](https://scikit-learn.org/stable/), for example, requires that we specify in our model matrix construction that we want to drop the 1st categorical value to arrive at *n-1* dummies; howeover, R does this automatically via the model.matrix() function demonstrated below. All of this section is essentially to reaffirm two pieces of advice for model pipeline building:
+
+1.  Build your model matrix carefully to ensure that you have n-1 dummies for each categorical variable.
+2.  Ensure that you understand how the matrix-building & model-fitting functions you use (in any language) work, in detail, as some of the default settings might surprise you and strike you as unintuitive.
+
+Alternative Methods of Variable Selection
+-----------------------------------------
+
+It is worth briefly noting that one often-taught method of variable-selection that I do not cover here is stepwise varaible selection, and this omission is entirely purposeful. While seemingly helpful in principle, it is almost never benefitial to make use of stepwise variable selection as opposed to ridge or other penalized methods. The reason for this is perhaps best made clear by [this research paper here.](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2656.2006.01141.x)
 
 Tuning the Hyperparameter for the Lasso Model w/ 2-Way Interactions and Polynomial Terms
 ----------------------------------------------------------------------------------------
@@ -1083,7 +1090,6 @@ Having explored he upsampling method of selective sampling to increase model per
 ``` r
 # likewise hiding the output here because of the annoying output of the DBSMOTE function
 library(smotefamily) # main SMOTE variety package
-library(FNN) # needed for dbsmote prereq
 library(dbscan) #needed for dbsmote type of SMOTE to function
 
 # first we construct a SMOTE-built training dataset that is more well-balanced than our actual pop. 

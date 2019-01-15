@@ -24,6 +24,8 @@ Welcome! The purpose of this repository is to serve as stockpile of statistical 
     1. [Basic Texting Mining and NLP -- R](https://github.com/pmaji/data-science-toolkit/blob/master/text-mining-and-nlp/nlp_and_text_mining.md)
 8. Notes and Material from Data Science Conferences
     1. [PyData 2018 DC Conferences (Notes and Tutorial Code) -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/conferences/py_data_dc_2018/pydata_conference_notes.ipynb)
+9. Utilities
+    1. [HTML File Appender (Using Beautiful Soup)](https://github.com/pmaji/data-science-toolkit/blob/master/utilities/html_file_appender_bs4.ipynb)
 
 ## Contribution Info
 

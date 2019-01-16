@@ -1,0 +1,52 @@
+GeoFips,GeoName,State,2017
+1000,Alabama,AL,1.1
+2000,Alaska,AK,0.3
+4000,Arizona,AZ,1.7
+5000,Arkansas,AR,0.6
+6000,California,CA,14.4
+8000,Colorado,CO,1.8
+9000,Connecticut,CT,1.4
+10000,Delaware,DE,0.4
+11000,District of Columbia,DC,0.7
+12000,Florida,FL,5
+13000,Georgia,GA,2.9
+15000,Hawaii,HI,0.5
+16000,Idaho,ID,0.4
+17000,Illinois,IL,4.2
+18000,Indiana,IN,1.8
+19000,Iowa,IA,0.9
+20000,Kansas,KS,0.8
+21000,Kentucky,KY,1
+22000,Louisiana,LA,1.2
+23000,Maine,ME,0.3
+24000,Maryland,MD,2.1
+25000,Massachusetts,MA,2.8
+26000,Michigan,MI,2.6
+27000,Minnesota,MN,1.8
+28000,Mississippi,MS,0.6
+29000,Missouri,MO,1.6
+30000,Montana,MT,0.2
+31000,Nebraska,NE,0.6
+32000,Nevada,NV,0.8
+33000,New Hampshire,NH,0.4
+34000,New Jersey,NJ,3.1
+35000,New Mexico,NM,0.5
+36000,New York,NY,8.2
+37000,North Carolina,NC,2.8
+38000,North Dakota,ND,0.3
+39000,Ohio,OH,3.3
+40000,Oklahoma,OK,1
+41000,Oregon,OR,1.2
+42000,Pennsylvania,PA,3.9
+44000,Rhode Island,RI,0.3
+45000,South Carolina,SC,1.1
+46000,South Dakota,SD,0.3
+47000,Tennessee,TN,1.8
+48000,Texas,TX,8.4
+49000,Utah,UT,0.8
+50000,Vermont,VT,0.2
+51000,Virginia,VA,2.6
+53000,Washington,WA,2.7
+54000,West Virginia,WV,0.4
+55000,Wisconsin,WI,1.6
+56000,Wyoming,WY,0.2

@@ -8,8 +8,9 @@ Welcome! The purpose of this repository is to serve as stockpile of statistical 
     1. [Rough Notes from ISLR Exercises -- R](https://github.com/pmaji/data-science-toolkit/blob/master/playground/r_basic_data_science.md)
     2. [Rough Notes from Python Data Scientist Track -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/playground/python_basic_data_science.ipynb)
 2. Exploratory Data Analysis (EDA) and Visualization
-    1. [EDA and Visualization -- R](https://github.com/pmaji/stats-and-modeling/blob/master/eda-and-visualization/eda_and_visualization.md)
-    2. [Visualizing Geographic Data -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/geo_mapping_viz.ipynb)
+    1. [EDA and Basic Visualization -- R](https://github.com/pmaji/stats-and-modeling/blob/master/eda-and-visualization/eda_and_visualization.md)
+    2. [EDA and Basic Visualization -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/eda_and_visualization.ipynb)
+    3. [Visualizing Geographic Data -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/geo_mapping_viz.ipynb)
 3. Hypothesis Testing
     1. [Kolmogorov-Smirnov Test (KS Test) -- R](https://github.com/pmaji/stats-and-modeling/blob/master/hypothesis-tests/ks_test.md)
     2. [Useful Hypothesis Testing Functions -- R](https://github.com/pmaji/stats-and-modeling/blob/master/hypothesis-tests/useful_hyp_test_functions.R)

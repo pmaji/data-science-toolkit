@@ -11,6 +11,7 @@ Welcome! The purpose of this repository is to serve as stockpile of statistical 
     1. [EDA and Basic Visualization -- R](https://github.com/pmaji/stats-and-modeling/blob/master/eda-and-visualization/eda_and_visualization.md)
     2. [EDA and Basic Visualization -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/eda_and_visualization.ipynb)
     3. [Visualizing Geographic Data -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/geo_mapping_viz.ipynb)
+    4. [Radar Charts -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/radar_charts.ipynb)
 3. Hypothesis Testing
     1. [Kolmogorov-Smirnov Test (KS Test) -- R](https://github.com/pmaji/stats-and-modeling/blob/master/hypothesis-tests/ks_test.md)
     2. [Useful Hypothesis Testing Functions -- R](https://github.com/pmaji/stats-and-modeling/blob/master/hypothesis-tests/useful_hyp_test_functions.R)

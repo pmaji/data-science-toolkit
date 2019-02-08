@@ -18,11 +18,11 @@ While the code is extensively commented, with additional explanatory notes along
 
 ## Setup
 
-```{r results='hide', warning=FALSE, message=FALSE}
+```{r setup, results='hide', warning=FALSE, message=FALSE}
 # first a few general set-up items / housekeeping items
 
 # setting the appropriate working directory
-knitr::opts_knit$set(root.dir = '~/Desktop/Personal/personal_code/classification/')
+knitr::opts_knit$set(root.dir = '/Users/pauljeffries/Desktop/personal/personal_code/data-science-toolkit-master/classification')
 
 # setting scipen options to kill all use of scientific notation
 options(scipen = 999)
@@ -32,6 +32,7 @@ library(dplyr) # for piping
 library(ggplot2) # for visualization
 library(ggthemes) # for custom visualization
 library(broom) # needing for tidying model summary output into a df
+
 ```
 
 # Importing, Exploring, Cleaning, Normalizing / Centering, and Prepping the Data
@@ -433,10 +434,30 @@ The process by which one [creates a model matrix (as will be shown in the code b
 
 As part of the dummy variable creation process, it is important to remember that if your categorical variable can take on *n* possible values, you must create *n-1* dummy variables. There are many good explainers for why this is the case--[like this brief one here](http://www.algosome.com/articles/dummy-variable-trap-regression.html)--but I particularly like the [succinct explanation](https://www.quora.com/What-happens-to-the-regression-model-when-you-create-n-dummy-variables-instead-of-n-1-dummy-variables-for-an-n-level-categorical-variable) that using *n* dummy variables (instead of *n-1*) will make it so that "you will not be able to invert the [covariance matrix](https://www.quora.com/What-is-the-inverse-covariance-matrix-What-is-its-statistical-meaning)."
 
-Finally, there are a few **quick tips** that I'd like to share given experiences in both R and Python. First, **[regularization](https://en.wikipedia.org/wiki/Regularization_(mathematics)) is never a robust suitable replacement for careful *n-1* dummy variable creation.** What I mean by this is that the fact that using a method like lasso for regularization will likely result in some variables' coefficients being dampenned to 0 does *not* allow us to include *n* dummy variables. Second, it is key to note that **the method of arriving at *n-1* dummies in our model matrix is different in R than it is in Python.** As of the writing of this document, [scikit-learn](https://scikit-learn.org/stable/), for example, requires that we specify in our model matrix construction that we want to drop the 1st categorical value to arrive at *n-1* dummies; howeover, R does this automatically via the model.matrix() function demonstrated below. All of this section is essentially to reaffirm two pieces of advice for model pipeline building:
+Finally, there are a few **quick tips** that I'd like to share given experiences in both R and Python. First, **[regularization](https://en.wikipedia.org/wiki/Regularization_(mathematics)) is never a robust suitable replacement for careful *n-1* dummy variable creation.** What I mean by this is that the fact that using a method like lasso for regularization will likely result in some variables' coefficients being dampenned to 0 does *not* allow us to include *n* dummy variables (in most cases). Second, it is key to note that **the method of arriving at *n-1* dummies in our model matrix is different in R than it is in Python.** As of the writing of this document, [scikit-learn](https://scikit-learn.org/stable/), for example, requires that we specify in our model matrix construction that we want to drop the 1st categorical value to arrive at *n-1* dummies; however, glmnet does not require a full-rank invertible matrix, and can do one-hot encoding. 
 
-1. Build your model matrix carefully to ensure that you have n-1 dummies for each categorical variable.
-2. Ensure that you understand how the matrix-building & model-fitting functions you use (in any language) work, in detail, as some of the default settings might surprise you and strike you as unintuitive. 
+**Glmnet is also just finicky in general.** Below are a few tricky details and general comments about the package that it pays to remember so that your code doesn't break, or worse yet, your code runs fine, but in reality it just returns wrong or misleading results.
+
+- L1 (lasso) -- alpha = 1 in glmnet -- is good at removing variables entirely
+- L2 (ridge) -- alpha = 0 in glmnet -- is good at dampening multicolinearity
+- any alpha slighlty below 1 might remove some variables entirely, but rarely
+- for more info on regularization, check out [Statistical Learning with Sparsity](https://web.stanford.edu/~hastie/StatLearnSparsity/)
+- you **need to center and scale all variables that go into glmnet** because otherwise the penalty will affect some variables more than others (yes this includes your dummy variables)
+- the output you get from glmnet can vary weirdly and sometimes unpredictably, so when you can, use the caret and recipes packages to help clean this up (more on this below)
+- usually values between 0 and 1 on the log 10 scale are good values for lambda (source on this is Max Kuhn, I don't have math to prove it but this is anecdotally true)
+- glmnet cannot handle zero-variance predictors (i.e. a binary flag with all 0s), which sometimes results when doing any sort of resampling or cross-validation. If this seems confusing, and you're worried about getting it all right / hunting for a better way, read the next subsection.
+
+### The Best Way to Build Your Model Matrix and Dummy Variables?
+
+As you can tell from above, building your model matrix, dummy variables, and just in general getting your pre-processing right can be very annoying; luckily, since I wrote all of this code, things have gotten better, in large part thanks to the [recipes package](https://tidymodels.github.io/recipes/). I don't integrate any of the functionalities of recipes in the code below (because I am writing this comment long after having first drafted all of this code), but I do intend on writing a newer vignette in the near future that focuses on linear regression using the recipes package. The main functionalities of the recipes package that fix the previously mentioned problems are called out below:
+
+You should **always do your pre-processing (done via recipes) within each resample**, not the other way around. As one example of WHY this is the case, imagine scaling and centering a large dataset, then resampling from that dataset; the result is samples that are not centered and scaled appropriately, as they were centered on the mean of the full dataset, as opposed to the mean of the sample. The learning here is that the **standard model workflow should include 1st taking your sample, bootstrap, etc., and *then* running that sample through your preprocessing recipe**.
+
+It is probably safest to create dummy variables with the [step_dummy() step in recipes](https://tidymodels.github.io/recipes/reference/step_dummy.html), which, like model.matrix, by default **drops the first level of the factor to be dummified, rolling that into your intercept**. If, therefore, you wanted to pick what level of the factor to have rolled into the intercept, instead of its simply being the first level of the factor, you would simply re-order the level of your factored variable of interest (which could be done via a step_mutate within a recipe) prior to dummifying the variables.
+
+As part of your pre-processing recipe, we can easily solve the zero variance predictor problem by making use of the step_zv() function, which drops any binary predictors that have zero variance. There is also a step_nzv() function that does the same thing, but for low-variance predictors (i.e. not just 0 variance ones). If you want to collapse low-incidence variables together, like taking a handful of rare binary flags and combining them into a slightly more prevalent category, we use the step_other() function. **It is best practice to run step_zv() or your equivalent steps at the end of your pre-processing recipe**.
+
+This thus solves that majority of our thornier questions when it comes to the nuances of pre-processing and model-pipeline-construction in R. If you have further specific questions about regression modeling strategies--like when you might want to cross-validate but not do a test/train split, for example--see [this excellent book on regression modeling strategies](http://biostat.mc.vanderbilt.edu/wiki/Main/RmS) by Frank Harrel. Also, the RStudio team does (as of early 2019) have plans for a package similar to scikit's pipeline object in Python that would do a lot of this for us, so stay tuned for that!
 
 ## Alternative Methods of Variable Selection
 
@@ -991,7 +1012,7 @@ While this is a continual work-in-progress, much has been accomplished thus far.
 
 Yet to come:
 
-- Variable importance commentary
+Variable importance commentary. (this was more so written to show you some tools to use when modeling, not necessarily to arrive at a "good" model for wine quality prediction, so I'll come back to and refine this if possible when I have time. For now, enjoy and make use of these tools, and happy model-building!)
 
 ## Summary of Chosen "Best" Model 
 

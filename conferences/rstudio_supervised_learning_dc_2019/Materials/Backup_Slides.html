@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Applied Machine Learning - Backup Slides</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Max Kuhn (RStudio)" />
+    <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
+    <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Applied Machine Learning - Backup Slides
+### Max Kuhn (RStudio)
+
+---
+
+
+
+
+# Outline
+
+* Equivocal Zones
+* Multiclass Model Statistics
+* `tidypredict`
+
+---
+
+# tidymodels
+
+
+```r
+library(tidymodels)
+```
+
+```
+## ── Attaching packages ──────────────────────────────────────────────────────────── tidymodels 0.0.2 ──
+```
+
+```
+## ✔ broom     0.5.1     ✔ purrr     0.2.5
+## ✔ dials     0.0.2     ✔ recipes   0.1.4
+## ✔ dplyr     0.7.8     ✔ rsample   0.0.4
+## ✔ infer     0.4.0     ✔ tibble    2.0.0
+## ✔ parsnip   0.0.1     ✔ yardstick 0.0.2
+```
+
+```
+## ── Conflicts ─────────────────────────────────────────────────────────────── tidymodels_conflicts() ──
+## ✖ purrr::discard()    masks scales::discard()
+## ✖ dplyr::filter()     masks stats::filter()
+## ✖ dplyr::lag()        masks stats::lag()
+## ✖ rsample::populate() masks Rcpp::populate()
+## ✖ recipes::step()     masks stats::step()
+```
+
+---
+layout: false
+class: inverse, middle, center
+
+# Applicability and Equivocals
+
+
+---
+
+# Medical diagnostic analysis of assay results
+
+&lt;img src="Backup_Slides_files/figure-html/diag-dist-1.svg" width="75%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Add a cutoff via ROC curve
+
+&lt;img src="Backup_Slides_files/figure-html/diag-roc-1.svg" width="75%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Mandated buffer of equivocal results
+
+&lt;img src="Backup_Slides_files/figure-html/diag-eq-1.svg" width="75%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Equivocals and applicability domains
+
+.pull-left[
+
+Are there times when we should _not_ report a model result? 
+
+Just because we get a predicted value, it should not be assumed to be appropriate or _applicable_. 
+
+There is a modeling sub-field for determining the [_applicability domain_](https://scholar.google.com/scholar?hl=en&amp;as_sdt=0%2C5&amp;q=%22applicability+domain%22&amp;btnG=) of a model and deciding when to report a prediction.  
+
+]
+.pull-right[
+
+As a real example, in drug discovery, computational chemistry models are built to predict various types of drug toxicity.
+
+.font90[
+
+* Using assay results for existing compounds, predictions can be made on _proposed_ compounds prior to their synthesis. 
+
+* Some models attempt to predict when prospective compounds are _toxic_. 
+
+* If a prediction were to be called **equivocal** or **unapplicable** (but interesting), the medicinal chemist and/or project biologist could then review the chemical structure and other properties in more detail (or send to a definitive screening assay). 
+
+]
+
+]
+
+---
+
+# OkC Data
+
+As a simple example, let's use the OkCupid data set with a reduced set of predictors. 
+
+A Bayesian logistic regression model with diffuse Gaussian priors ( `\(\beta_j \sim N(0, 10)\)` ) was fit the data to make model predictions. 
+
+From this, we can get predictions of the probability of STEM as well as posterior _distribution_ estimates. 
+
+A quasi standard error of fit was computed using the standard deviation of the posterior distribution.
+
+  * Recall that the standard error of the simple binomial rate `\(p\)` is  `\(\sqrt{p (1- p) / n}\)`. 
+
+10-fold cross-validation was used to compute out-of-sample predictions of each profile. 
+
+Other models, notably random forest, can compute uncertainty measures for prediction.  
+
+
+---
+
+# Helper Functions
+
+
+```r
+# requires rstanarm package too. 
+make_fit &lt;- function(recipe, ...) {
+  logistic_reg() %&gt;%
+    set_engine("stan", chains = 4, cores = 1, QR = TRUE, init = 0, iter = 5000, seed = 25622) %&gt;%
+    fit(..., data = juice(recipe))
+}
+
+make_preds &lt;- function(splits, recipes, models, ...) {
+  # Get the dummy variables
+  holdout &lt;- bake(recipes, new_data = assessment(splits))
+  holdout %&gt;%
+    bind_cols(predict(models, holdout %&gt;% select(-Class), type = "class")) %&gt;%
+    bind_cols(predict(models, holdout %&gt;% select(-Class), type = "prob")) %&gt;%
+    bind_cols(predict(models, holdout %&gt;% select(-Class), type = "conf_int", std_error = TRUE)) %&gt;%
+    dplyr::select(Class, starts_with(".")) %&gt;% 
+    # Get information about the resample and the original data index
+    mutate(
+      resample = labels(splits) %&gt;% pull(id),
+      .row = as.integer(splits, data = "assessment")
+    ) %&gt;%
+    as_tibble()
+}
+```
+
+---
+
+# Modeling Code
+
+.pull-left[
+
+```r
+load("Data/okc.RData")
+
+keywords &lt;- names(okc_train)[32:91]
+okc_lr_train &lt;- 
+  okc_train %&gt;%
+  dplyr::select(Class, where_town, age, male, diet, 
+                religion, education, !!!keywords)
+
+dummies &lt;- 
+  recipe(Class ~ ., data = okc_lr_train) %&gt;%
+  step_dummy(all_nominal(), -Class) %&gt;%
+  step_downsample(Class) %&gt;%
+  step_zv(all_predictors())
+```
+]
+.pull-right[
+
+
+```r
+library(furrr)
+
+# or plan("sequential")
+plan("multicore") # non-windows implementation 
+
+set.seed(9798)
+okc_splits &lt;- 
+  vfold_cv(okc_lr_train) %&gt;%
+  mutate(
+    recipes =  map(splits, prepper, dummies),
+    # The next line takes a long time to execute. 
+    # It took 77 min using 10 cores for me. 
+    models = future_map(recipes, make_fit, Class ~ .)
+  ) %&gt;%
+  mutate(
+    preds = pmap(., make_preds)
+  )
+```
+
+]
+
+---
+
+# Predicted Probability versus Uncertainty
+
+&lt;img src="Backup_Slides_files/figure-html/backup-mean-sd-bayes-1.svg" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Two samples with very similar _mean_ probabilities
+
+
+.pull-left[
+
+&lt;table&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; Class &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; STEM Prob &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; Std Err &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; Fold &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; Sample # &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; stem &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.210 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.061 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.421 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3651 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; other &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.206 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.494 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3.427 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1132 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+Why might this be? Two of many reasons are:
+
+ * It could be due to different models in cross-validation (but it's not here). 
+ 
+ * The sample might not be _applicable_ if it is very different from the other samples in the training set (i.e. extrapolation). 
+
+
+]
+.pull-right[
+
+&lt;img src="Backup_Slides_files/figure-html/two-sample-post-1.svg" width="110%" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+
+# Adding a _post hoc_ equivocal zone
+
+.pull-left[
+
+We'll label samples as equivocal using rules:
+
+ * any sample whose standard error is 10-fold above the estimated average standard error **or**
+ * any sample with a predicted probability between  0.45 and 0.55. 
+
+To estimate the average standard error, we'll use the standard deviation of the binomial parameter. 
+
+
+```r
+av_std_error &lt;-
+  nls(
+    .std_error ~ a * 
+      sqrt((.pred_stem) * 
+             (1 - .pred_stem)),
+    data = okc_tr_res,
+    start = list(a = .5)
+  )
+```
+
+]
+.pull-right[
+
+.code70[
+
+```r
+okc_tr_res &lt;- 
+  okc_tr_res %&gt;%
+  mutate(
+    exp_std_err = predict(av_std_error, .),
+    fold_above = .std_error/exp_std_err
+  )
+okc_tr_res %&gt;%
+  dplyr::select(.pred_stem, .std_error, 
+                exp_std_err, fold_above) %&gt;%
+  slice(1:8)
+```
+
+```
+## # A tibble: 8 x 4
+##   .pred_stem .std_error   exp_std_err  fold_above
+##        &lt;dbl&gt;      &lt;dbl&gt;         &lt;dbl&gt;       &lt;dbl&gt;
+## 1   2.22e-16     0.0234 0.00000000531 4405600.   
+## 2   1.86e- 1     0.102  0.139               0.736
+## 3   3.77e- 1     0.165  0.173               0.955
+## 4   6.03e- 2     0.0942 0.0848              1.11 
+## 5   2.96e- 2     0.0644 0.0604              1.07 
+## 6   5.59e- 1     0.0971 0.177               0.549
+## 7   1.54e- 1     0.143  0.129               1.11 
+## 8   9.67e- 1     0.0200 0.0638              0.314
+```
+]
+
+]
+
+---
+
+# The `probably` Package
+ 
+ 
+[`probably`](https://tidymodels.github.io/probably) contains methods for post-processing class probability predictions, such as
+
+* calibrating probability estimates (not yet implemented)
+* determining appropriate thresholds for two-class data sets
+* equivocal predictions
+ 
+`probably` has a new type of object called [`class_pred`](https://tidymodels.github.io/probably/reference/class_pred.html) that is like a factor but can include which samples should _not_ be reported. 
+
+The object type builds on Hadley's new [`vctrs`](https://vctrs.r-lib.org/) package. 
+ 
+---
+
+# `class_pred` Objects
+
+
+.pull-left[
+
+.code70[
+
+
+```r
+library(probably)
+
+okc_tr_res &lt;- 
+  okc_tr_res %&gt;%
+  mutate(
+    in_eq_zone = 
+      fold_above &gt; 10 &amp;
+      (.pred_stem &gt; 0.45 | .pred_stem &lt; 0.55),
+    new_pred  = 
+      class_pred(.pred_class, which = which(in_eq_zone))
+  )
+okc_tr_res %&gt;%
+  dplyr::select(.pred_class, new_pred) %&gt;% 
+  slice(1:5)
+```
+
+```
+## # A tibble: 5 x 2
+##   .pred_class   new_pred
+##   &lt;fct&gt;       &lt;clss_prd&gt;
+## 1 other             [EQ]
+## 2 other            other
+## 3 other            other
+## 4 other            other
+## 5 other            other
+```
+
+]
+
+]
+.pull-right[
+
+.code70[
+
+
+```r
+okc_tr_res %&gt;% pull(new_pred) %&gt;% class()
+```
+
+```
+## [1] "class_pred" "vctrs_vctr"
+```
+
+```r
+okc_tr_res %&gt;% pull(new_pred) %&gt;% levels()
+```
+
+```
+## [1] "stem"  "other"
+```
+
+```r
+okc_tr_res %&gt;% slice(1:6) %&gt;% pull(new_pred) %&gt;% as.factor()
+```
+
+```
+## [1] &lt;NA&gt;  other other other other stem 
+## Levels: stem other
+```
+
+]
+
+]
+
+
+---
+
+# Performance Metrics with Equivocals
+
+
+.pull-left[
+Equivocals are not included when performance is calculated (e.g. accuracy) and the _reportable rate_ should also be inlcuded. 
+
+.code70[
+
+
+```r
+okc_tr_res %&gt;% slice(1:5) %&gt;% pull(new_pred)
+```
+
+```
+## [1] [EQ]  other other other other
+## Levels: stem other
+## Reportable: 80.0%
+```
+
+```r
+okc_tr_res %&gt;%
+  summarise(reportable = reportable_rate(new_pred))
+```
+
+```
+## # A tibble: 1 x 1
+##   reportable
+##        &lt;dbl&gt;
+## 1      0.950
+```
+
+]
+
+]
+.pull-right[
+
+When converted to a factor, equivocal values are converted to missing. 
+
+ * The next version of `yardstick` will automatically convert `class_pred` to factor before computing metrics. 
+
+.code70[
+
+
+```r
+okc_tr_res %&gt;%
+  mutate(new_pred = as.factor(new_pred)) %&gt;%
+  kap(Class, new_pred)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 kap     binary         0.270
+```
+
+]
+
+]
+
+
+---
+layout: false
+class: inverse, middle, center
+
+# Multiclass Metrics
+
+---
+
+# Multiclass Metrics With yardstick &lt;img src="images/yardstick.png" class="title-hex"&gt;
+
+Multiclass? This just means your outcome has &gt;2 possibilities (Religion: Catholic, Atheist, Buddhist, etc).
+
+.pull-left[
+
+Consider binary `precision()`:
+
+$$
+Pr = \frac{TP}{TP + FP} 
+$$
+
+
+```
+## # A tibble: 5 x 2
+##   truth estimate
+##   &lt;fct&gt; &lt;fct&gt;   
+## 1 ✅    ✅      
+## 2 😡    😡      
+## 3 ✅    ✅      
+## 4 😡    ✅      
+## 5 😡    😡
+```
+
+]
+
+.pull-right[
+
+`$$TP = 2$$`
+
+`$$FP = 1$$`
+
+`$$Pr = \frac{2}{2 + 1} = \frac{2}{3}$$`
+
+
+```r
+precision(prec_example, truth, estimate)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric   .estimator .estimate
+##   &lt;chr&gt;     &lt;chr&gt;          &lt;dbl&gt;
+## 1 precision binary         0.667
+```
+
+]
+
+---
+
+# Macro Averaging &lt;img src="images/yardstick.png" class="title-hex"&gt;
+
+What does this look like in multiclass world?
+
+.pull-left[
+
+
+```
+## # A tibble: 5 x 2
+##   truth estimate
+##   &lt;fct&gt; &lt;fct&gt;   
+## 1 ✅    ✅      
+## 2 🤷    😡      
+## 3 ✅    ✅      
+## 4 😡    🤷      
+## 5 😡    😡
+```
+
+One technique for dealing with this is _macro averaging_. This reduces the problem to multiple one-vs-all comparisons.
+
+]
+
+--
+
+.pull-right[
+
+1) Convert `truth`/`estimate` to binary with levels: ✅ and `other`.
+
+2) Compute `precision()` to get `Pr_1`.
+
+3) Repeat 1) and 2) for each level to get `Pr_1`, `Pr_2`, `Pr_3`.
+
+4) Average the results:
+
+$$
+Pr_{macro} = \frac{Pr_1 + Pr_2 + Pr_3}{3}
+$$
+
+]
+
+---
+
+# Macro Averaging &lt;img src="images/yardstick.png" class="title-hex"&gt;
+
+
+.pull-left[
+
+
+```r
+prec_multi
+```
+
+```
+## # A tibble: 5 x 2
+##   truth estimate
+##   &lt;fct&gt; &lt;fct&gt;   
+## 1 ✅    ✅      
+## 2 🤷    😡      
+## 3 ✅    ✅      
+## 4 😡    🤷      
+## 5 😡    😡
+```
+
+$$
+`\begin{align}
+Pr_1 &amp;= \frac{2}{2 + 0} = 1\\
+Pr_2 &amp;= \frac{1}{1 + 1} = 0.5\\
+Pr_3 &amp;= \frac{0}{0 + 1} = 0
+\end{align}`
+$$
+
+]
+
+.pull-right[
+
+`$$Pr_{macro} = \frac{1 + 0.5 + 0}{3} = 0.5$$`
+
+
+```r
+precision(prec_multi, truth, estimate)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric   .estimator .estimate
+##   &lt;chr&gt;     &lt;chr&gt;          &lt;dbl&gt;
+## 1 precision macro            0.5
+```
+
+]
+
+???
+
+yardstick automatically detects that you have a multiclass outcome.
+
+---
+
+# Caveats &lt;img src="images/yardstick.png" class="title-hex"&gt;
+
+Macro averaging gives each class _equal weight_ to the total precision value (`1/3` here). This may not be realistic when a class imbalance is present. 
+
+In that case, you can use a _weighted macro average_ which weights by the frequency of that class in the `truth` column.
+
+
+```r
+precision(prec_multi, truth, estimate, estimator = "macro_weighted")
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric   .estimator     .estimate
+##   &lt;chr&gt;     &lt;chr&gt;              &lt;dbl&gt;
+## 1 precision macro_weighted       0.6
+```
+
+--
+
+There is additionally a _micro average_ that gives each _observation_ equal weight rather than each _class_. This gives classes with more observations more influence.
+
+
+Find more information at the [yardstick vignette](https://tidymodels.github.io/yardstick/articles/multiclass.html).
+
+
+
+
+---
+layout: false
+class: inverse, middle, center
+
+# tidypredict
+
+---
+
+# Converting Prediction Equations to SQL
+
+`tidypredict` can convert some R model objects into SQL code that can be used for deployment. 
+
+The current set of models are: `lm()`, `glm()`, `randomForest()`, and `ranger()`. 
+
+There is work underway for `earth()`, `cubist()`, and tree-based models via `as.party()`. 
+
+There are currently some restrictions: no-line functions, non-treatment contrasts, and a [few others](https://tidypredict.netlify.com/articles/lm/#highlights-limitations). 
+
+Linear model prediction intervals can be computed though!
+
+---
+
+# An Example
+
+.pull-left[
+
+```r
+library(tidymodels)
+library(AmesHousing)
+library(tidypredict)
+
+ames &lt;- make_ames() %&gt;% 
+  dplyr::select(-matches("Qu")) %&gt;% 
+  # Manually log the variables :-(
+  mutate(
+    Sale_Price = log10(Sale_Price),
+    Lot_Area = log10(Lot_Area),
+    Gr_Liv_Area = log10(Gr_Liv_Area)
+  )
+
+set.seed(4595)
+data_split &lt;- 
+  initial_split(ames, strata = "Sale_Price")
+
+ames_train &lt;- training(data_split) 
+ames_test  &lt;- testing(data_split) 
+```
+]
+.pull-right[
+
+```r
+ames_mod &lt;- 
+  lm(Sale_Price ~ Bldg_Type + Neighborhood + 
+       Year_Built +  Gr_Liv_Area + 
+       Full_Bath + Lot_Area + 
+       Central_Air*Year_Sold,
+     data = ames_train)
+
+acceptable_formula(ames_mod) # Silence is golden here
+
+ames_sql &lt;- tidypredict_fit(ames_mod)
+
+# Check against `lm()`:
+
+tidypredict_test(ames_mod, ames_test)
+```
+
+```
+## tidypredict test results
+## Difference threshold: 1e-12
+## 
+##  All results are within the difference threshold
+```
+
+]
+
+]
+
+
+---
+
+# Scoring 
+
+A taste of the model equation as an R expression:
+
+
+```
+## 18.5002644076146 + (ifelse(Bldg_Type == "TwoFmCon", 1, 0) * -0.0164418404830365) + 
+##     (ifelse(Bldg_Type == "Duplex", 1, 0) * -0.0790188658258443) + 
+##     (ifelse(Bldg_Type == "Twnhs", 1, 0) * -0.0476581323558805) + 
+##     (ifelse(Bldg_Type == "TwnhsE", 1, 0) * -0.00400678175266399) + 
+##     (ifelse(Neighborhood == "College_Creek", 1, 0) * 0.0322842898050883) +
+```
+
+or SQL:
+
+
+```r
+tidypredict_sql(ames_mod, dbplyr::simulate_mssql()) %&gt;% substr(1, 85)
+```
+
+```
+## [1] "18.5002644076146 + (CASE WHEN ((`Bldg_Type` = 'TwoFmCon') =  'TRUE') THEN (1.0) WHEN ..."
+```
+
+One cool thing about this is that these expressions do not require all of the predictors when the model includes feature selection (_a la_ MARS or CART).
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightLanguage": "R",
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

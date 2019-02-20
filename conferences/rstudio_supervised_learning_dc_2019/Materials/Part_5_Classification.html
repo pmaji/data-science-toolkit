@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Applied Machine Learning - Classification</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Max Kuhn (RStudio)" />
+    <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
+    <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Applied Machine Learning - Classification
+### Max Kuhn (RStudio)
+
+---
+
+
+
+
+# Outline
+
+* Performance Measures
+* OkC Data
+* Classification Trees
+* More Bagging
+* Naive Bayes Models
+
+---
+
+# Load Packages
+
+.pull-left[
+.code70[
+
+```r
+library(tidymodels)
+```
+
+```
+## ── Attaching packages ──────────────────────────────────────────────────────────── tidymodels 0.0.2 ──
+```
+
+```
+## ✔ broom     0.5.1     ✔ purrr     0.2.5
+## ✔ dials     0.0.2     ✔ recipes   0.1.4
+## ✔ dplyr     0.7.8     ✔ rsample   0.0.4
+## ✔ infer     0.4.0     ✔ tibble    2.0.0
+## ✔ parsnip   0.0.1     ✔ yardstick 0.0.2
+```
+
+```
+## ── Conflicts ─────────────────────────────────────────────────────────────── tidymodels_conflicts() ──
+## ✖ purrr::discard() masks scales::discard()
+## ✖ dplyr::filter()  masks stats::filter()
+## ✖ dplyr::lag()     masks stats::lag()
+## ✖ dplyr::select()  masks MASS::select()
+## ✖ recipes::step()  masks stats::step()
+```
+]
+]
+.pull-right[
+
+```r
+transp &lt;- 
+  element_rect(fill = "transparent", colour = NA)
+
+thm &lt;- theme_bw() + 
+  theme(
+    panel.background = transp, 
+    plot.background = transp,
+    legend.background = transp,
+    legend.key = transp,
+    legend.position = "top"
+  )
+
+theme_set(thm)
+```
+]
+
+---
+layout: false
+class: inverse, middle, center
+
+# Measuring Performance in Classification
+
+
+---
+
+# Illustrative Example  &lt;img src="images/yardstick.png" class="title-hex"&gt;
+
+`yardstick` contains another test set example in a data frame called `two_class_example`:
+
+
+
+```r
+two_class_example %&gt;% head(4)
+```
+
+```
+##    truth  Class1 Class2 predicted
+## 1 Class2 0.00359  0.996    Class2
+## 2 Class1 0.67862  0.321    Class1
+## 3 Class2 0.11089  0.889    Class2
+## 4 Class1 0.73516  0.265    Class1
+```
+
+Both `truth` and `predicted` are factors with the same levels. The other two columns represent _class probabilities_. 
+
+This reflects that most classification models can generate "hard" and "soft" predictions for models. 
+
+The class predictions are usually created by thresholding some numeric output of the model (e.g. a class probability) or by choosing the largest value.  
+
+
+
+
+---
+
+# Class Prediction Metrics
+
+.pull-left[
+With class predictions, a common summary method is to produce a _confusion matrix_ which is a simple cross-tabulation between the observed and predicted classes:
+
+
+```r
+two_class_example %&gt;% 
+	conf_mat(truth = truth, estimate = predicted)
+```
+
+```
+##           Truth
+## Prediction Class1 Class2
+##     Class1    227     50
+##     Class2     31    192
+```
+
+These can be visualized using [mosaic plots](https://en.wikipedia.org/wiki/Mosaic_plot). 
+
+]
+.pull-right[
+Accuracy is the most obvious metric for characterizing the performance of models.
+
+
+```r
+two_class_example %&gt;% 
+	accuracy(truth = truth, estimate = predicted)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric  .estimator .estimate
+##   &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+## 1 accuracy binary         0.838
+```
+
+However, it suffers when there is a _class imbalance_; suppose 95% of the data have a specific class. 95% accuracy can be achieved by predicting samples to be the majority class.  
+
+There are measures that correct for the natural event rate, such as [Cohen's Kappa](https://en.wikipedia.org/wiki/Cohen%27s_kappa).
+]
+
+
+---
+
+# Two Classes
+
+
+There are a number of specialized metrics that can be used when there are two classes. Usually, one of these classes can be considered the _event of interest_ or the _positive class_. 
+
+One common way to think about performance is to consider false negatives and false positives. 
+
+* The sensitivity is the _true positive rate_ (out of all of the actual positives, how many did you get right?).
+
+* The specificity is the rate of correctly predicted negatives, or 1 - _false positive rate_ (out of all the actual negatives, how many did you get right?). 
+
+From this, assuming that `Class1` is the event of interest: 
+
+ .pull-left[
+
+```
+##           Truth
+## Prediction Class1 Class2
+##     Class1    227     50
+##     Class2     31    192
+```
+]
+.pull-right[
+ sensitivity = 227/(227 + 31)  = 0.88
+
+ specificity = 192/(192 + 50)  = 0.79
+]
+
+
+---
+
+# Conditional and Unconditional Measures
+
+Sensitivity and specificity can be computed from `sens()` and `spec()`, respectively. 
+
+It should be noted that these are _conditional measures_ since we need to know the true outcome. 
+
+The event rate is the _prevalence_ (or the Bayesian _prior_). Sensitivity and specificity are analogous to the _likelihood values_. 
+
+There are _unconditional_ analogs to the _posterior values_ called the positive predictive values and the negative predicted values. 
+
+A variety of other measures are available for two class systems, especially for _information retrieval_.  
+
+One thing to consider: what happens if our **threshold to call a sample an event is not optimal**? 
+
+
+---
+
+# Changing the Probability Threshold
+
+.pull-left[
+For two classes, the 50% cutoff is customary; if the probability of class #1 is &gt;= 50%, they would be labelled as `Class1`. 
+
+
+What happens when you change the cutoff? 
+
+* Increasing it makes it harder to be called `Class1` `\(\Rightarrow\)` fewer predicted events, specificity `\(\uparrow\)`, sensitivity `\(\downarrow\)` 
+  
+
+* Decreasing the cutoff makes it easier to be called `Class1` `\(\Rightarrow\)` more predicted events, specificity `\(\downarrow\)`, sensitivity `\(\uparrow\)`  
+
+With two classes, the **Receiver Operating Characteristic (ROC) curve** can be used to estimate performance using a combination of sensitivity and specificity.  
+
+]
+.pull-right[
+  
+To create the curve, many alternative cutoffs are evaluated. 
+
+For each cutoff, we calculate the sensitivity and specificity.
+
+The ROC curve plots the sensitivity (eg. true positive rate) versus 1 - specificity (eg. the false positive rate).
+  
+The area under the ROC curve is a common metric of performance.  
+]
+ 
+  
+---
+
+# The Receiver Operating Characteristic (ROC) Curve  &lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+.pull-left[
+
+```r
+roc_obj &lt;- 
+  two_class_example %&gt;% 
+  roc_curve(truth, Class1)
+```
+
+```r
+two_class_example %&gt;% roc_auc(truth, Class1)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 roc_auc binary         0.939
+```
+
+```r
+autoplot(roc_obj) + thm
+```
+]
+.pull-right[
+
+&lt;img src="Part_5_Classification_files/figure-html/roc-plot-1.svg" width="100%" style="display: block; margin: auto;" /&gt;
+]
+
+  
+---
+
+# Changing the Threshold 
+
+
+
+&lt;img src="Part_5_Classification_files/figure-html/unnamed-chunk-1-1.gif" width="50%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# The Receiver Operating Characteristic (ROC) Curve 
+
+The ROC curve has some major advantages:
+
+ * It can allow models to be optimized for performance before a definitive cutoff is determined.
+ 
+ * It is _robust_ to class imbalances; no matter the event rate, it does a good job at characterizing model performance. 
+ 
+ * The ROC curve can be used to pick an optimal cutoff based on the trade-offs between the types of errors that can occur. 
+
+When there are two classes, it is advisable to focus on the area under the ROC curve instead of sensitivity and specificity. 
+
+Once an acceptable model is determined, a proper cutoff can be determined. 
+
+
+---
+
+# OkC Data
+
+.pull-left[
+These data contains several types of fields:
+
+* a number of open text essays related to interests and personal descriptions 
+* single choice type fields, such as profession, diet, religion, etc.
+* multiple choice data, including languages spoken, etc.
+
+We will try to predict whether someone has a profession in the STEM fields (science, technology, engineering, and math) using a random sample of the overall dataset. 
+
+The data are included in the workshop's GitHub repo:
+]
+.pull-right[
+
+```r
+load("Data/okc.RData")
+okc_train %&gt;% dim()
+```
+
+```
+## [1] 4000   88
+```
+
+```r
+okc_test %&gt;% nrow()
+```
+
+```
+## [1] 1000
+```
+
+```r
+table(okc_train$Class)
+```
+
+```
+## 
+##  stem other 
+##   729  3271
+```
+]
+
+
+
+---
+
+# Dealing with Class Imbalances
+
+In our data, only 18.2% of the profiles are in STEM professions. This complicates the analysis since many models will overfit to the majority class.
+
+There are two main strategies to deal with this:
+
+ * _Cost-sensitive learning_ where a higher cost is attached to the minority classes. In this way, the fitting process puts more emphasis on those samples. 
+ 
+ * _Sampling procedures_ that modify the rows of the data to re-balance the training set. 
+ 
+Cost-sensitive models tend to only produce hard classifications so we will focus on the latter. 
+
+
+---
+
+# Class Imbalance Sampling
+
+There are a variety of methods for subsampling the data. Some exclude or replicate rows in the training set while others try to _synthesize_ new data points to balance the classes. 
+
+The simplest method for dealing with the problem is to _down-sample_ the data to make the number of STEM and non-STEM profiles the same. 
+
+While it seems like throwing away most of the data is a bad idea, it tends to produce less pathological distributions of the class probabilities and _might_ improve the ROC curve. 
+
+
+It is critical that:
+
+ * the sampling should be done _inside of resampling_. Otherwise, the [performance estimates can be optimistic](https://topepo.github.io/caret/subsampling-for-class-imbalances.html#resampling). 
+ * these sampling methods take place on the analysis set and not the assessment set.
+
+Note that for a simple logistic regression model, this mainly has the effect of changing the intercept. 
+
+
+---
+
+# Calibration Effect (Test Set Example)
+
+
+
+&lt;img src="Part_5_Classification_files/figure-html/calib-hist-1.svg" width="75%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Calibration Effect (Test Set Example)
+
+&lt;img src="Part_5_Classification_files/figure-html/calib-roc-1.svg" width="50%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Resampling and Analysis Strategy
+
+.pull-left[
+If we down-sample the data, the analysis set will consist of 1458 profiles (equally balanced). We'll again use 10-fold CV to resample the data. 
+
+Within each resample, the analysis data are down-sampled and the assessment sets are left alone.
+
+
+The number of STEM profiles held-out would be about 72 and this should be sufficient to compute sensitivity.  
+]
+.pull-right[
+The models will be optimized on the area under the ROC curve. 
+
+
+```r
+library(caret)
+ctrl &lt;- trainControl(
+	method = "cv",
+	# Also predict the probabilities
+	classProbs = TRUE,
+	# Compute the ROC AUC as well as the sens and  
+	# spec from the default 50% cutoff. The 
+	# function `twoClassSummary` will produce those. 
+	summaryFunction = twoClassSummary,
+	savePredictions = "final",
+	sampling = "down"
+)
+```
+]
+
+
+---
+layout: false
+class: inverse, middle, center
+
+# Classification Trees
+
+
+---
+
+# Classification Trees
+
+Tree-based classifiers conduct searches of the predictors to find the best split of the data to create two subsets. 
+
+"Best", in most cases, means that the class distribution is as _pure_ as possible in the subsets (i.e. is mostly one class). 
+
+There are many different types of classification trees, including [conditional inference trees](https://cran.r-project.org/web/packages/party/index.html), [C5.0](https://cran.r-project.org/web/packages/C50/index.html), [Bayesian additive regression trees](https://cran.r-project.org/web/packages/BayesTree/index.html), [globally optimal trees](https://cran.r-project.org/web/packages/evtree/index.html), [CART](https://cran.r-project.org/web/packages/rpart/index.html), and others. 
+
+We'll focus on CART via the `rpart` package for these notes.  
+
+
+---
+
+# Two Possible Splits - Which One is Better? 
+
+The data have been down-sampled so that classes have equal frequencies. 
+
+.pull-left[
+&lt;img src="Part_5_Classification_files/figure-html/cart-orientation-split-1.svg" width="95%" style="display: block; margin: auto;" /&gt;
+]
+.pull-right[
+&lt;img src="Part_5_Classification_files/figure-html/cart-age-split-1.svg" width="95%" style="display: block; margin: auto;" /&gt;
+]
+
+
+---
+
+# The Official First Split 
+
+.pull-left[
+&lt;img src="Part_5_Classification_files/figure-html/cart-split-edu-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+]
+.pull-right[
+The two sets were derived by the model and are not listed here due to their sizes. 
+
+"Set 1" includes
+
+
+```
+##  [1] "college_university"               
+##  [2] "dropped_out_of_college_university"
+##  [3] "dropped_out_of_high_school"       
+##  [4] "dropped_out_of_ph_d_program"      
+##  [5] "graduated_from_college_university"
+##  [6] "graduated_from_masters_program"   
+##  [7] "graduated_from_ph_d_program"      
+##  [8] "graduated_from_space_camp"        
+##  [9] "masters_program"                  
+## [10] "working_on_space_camp"
+```
+
+]
+
+---
+
+# The Next Two splits
+
+.pull-left[
+Once the initial split is made, the model will then split the resulting two data sets using new searches in those _leaves_. 
+
+The process continues until there are not enough data points left to accurately split or a pre-defined split limit has been reached.  
+
+This is the _tree growing_ process and, once complete, most tree-based models begin to _prune_ the trees using some method that balances complexity with performance. 
+]
+.pull-right[
+&lt;img src="Part_5_Classification_files/figure-html/cart-split-2-1.svg" width="95%" style="display: block; margin: auto;" /&gt;
+]
+
+
+---
+
+# Classification Trees
+
+
+.pull-left[
+`caret` contains multiple method for training CART models. 
+
+We'll go with `method = "rpart2"` which uses `maxdepth` as the tuning parameter. 
+
+Also, we'll use the non-formula interface so that the factor predictors are not converted to indicator variables. 
+
+
+]
+.pull-right[
+
+```r
+set.seed(5515)
+cart_mod &lt;- train(
+	x = okc_train[, names(okc_train) != "Class"], 
+	y = okc_train$Class,
+	method = "rpart2",
+	metric = "ROC",
+	tuneGrid = data.frame(maxdepth = 1:20),
+	trControl = ctrl
+)
+```
+]
+
+
+
+---
+
+# CART Model
+
+.code50[
+
+```r
+cart_mod$finalModel
+```
+
+```
+## n= 1458 
+## 
+## node), split, n, loss, yval, (yprob)
+##       * denotes terminal node
+## 
+##   1) root 1458 729 stem (0.5000 0.5000)  
+##     2) tech&gt;=0.5 299  70 stem (0.7659 0.2341) *
+##     3) tech&lt; 0.5 1159 500 other (0.4314 0.5686)  
+##       6) education=college_university,dropped_out_of_college_university,dropped_out_of_high_school,dropped_out_of_ph_d_program,graduated_from_college_university,graduated_from_masters_program,graduated_from_ph_d_program,graduated_from_space_camp,graduated_from_two_year_college,masters_program,working_on_space_camp 874 429 stem (0.5092 0.4908)  
+##        12) religion=agnosticism,atheism,buddhism,hinduism 335 125 stem (0.6269 0.3731) *
+##        13) religion=religion_missing,catholicism,christianity,judaism,other 539 235 other (0.4360 0.5640)  
+##          26) where_town=alameda,albany,belmont,berkeley,burlingame,emeryville,fairfax,fremont,hayward,martinez,menlo_park,millbrae,mountain_view,novato,pacifica,palo_alto,redwood_city,san_bruno,san_francisco,san_mateo,south_san_francisco,stanford,vallejo 428 209 other (0.4883 0.5117)  
+##            52) height&gt;=67.5 269 117 stem (0.5651 0.4349)  
+##             104) income=missing,inc20000,inc50000,inc70000,inc80000,inc100000,inc150000 255 104 stem (0.5922 0.4078)  
+##               208) sign=sign_missing,aquarius,aries,gemini,leo,libra,sagittarius,scorpio 194  67 stem (0.6546 0.3454)  
+##                 416) kids&lt; 0.5 182  57 stem (0.6868 0.3132) *
+##                 417) kids&gt;=0.5 12   2 other (0.1667 0.8333) *
+##               209) sign=cancer,capricorn,pisces,taurus,virgo 61  24 other (0.3934 0.6066) *
+##             105) income=inc30000,inc40000,inc60000,inc250000,inc1000000 14   1 other (0.0714 0.9286) *
+##            53) height&lt; 67.5 159  57 other (0.3585 0.6415) *
+##          27) where_town=benicia,castro_valley,daly_city,el_cerrito,el_sobrante,hercules,lafayette,oakland,pinole,pleasant_hill,richmond,san_anselmo,san_carlos,san_leandro,san_lorenzo,san_pablo,san_rafael,sausalito,walnut_creek 111  26 other (0.2342 0.7658) *
+##       7) education=ed_missing,dropped_out_of_space_camp,dropped_out_of_two_year_college,graduated_from_high_school,graduated_from_law_school,graduated_from_med_school,high_school,ph_d_program,two_year_college,working_on_college_university,working_on_high_school,working_on_law_school,working_on_masters_program,working_on_med_school,working_on_ph_d_program,working_on_two_year_college 285  55 other (0.1930 0.8070) *
+```
+]
+  
+  Note that there are 9 terminal nodes and thus 9 possible probability values. 
+
+---
+
+# CART Resampling Profile
+
+&lt;img src="Part_5_Classification_files/figure-html/cart-plot-1.svg" width="60%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Classification Tree Average ROC Curve
+
+.pull-left[
+ 
+ROC curves will be created for each model so a convenience function will be used repeatedly to create an _approximate_ curve: 
+
+
+
+```r
+approx_roc_curve &lt;- function(x, label) {
+  x %&gt;%
+    pluck("pred") %&gt;%
+    roc_curve(obs, stem) %&gt;%
+    mutate(model = label)
+}
+approx_roc_curve(cart_mod, "CART") %&gt;%
+  ggplot(aes(x = 1 - specificity, y = sensitivity)) +
+  geom_path()  +
+  geom_abline(col = "red", alpha = .5)
+```
+
+]
+.pull-right[
+
+&lt;img src="Part_5_Classification_files/figure-html/cart-roc-plot-1.svg" width="100%" style="display: block; margin: auto;" /&gt;
+]
+  
+
+---
+
+# Resampled Confusion Matrix
+
+.pull-left[
+Since there are 10 different assessment sets, separate confusion matrices can be constructed for each. 
+
+`train()` has its own `confusionMatrix()` method that can show aggregations of these matrices.
+
+By default, the overall rates are shown in each cell.  
+]
+.pull-right[
+
+```r
+confusionMatrix(cart_mod)
+```
+
+```
+## Cross-Validated (10 fold) Confusion Matrix 
+## 
+## (entries are percentual average cell counts across resamples)
+##  
+##           Reference
+## Prediction stem other
+##      stem  12.4  28.6
+##      other  5.8  53.2
+##                             
+##  Accuracy (average) : 0.6558
+```
+]
+
+
+---
+
+# Variable Importance Scores &lt;img src="images/ggplot2.png" class="title-hex"&gt;
+
+.pull-left[
+CART tracks the decrease in impurity in the nodes when splits are made. 
+
+These can be aggregated over the tree to produce another general importance score. 
+
+`rpart` can also keep track of splits not used in the model (e.g. surrogate, completing) that can be used when there are missing predictor values. The `varImp()` method has options to turn these on/off. 
+
+Turning these off gives only the splits uses in the official tree. 
+
+]
+.pull-right[
+
+```r
+cart_imp &lt;- varImp(cart_mod, scale = FALSE, 
+                   surrogates = FALSE, 
+                   competes = FALSE)
+ggplot(cart_imp, top = 7) + xlab("")
+```
+
+&lt;img src="Part_5_Classification_files/figure-html/cart-imp-1.svg" width="75%" style="display: block; margin: auto;" /&gt;
+]
+
+
+---
+
+# Hands-On: I Don't Want to be a Dummy!
+
+Take the previous code and _use the formula method_ to create the model. For `train()`, the formula method _always_ creates dummy variables for predictors that are factors. 
+
+Is there any difference in performance? 
+
+Is the final model affected? How? 
+
+Take 15 min to answer these questions. 
+
+
+---
+layout: false
+class: inverse, middle, center
+
+# Bagging (Again)
+
+
+---
+
+# Instability of Trees
+
+Many types of trees are _unstable_ in that they have high variance; if the data are slightly changed, a large impact can be seen on the structure of the model. 
+
+This is generally bad and might make you question the interpretability of trees. 
+
+For example, what happens if we were to build our model on bootstrap samples of the training set?
+
+In the three following plots, the maximum tree depth was capped at 5 to make the trees easier to visualize. 
+
+
+---
+
+# Bootstrap Sample #1
+
+&lt;img src="Part_5_Classification_files/figure-html/boot-cart-1-1.svg" width="55%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Bootstrap Sample #2
+
+&lt;img src="Part_5_Classification_files/figure-html/boot-cart-2-1.svg" width="55%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Bootstrap Sample #3
+
+&lt;img src="Part_5_Classification_files/figure-html/boot-cart-3-1.svg" width="55%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Lemonade from Lemons
+
+The _nice_ thing about this instability is that it makes trees great candidates for ensemble methods. 
+
+Since ensembles use multiple models, they are only effective when the constituent models are _diverse_; otherwise the same predictions are averaged. 
+
+Let's bag the CART trees by using bootstrap samples of the training set and growing the largest possible tree. 
+
+`caret` wraps `ipred::bagging()` using `method = "treebag"`. We will use the default ensemble size of 25 models.
+
+
+---
+
+# Bagging CART Trees
+
+
+```r
+set.seed(5515)
+cart_bag &lt;- train(
+	x = okc_train[, names(okc_train) != "Class"], 
+	y = okc_train$Class,
+	method = "treebag",
+	metric = "ROC",
+	trControl = ctrl
+)
+```
+
+
+---
+
+# Bagged CART Results
+
+
+```r
+cart_bag
+```
+
+```
+## Bagged CART 
+## 
+## 4000 samples
+##   87 predictor
+##    2 classes: 'stem', 'other' 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (10 fold) 
+## Summary of sample sizes: 3600, 3601, 3599, 3600, 3600, 3600, ... 
+## Addtional sampling using down-sampling
+## 
+## Resampling results:
+## 
+##   ROC    Sens  Spec 
+##   0.728  0.69  0.669
+```
+
+
+---
+
+# Resampled Confusion Matrix
+
+As measured by the default cutoffs, there is some increase in accuracy that is achieved by improving the specificity (27.1% versus CART's 28.6%). 
+
+
+```r
+confusionMatrix(cart_bag)
+```
+
+```
+## Cross-Validated (10 fold) Confusion Matrix 
+## 
+## (entries are percentual average cell counts across resamples)
+##  
+##           Reference
+## Prediction stem other
+##      stem  12.6  27.1
+##      other  5.7  54.7
+##                             
+##  Accuracy (average) : 0.6728
+```
+
+
+---
+
+# Bagged Classification Tree Average ROC Curve
+
+.pull-left[
+
+```r
+all_curves &lt;- 
+  approx_roc_curve(cart_mod, "CART") %&gt;%
+  bind_rows(approx_roc_curve(cart_bag, "Bagged CART")) 
+
+ggplot(all_curves) +
+  aes(x = 1 - specificity, y = sensitivity, 
+      group = model, col = model) + 
+  geom_path()  +
+  geom_abline(col = "red", alpha = .5)
+```
+
+The bagged model's curve is uniformly better than the single tree. 
+
+]
+.pull-right[
+
+&lt;img src="Part_5_Classification_files/figure-html/bag-roc-plot-1.svg" width="100%" style="display: block; margin: auto;" /&gt;
+]
+
+
+---
+
+# Variable Importance Scores &lt;img src="images/ggplot2.png" class="title-hex"&gt;
+
+.pull-left[
+When bagging, the CART importances scores for each tree are aggregated across trees. 
+
+Many more predictors are used in this model. 
+
+]
+.pull-right[
+
+```r
+bag_imp &lt;- varImp(cart_bag, scale = FALSE)
+ggplot(bag_imp, top = 30) + xlab("")
+```
+
+&lt;img src="Part_5_Classification_files/figure-html/bag-imp-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+]
+
+
+---
+
+# Hands-On: How Many Trees?
+
+As previously mentioned, `caret` uses `ipred::bagging()` to create the model. 
+
+Look at the help function to determine which `bagging()` argument controls the number of bootstraps.
+
+How can we make `train()` use a different value? (hint: `?train`)
+
+Does changing this affect the area under the ROC curve? 
+
+Take another 10 mins.
+
+
+---
+
+# Other Ensemble Methods
+
+There are a variety of other methods for creating ensembles
+
+* **Random forests** are just like bagging but the trees are made more diverse by randomly sampling a subset of predictors to be used in each split. ([`ranger`](https://cran.r-project.org/web/packages/ranger/index.html))
+
+* **Boosting** fits a _sequence_ of trees and modifies the case-weights of each data point to increase diversity. ([`xgboost`](https://cran.r-project.org/web/packages/xgboost/index.html), [`C50`](https://topepo.github.io/C5.0/))
+
+* **Rotation forests** is PCA signal extraction on a random subset of the data prior to creating the trees. ([`rotationForest`](https://cran.r-project.org/web/packages/rotationForest/index.html))
+
+* Regression **committees** adjust the outcome data over a sequence of models. ([`Cubist`](https://topepo.github.io/Cubist/)) 
+
+* **Stacking** is an ensemble method where different types of models can be blended together through averaging. ([`caretEnsemble`](https://cran.r-project.org/web/packages/caretEnsemble/index.html))
+
+R has multiple implementations of these methods. 
+
+
+---
+layout: false
+class: inverse, middle, center
+
+#  Bayes' Rule
+
+
+---
+
+# Naive Bayes Models
+
+This classification model is motivated directly from statistical theory based on Bayes' Rule:
+
+`$$Pr[Class|Predictors] = \frac{Pr[Class]\times Pr[Predictors|Class]}{Pr[Predictors]} 
+= \frac{Prior\:\times\:Likelihood}{Evidence}$$`
+
+In English:
+
+&gt; Given our predictor data, what is the probability of each class? 
+
+The _prior_ is the prevalence that was mentioned earlier (e.g. the rate of STEM profiles). This can be estimated or set. 
+
+Most of the action is in `Pr[Predictors|Class]`, which is based on the observed training set.
+
+Predictions are based on a blend of the training data and our _prior belief_ about the outcome... 
+
+
+
+---
+
+# So  Why is it Naive?
+
+Determining `\(Pr[Predictors|Class]\)` can be very difficult without strong assumptions because it measures the _joint probability_ of all of the predictors. 
+
+* For example, what is the correlation between a person's essay length and their religion? 
+
+To resolve this, **naive** Bayes assumes that all of the predictors are _independent_ and that their probabilities can be estimated separately. 
+
+The joint probability is then the product of all of the individual probabilities (an example follows soon). 
+
+This assumption is almost certainly bogus but the model tends to do well despite this. 
+
+
+---
+
+# The Effect of Independence
+
+The probability contours assume multivariate normality with different assumptions.  
+
+Suppose the red dot is a new sample. 
+
+&lt;img src="Part_5_Classification_files/figure-html/nb-indep-1.svg" width="60%" style="display: block; margin: auto;" /&gt;
+
+Probability of the red point: 0.0000066 (accurate) and 0.013 (inaccurate). 
+
+---
+
+# Conditional Densities for Each Class
+
+`\(Pr[Essay\: Length|Class]\)`
+
+&lt;img src="Part_5_Classification_files/figure-html/nb-dens-1.svg" width="60%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Conditional Values for Numeric Predictors
+
+`\(Pr[Essay\: Length=8|Class]\)`
+
+&lt;img src="Part_5_Classification_files/figure-html/nb-numeric-1.svg" width="60%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Conditional Probabilities for Categorical Predictors
+
+`\(Pr[Religion|Class]\)`
+
+&lt;img src="Part_5_Classification_files/figure-html/nb-cat-1.svg" width="60%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Combining Predictor Scores with the Prior
+
+
+
+
+For an Atheist who wrote _e_&lt;sup&gt;8&lt;/sup&gt; words, their likelihood values were:
+
+* `\(Pr[Essay\: Length = 8|STEM] \times Pr[Religion=Atheism|STEM]\)` = 0.518 x 0.207 = 0.107
+
+* `\(Pr[Essay\: Length = 8|Other] \times Pr[Religion=Atheism|Other]\)` =0.428 x 0.103 = 0.044
+
+However, when these are combined with the _prior probability_ for each class, the _relative probabilities_ show:
+
+
+* `\(Pr[Predictors|STEM] \times Pr[STEM]\)` = 0.107 x 0.182 = 0.02
+
+* `\(Pr[Predictors|Other] \times Pr[Other]\)` = 0.044 x 0.818 = 0.036
+
+We don't need to compute the evidence; we can just normalize these values to add up to 1. 
+
+The results is that the _posterior probability_ that this person is in a STEM field is 35.1%.
+
+
+---
+
+# Pros and Cons
+
+.pull-left[
+Good: 
+
+* This model can be very quickly trained (and theoretically in parallel). 
+
+* Once trained, the prediction is basically a look-up table (i.e. fast). 
+
+* Nonlinear class boundaries can be generated. 
+
+]
+.pull-right[
+Bad:
+
+* Linearly diagonal boundaries can be difficult.
+
+* With many predictors, the class probabilities become poorly calibrated and U-shaped with most values near zero or one. 
+]
+
+
+---
+
+# U-Shaped Class Probability Distributions
+
+.pull-left[
+A completely non-informative data set was simulated using the naive assumption. 
+
+The training set has 500 data points over two classes and 450 predictors. 
+
+When a model is fit with 10 predictors, the distribution of the class probabilities gives us shapes that we would expect.
+  
+What happens when the number of predictors becomes larger? 
+]
+.pull-right[
+
+&lt;img src="Part_5_Classification_files/figure-html/normal-shape-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+]
+
+---
+
+# U-Shaped Class Probability Distributions
+
+
+
+
+&lt;img src="bayes.gif" width="45%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Naive Bayes Data Preparations
+
+There is a step specifically designed for converting binary dummy variables into factors. 
+
+First, we identify them, then use quasiquotation (via `!!!`) to pass them to the step function.
+
+
+```r
+is_dummy &lt;- function(x) length(unique(x)) == 2 &amp; is.numeric(x)
+dummy_or_not &lt;- map_lgl(okc_train, is_dummy)
+dummies &lt;- names(dummy_or_not)[dummy_or_not]
+head(dummies)
+```
+
+```
+## [1] "essay_link" "tech"       "technology" "math"       "computer"   "geek"
+```
+
+```r
+no_dummies &lt;- 
+  recipe(Class ~ ., data = okc_train) %&gt;%
+	step_bin2factor(!!! dummies) %&gt;%        # `one_of(dummies)` would also work.
+	step_zv(all_predictors())
+```
+
+We will use basic defaults for the tuning parameters: 
+
+
+```r
+nb_grid &lt;- expand.grid(usekernel = TRUE, fL = 0, adjust = 1)
+```
+
+---
+
+# Naive Bayes Training
+
+
+```r
+set.seed(5515)
+nb_mod &lt;- train(
+	no_dummies,
+	data = okc_train,
+	method = "nb",
+	metric = "ROC",
+	tuneGrid = nb_grid,
+	trControl = ctrl
+)
+```
+
+Some warnings: `## Warning in FUN(X[[i]], ...): Numerical 0 probability for all classes with observation 1`
+
+This is due to the poorly calibrated probabilities although the warning is a bit misleading. This issue does not generally affect performance and can be ignored. 
+
+
+---
+
+# Naive Bayes Resampling Profile
+
+
+```r
+nb_mod
+```
+
+```
+## Naive Bayes 
+## 
+## 4000 samples
+##   87 predictor
+##    2 classes: 'stem', 'other' 
+## 
+## Recipe steps: bin2factor, zv 
+## Resampling: Cross-Validated (10 fold) 
+## Summary of sample sizes: 3600, 3601, 3599, 3600, 3600, 3600, ... 
+## Addtional sampling using down-sampling
+## 
+## Resampling results:
+## 
+##   ROC    Sens   Spec 
+##   0.783  0.701  0.705
+## 
+## Tuning parameter 'fL' was held constant at a value of 0
+## Tuning parameter 'usekernel' was held constant at
+##  a value of TRUE
+## Tuning parameter 'adjust' was held constant at a value of 1
+```
+
+
+---
+
+# Three ROC Curves
+
+
+
+.pull-left[
+
+```r
+all_curves &lt;- 
+  all_curves %&gt;%
+  bind_rows(approx_roc_curve(nb_mod, "Naive Bayes"))
+
+ggplot(all_curves) +
+  aes(x = 1 - specificity, y = sensitivity, 
+      group = model, col = model) + 
+  geom_path()  +
+  geom_abline(col = "red", alpha = .5)
+```
+]
+.pull-right[
+
+&lt;img src="Part_5_Classification_files/figure-html/nb-roc-plot-1.svg" width="100%" style="display: block; margin: auto;" /&gt;
+]
+
+---
+
+# Test Set Results
+
+
+
+```r
+test_res &lt;- okc_test %&gt;%
+	dplyr::select(Class) %&gt;%
+	mutate(
+		prob = predict(nb_mod, okc_test, type = "prob")[, "stem"],
+		pred = predict(nb_mod, okc_test)
+	)
+roc_auc(test_res, Class, prob)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 roc_auc binary         0.772
+```
+
+```r
+getTrainPerf(nb_mod)
+```
+
+```
+##   TrainROC TrainSens TrainSpec method
+## 1    0.783     0.701     0.705     nb
+```
+
+
+---
+
+# Test Set ROC Curve
+
+.pull-left[
+
+```r
+two_class &lt;- metric_set(sens, spec, accuracy)
+two_class(test_res, truth = Class, estimate = pred)
+```
+
+```
+## # A tibble: 3 x 3
+##   .metric  .estimator .estimate
+##   &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+## 1 sens     binary         0.675
+## 2 spec     binary         0.758
+## 3 accuracy binary         0.741
+```
+
+```r
+test_roc &lt;- roc_curve(test_res, Class, prob)
+```
+
+```r
+  ggplot(test_roc) +
+  aes(x = 1 - specificity, y = sensitivity) + 
+  geom_path()  +
+  geom_abline(col = "red", alpha = .5)
+```
+]
+.pull-right[
+&lt;img src="Part_5_Classification_files/figure-html/test-roc-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+]
+
+---
+
+# Test Set Class Probabilities
+
+
+```r
+ggplot(test_res, aes(x = prob)) + geom_histogram(binwidth = .04) + facet_wrap( ~ Class) +
+  xlab("Pr[Stem]")
+```
+
+&lt;img src="Part_5_Classification_files/figure-html/test-probs-1.svg" width="65%" style="display: block; margin: auto;" /&gt;
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightLanguage": "R",
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

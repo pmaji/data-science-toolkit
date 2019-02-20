@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>tidymodels Discussion</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Max Kuhn (RStudio)" />
+    <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
+    <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# tidymodels Discussion
+### Max Kuhn (RStudio)
+
+---
+
+
+
+
+# On the Horizon
+
+There is a project list in the [`tidymodels` org](https://github.com/orgs/tidymodels/projects) that has a list of ac tivities and potential projects that we will be tackling. 
+
+
+---
+
+# Pipelines
+
+As previously mentioned, the modeling _process_ includes pre-modeling activities (e.g. feature engineering) as well as post-processing actions such as 
+
+* choosing an appropriate probabilitiy threshold
+
+* calibrating probabilities
+
+* appling equivocal zones and model applicability domain analyses
+
+Modeling pipelines exist in [python](https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html) and [spark](https://spark.apache.org/docs/latest/ml-pipeline.html). 
+
+Our implmentation will be tidy and allow users to quickly try different cpmbinations of technqiues. 
+
+
+---
+
+# Pipelines Syntax
+
+Suppose we need to impute some data, fit a logistic regression, then choose an appropriate probability threshold. 
+
+Although it isn't finalized, the syntax will look something like:
+
+
+```r
+data(credit_data)
+
+imputer &lt;- 
+  recipe(Status ~ ., data = credit_data) %&gt;%
+  step_knnimpute(Home, Marital, Job, Income, Assets, Debt) %&gt;%
+  step_downsample(Status)
+
+credit_pln &lt;- 
+  pipeline() %&gt;%
+  add_recipe(imputer) %&gt;%
+  add_model(logistic_reg() %&gt;% set_engine("glmnet")) %&gt;%
+  add_cutoff(0.25)
+
+trained &lt;- fit(credit_pln, training = credit_data)
+
+predict(credit_pln, new_data = new_customer)
+```
+
+
+---
+
+# Automatically Identify Tunable Parameters
+
+.pull-left[
+
+```r
+imputer &lt;- 
+  recipe(Status ~ ., data = credit_data) %&gt;%
+  step_knnimpute(Home, Marital, Job, 
+                 Income, Assets, Debt, 
+                 neighbors = varying()) %&gt;%
+  step_downsample(Status)
+
+mod &lt;- 
+  logistic_reg(
+    mixture = varying(), 
+    penalty = varying()
+  ) %&gt;% 
+  set_engine("glmnet")
+
+credit_pln &lt;- 
+  pipeline() %&gt;%
+  add_recipe(imputer) %&gt;%
+  add_model(mod) %&gt;%
+  add_cutoff(threshold = varying())
+```
+]
+.pull-right[
+
+```r
+varying_args(credit_pln)
+```
+
+```
+## # A tibble: 4 x 4
+##   name      varying id             type      
+##   &lt;chr&gt;     &lt;lgl&gt;   &lt;chr&gt;          &lt;chr&gt;     
+## 1 neighbors TRUE    step_knnimpute step      
+## 2 penalty   TRUE    model          model_spec
+## 3 mixture   TRUE    model          model_spec
+## 4 threshold TRUE    cutoff         cutoff
+```
+]
+
+
+---
+
+# Model Tuning Syntax Prototype
+
+
+```r
+resamp &lt;- vfold_cv(credit_data)
+
+grid_search(credit_pln, resamp, levels = 5)
+
+# or
+grid_racing(credit_pln, resamp, levels = 5, initial = 3)
+
+# or 
+rnd_param &lt;- random_search(credit_pln, resamp, size = 25)
+
+# and/or
+bayes_search(credit_pln, resamp, initial = rnd_param, num_iter = 20)
+
+# Loop back to the pipeline to update
+finalized_pln &lt;- 
+  update(credit_pln, param_best(bayes_search)) %&gt;%
+  fit(training = credit_data)
+```
+
+
+---
+
+# Principles of Modeling Packages and Templates
+
+.font90[
+We are in the process of developing a set of _guidelines_ for making good modeling packages. For example:
+
+ * Separate the interface that the **modeler** uses from the code to do the computations. They serve two very different purposes. 
+
+ * Have multiple interfaces (e.g. formula, x/y, etc). 
+
+ * The _user-facing interface_ should use the most appropriate data structures for the data (as opposed to the computations). For example, factor outcomes versus 0/1 indicators and data frames versus matrices. 
+
+ * `type = "prob"` for class probabilities 😄. 
+
+ * Use S3 methods.  
+
+ * The `predict` method should give standardized, predictable results. 
+
+Rather than try to make methodologists into software developers, we will provide **GitHub repositories** with template packages that can be used to meet these guidelines (along with documentation and examples on _why_). 
+
+]
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightLanguage": "R",
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

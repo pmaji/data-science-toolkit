@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Applied Machine Learning - Regression Modeling</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Max Kuhn (RStudio)" />
+    <script src="libs/kePrint-0.0.1/kePrint.js"></script>
+    <script src="libs/htmlwidgets-1.3/htmlwidgets.js"></script>
+    <script src="libs/viz-0.3/viz.js"></script>
+    <link href="libs/DiagrammeR-styles-0.2/styles.css" rel="stylesheet" />
+    <script src="libs/grViz-binding-1.0.0/grViz.js"></script>
+    <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
+    <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Applied Machine Learning - Regression Modeling
+### Max Kuhn (RStudio)
+
+---
+
+
+
+
+# Outline
+
+* Example Data
+* Regularized Linear Models
+* Multivariate Adaptive Regression Splines
+* Ensembles of MARS Models
+* Model Comparison via Bayesian Analysis
+
+
+
+---
+
+# Load Packages  &lt;img src="images/tidymodels_hex.png" class="title-hex"&gt;
+
+.code70[
+
+```r
+library(tidymodels)
+```
+
+```
+## ── Attaching packages ──────────────────────────────────────────────────────────── tidymodels 0.0.2 ──
+```
+
+```
+## ✔ broom     0.5.1     ✔ purrr     0.2.5
+## ✔ dials     0.0.2     ✔ recipes   0.1.4
+## ✔ dplyr     0.7.8     ✔ rsample   0.0.4
+## ✔ infer     0.4.0     ✔ tibble    2.0.0
+## ✔ parsnip   0.0.1     ✔ yardstick 0.0.2
+```
+
+```
+## ── Conflicts ─────────────────────────────────────────────────────────────── tidymodels_conflicts() ──
+## ✖ purrr::accumulate() masks foreach::accumulate()
+## ✖ dplyr::combine()    masks gridExtra::combine()
+## ✖ purrr::discard()    masks scales::discard()
+## ✖ dplyr::filter()     masks stats::filter()
+## ✖ dplyr::lag()        masks stats::lag()
+## ✖ recipes::step()     masks stats::step()
+## ✖ purrr::when()       masks foreach::when()
+```
+]
+
+
+---
+layout: false
+class: inverse, middle, center
+
+# Example Data
+
+
+---
+
+# Expanded Car MPG Data  &lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+
+
+.font80[
+The data that are used here are an extended version of the ubiquitous `mtcars` data set. 
+
+[`fueleconomy.gov`](https://www.fueleconomy.gov/feg/download.shtml) was used to obtain fuel efficiency data on cars from 2015-2019. 
+
+Over this time range, duplicate ratings were eliminated; these occur when the same car is sold for several years in a row. As a result, there are 4209 cars that are listed in the data. The predictors include the automaker and addition information about the cars (e.g. intake valves per cycle, aspiration method, etc). 
+
+In our analysis, the data from 2015-2018 are used for training to see if we can predict the 613 cars that were new in 2018 or 2019. 
+]
+
+.code70[
+
+```r
+url &lt;- "https://github.com/topepo/cars/raw/master/2018_12_02_city/car_data_splits.RData"
+temp_save &lt;- tempfile()
+download.file(url, destfile = temp_save)
+load(temp_save)
+
+car_train %&gt;% bind_rows(car_test) %&gt;% group_by(year) %&gt;% count()
+```
+
+```
+## # A tibble: 5 x 2
+## # Groups:   year [5]
+##    year     n
+##   &lt;int&gt; &lt;int&gt;
+## 1  2015  1277
+## 2  2016   758
+## 3  2017   846
+## 4  2018   715
+## 5  2019   613
+```
+]
+
+
+---
+
+# Gas-Related Vehicles Only! &lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+Non-combustion engines have their MPG estimated even though there are no real gallons. Let's get rid of these for simplicity. 
+
+
+```r
+removals &lt;- c("CNG", "Electricity")
+
+car_train &lt;- 
+  car_train %&gt;% 
+  dplyr::filter(!(fuel_type %in% removals)) %&gt;%
+  mutate(fuel_type = relevel(fuel_type, "Gasoline_or_natural_gas"))
+
+car_test &lt;-
+  car_test %&gt;% 
+  dplyr::filter(!(fuel_type %in% removals)) %&gt;%
+  mutate(fuel_type = relevel(fuel_type, "Gasoline_or_natural_gas"))
+```
+
+
+---
+
+# Hands-On: Explore the Car Data
+
+As before, let's take 10 minutes to get familiar with the training set using numerical summaries and plots. 
+
+More information about the data can be found on the [government website](https://www.fueleconomy.gov/feg/ws/index.shtml) and in [this repo](https://github.com/topepo/cars). 
+
+`geom_smooth` is very helpful here to discover the nature of relationships between the outcome (`mpg`) and the potential predictors. 
+
+&lt;br&gt; 
+&lt;br&gt;
+
+**Question**: If you had two models with competing RMSE values (in mpg), how big of a difference would be big enough to be _practical_? 
+
+
+???
+
+```
+ggplot(car_train, aes(x = eng_displ, y = mpg)) + geom_point() + geom_smooth()
+ggplot(car_train, aes(x = 1/sqrt(eng_displ), y = mpg)) + geom_point() + geom_smooth()
+library(splines)
+ggplot(car_train, aes(x = eng_displ, y = mpg)) + geom_point() + geom_smooth(method = "lm", formula = y ~ poly(x, 2))
+ggplot(car_train, aes(x = eng_displ, y = mpg)) + geom_point() + geom_smooth(method = "lm", formula = y ~ ns(x, df = 4))
+
+ggplot(car_train, aes(x = cylinders, y = mpg)) + geom_point() + geom_smooth()
+ggplot(car_train, aes(x = cylinders, y = mpg)) + geom_point() + geom_smooth(method = "lm", formula = y ~ ns(x, 4))
+
+car_train %&gt;% 
+  dplyr::filter(grepl("Cayenne", model)) %&gt;% 
+  dplyr::select(model, year, mpg) %&gt;% 
+  arrange(model, year)
+```
+
+
+---
+layout: false
+class: inverse, middle, center
+
+# Linear Models
+
+ 
+---
+
+# Linear Regression Analysis
+
+We'll start by fitting linear regression models to these data. 
+
+As a reminder, the "linear" part means that the model is linear in the _parameters_; we can add nonlinear terms to the model (e.g. `x^2` or `log(x)`) without causing issues. 
+
+We could start by using `lm` and the formula method using what we've learned so far: 
+
+
+```r
+library(splines)
+lm(mpg ~ . -model + ns(eng_displ, 4) + ns(cylinders, 4), data = car_train)
+```
+
+
+---
+
+# However... &lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+.code70[
+
+```r
+car_train %&gt;%
+  group_by(make) %&gt;%
+  count() %&gt;%
+  arrange(n) %&gt;%
+  head(6)
+```
+
+```
+## # A tibble: 6 x 2
+## # Groups:   make [6]
+##   make                      n
+##   &lt;fct&gt;                 &lt;int&gt;
+## 1 Karma                     1
+## 2 Koenigsegg                1
+## 3 Mobility_Ventures_LLC     1
+## 4 Bugatti                   2
+## 5 Lotus                     2
+## 6 Pagani                    2
+```
+]
+
+If one of these low occurrence car makes is only in the assessment set, it may cause issues (or errors) in some models.  
+
+A basic recipe will be created to account for this that collapses these data into an "other" category and will create dummy variables. 
+
+The recipe can be augmented when the model requires additional preprocessing.  
+
+
+---
+
+# Linear Regression Analysis for the Car Data   &lt;img src="images/recipes.png" class="title-hex"&gt;&lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+With recipes, variables can have different roles, such as case-weights, cluster, censoring indicator, etc. 
+
+We should keep `model` in the data so that we can use it to diagnose issues but we don't want it as a predictor. 
+
+The role of this variable will be changed to `"model"`. 
+
+
+
+```r
+basic_rec &lt;- recipe(mpg ~ ., data = car_train) %&gt;%
+  # keep the car name but don't use as a predictor
+  update_role(model, new_role = "model") %&gt;%
+  # collapse some makes into "other"
+  step_other(make, car_class, threshold = 0.005) %&gt;%
+  step_other(fuel_type, threshold = 0.01) %&gt;%
+  step_dummy(all_nominal(), -model) %&gt;%
+  step_zv(all_predictors())
+```
+
+???
+
+This will results in 114 predictors using the entire training set. 
+
+
+---
+
+# Potential Issues with Linear Regression
+
+We'll look at the car data and examine a few different models to illustrate some more complex models and approaches to optimizing them. We'll start with linear models. 
+
+However, some potential issues with linear methods:
+
+* They do not automatically do _feature selection_ and including irrelevant predictors may degrade performance.
+* Linear models are sensitive to situations where the predictors are _highly correlated_ (aka collinearity). This isn't too big of an issue for these data though. 
+
+To mitigate these two scenarios, _regularization_ will be used.  This approach adds a penalty to the regression parameters. 
+
+ * In order to have a large slope in the model, the predictor will need to have a large impact on the model. 
+ 
+There are different types of regularization methods. 
+
+
+---
+
+# Effect of Collinearity
+
+
+As an example of collinearity, our data set has two predictors that have a correlation above 0.95: `two_door_lug_vol` and `two_door_pass_vol`.
+
+What happens when we fit models with both predictors versus one-at-a-time? 
+
+
+&lt;table class="table" style="margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+&lt;tr&gt;
+&lt;th style="border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="1"&gt;&lt;div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;"&gt;Term&lt;/div&gt;&lt;/th&gt;
+&lt;th style="border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3"&gt;&lt;div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;"&gt;Coefficients&lt;/div&gt;&lt;/th&gt;
+&lt;th style="border-bottom:hidden" colspan="1"&gt;&lt;/th&gt;
+&lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; 2 Door Lugg Vol &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; 2 Door Pass Vol &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; Both Predictors &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; Variance Inflation &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 2 Door Lugg Vol &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.173 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; --- &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.125 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 14.1 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 2 Door Pass Vol &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; --- &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.023 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.038 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 14.1 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+The coefficients can drastically change depending on what is in the model and their corresponding variances can also be artificially large. 
+
+
+---
+
+# Regularized Linear Regression
+
+Now suppose we want to see if _regularizing_ the regression coefficients will result in better fits. 
+
+The [`glmnet`](https://www.jstatsoft.org/article/view/v033i01) model can be used to build a linear model using L&lt;sub&gt;1&lt;/sub&gt; or L&lt;sub&gt;2&lt;/sub&gt; regularization (or a mixture of the two). 
+
+ * The general formulation minimizes: `\(\sum_{i = 1}^{n} (y_i - \sum_{j = 1}^{p} x_{ij} \beta_j) ^ 2 + penalty\)`.
+ * An L&lt;sub&gt;1&lt;/sub&gt; penalty (penalty is `\(\lambda_1\sum|\beta_j|\)`) can have the effect of setting coefficients to zero. 
+ * L&lt;sub&gt;2&lt;/sub&gt; regularization ( `\(\lambda_2\sum\beta_j^2\)` ) is basically ridge regression where the magnitude of the coefficients are dampened to avoid overfitting.
+
+For a `glmnet` model, we need to determine the total amount regularization (called `lambda`) and the mixture of L&lt;sub&gt;1&lt;/sub&gt; and L&lt;sub&gt;2&lt;/sub&gt; (called `alpha`). 
+
+* `alpha` = 1  is a _lasso model_ while `alpha` = 0  is _ridge regression_ (aka weight decay).
+
+Predictors require centering/scaling before being used in a `glmnet`, lasso, or ridge regression model. 
+
+Technical bits can be found in [Statistical Learning with Sparsity](https://web.stanford.edu/~hastie/StatLearnSparsity/).
+
+???
+
+Note the need to center and scale based on the type of penalty
+
+---
+
+# Tuning the `glmnet` Model
+
+We have two tuning parameters now (`alpha` and `lambda`). We can extend our previous grid search approach by creating a 2D grid of parameters to test.  
+
+* `alpha` must be between zero and one. A small grid is used for this parameter.  
+* `lambda` is not as clear-cut. We consider values on the log&lt;sub&gt;10&lt;/sub&gt; scale. Usually values less than one are sufficient but this is not always true. 
+
+We can create combinations of these parameters and store them in a data frame:
+
+
+```r
+glmn_grid &lt;- expand.grid(alpha = seq(0, 1, by = .25), lambda = 10^seq(-3, -1, length = 20))
+nrow(glmn_grid)
+```
+
+```
+## [1] 100
+```
+
+Instead of using `rsample` to tune the model, the `train` function in the `caret` package will be introduced. 
+
+
+---
+
+# `caret`
+
+[`caret`](https://cran.rstudio.com/web/packages/caret/index.html) was developed to:
+
+* create a unified interface for modeling and prediction to 238 models
+* streamline model tuning using resampling
+* provide a variety of "helper" functions and classes for day-to-day model building tasks 
+* increase computational efficiency using parallel processing 
+* enable several feature selection frameworks
+
+It was originally developed in 2005 and is still very active. 
+
+There is an extensive [`github.io`](https://topepo.github.io/caret/) page and an [article in JSS](http://www.jstatsoft.org/v28/i05/paper). 
+
+
+---
+
+# `caret` Basics
+
+.pull-left[
+
+`train()` can take a formula method, a recipe object, or a non-formula approach (`x`/`y`) to specify the model. 
+
+
+```r
+train(recipe, data = dataset)
+# or 
+train(y ~ ., data = dataset)
+# or
+train(x = predictors, y = outcome)
+```
+
+Another argument, `method`, is used to specify the type of model to fit. 
+
+This is _usually_ named after the fitting function. 
+]
+.pull-right[
+
+
+We will need to use `method = "glmnet"` for that model. [`?models`](https://www.rdocumentation.org/packages/caret/versions/6.0-78/topics/train_model_list) has a list of all possibilities.  
+
+_One way_ of listing the submodels that should be evaluated is to used the `tuneGrid` parameter:
+
+
+```r
+train(recipe, 
+      data = car_train, 
+      method = "glmnet",
+      tuneGrid = glmn_grid)
+```
+
+Alternatively, the `tuneLength` argument will let `train` determine a grid sequence for each parameter. 
+
+]
+---
+
+# The Resampling Scheme
+
+How much (and how) should we resample these data to create the model?
+
+Previously, cross-validation was discussed. If 10-fold CV was used, the assessment set would consist of about 352 cars (on average). 
+
+That seems like an acceptable amount of data to determine the RMSE for each submodel. 
+
+`train()` has a control function that can be used to define parameters related to the numerical aspects of the search: 
+
+
+
+```r
+library(caret)
+ctrl &lt;- trainControl(
+  method = "cv", 
+  # Save the assessment predictions from the best model
+  savePredictions = "final",
+  # Log the progress of the tuning process
+  verboseIter = TRUE
+  )
+```
+
+???
+There are ways to translate `rsample` resample indices to `caret` and vice-versa. 
+
+
+---
+
+# Fitting the Model via `caret::train()` &lt;img src="images/recipes.png" class="title-hex"&gt; 
+
+Let's add some nonlinearity and centering/scaling to the preprocessing and run the search: 
+
+
+```r
+glmn_rec &lt;- 
+  basic_rec %&gt;%
+  step_center(all_predictors()) %&gt;%
+  step_scale(all_predictors()) %&gt;%
+  step_ns(eng_displ, cylinders, options = list(df = 4))
+
+
+set.seed(92598)
+glmn_mod &lt;- train(
+  glmn_rec, 
+  data = car_train,
+  method = "glmnet", 
+  trControl = ctrl,
+  tuneGrid = glmn_grid
+  )
+```
+
+```
+## Preparing recipe
+## + Fold01: alpha=0.00, lambda=0.1 
+## - Fold01: alpha=0.00, lambda=0.1 
+## + Fold01: alpha=0.25, lambda=0.1 
+## - Fold01: alpha=0.25, lambda=0.1 
+## + Fold01: alpha=0.50, lambda=0.1 
+## - Fold01: alpha=0.50, lambda=0.1 
+## + Fold01: alpha=0.75, lambda=0.1 
+## - Fold01: alpha=0.75, lambda=0.1 
+## + Fold01: alpha=1.00, lambda=0.1 
+## - Fold01: alpha=1.00, lambda=0.1 
+## + Fold02: alpha=0.00, lambda=0.1 
+## - Fold02: alpha=0.00, lambda=0.1 
+## + Fold02: alpha=0.25, lambda=0.1 
+## - Fold02: alpha=0.25, lambda=0.1 
+## + Fold02: alpha=0.50, lambda=0.1 
+## - Fold02: alpha=0.50, lambda=0.1 
+## + Fold02: alpha=0.75, lambda=0.1 
+## - Fold02: alpha=0.75, lambda=0.1 
+## + Fold02: alpha=1.00, lambda=0.1 
+## - Fold02: alpha=1.00, lambda=0.1 
+## + Fold03: alpha=0.00, lambda=0.1 
+## - Fold03: alpha=0.00, lambda=0.1 
+## + Fold03: alpha=0.25, lambda=0.1 
+## - Fold03: alpha=0.25, lambda=0.1 
+## + Fold03: alpha=0.50, lambda=0.1 
+## - Fold03: alpha=0.50, lambda=0.1 
+## + Fold03: alpha=0.75, lambda=0.1 
+## - Fold03: alpha=0.75, lambda=0.1 
+## + Fold03: alpha=1.00, lambda=0.1 
+## - Fold03: alpha=1.00, lambda=0.1 
+## + Fold04: alpha=0.00, lambda=0.1 
+## - Fold04: alpha=0.00, lambda=0.1 
+## + Fold04: alpha=0.25, lambda=0.1 
+## - Fold04: alpha=0.25, lambda=0.1 
+## + Fold04: alpha=0.50, lambda=0.1 
+## - Fold04: alpha=0.50, lambda=0.1 
+## + Fold04: alpha=0.75, lambda=0.1 
+## - Fold04: alpha=0.75, lambda=0.1 
+## + Fold04: alpha=1.00, lambda=0.1 
+## - Fold04: alpha=1.00, lambda=0.1 
+## + Fold05: alpha=0.00, lambda=0.1 
+## - Fold05: alpha=0.00, lambda=0.1 
+## + Fold05: alpha=0.25, lambda=0.1 
+## - Fold05: alpha=0.25, lambda=0.1 
+## + Fold05: alpha=0.50, lambda=0.1 
+## - Fold05: alpha=0.50, lambda=0.1 
+## + Fold05: alpha=0.75, lambda=0.1 
+## - Fold05: alpha=0.75, lambda=0.1 
+## + Fold05: alpha=1.00, lambda=0.1 
+## - Fold05: alpha=1.00, lambda=0.1 
+## + Fold06: alpha=0.00, lambda=0.1 
+## - Fold06: alpha=0.00, lambda=0.1 
+## + Fold06: alpha=0.25, lambda=0.1 
+## - Fold06: alpha=0.25, lambda=0.1 
+## + Fold06: alpha=0.50, lambda=0.1 
+## - Fold06: alpha=0.50, lambda=0.1 
+## + Fold06: alpha=0.75, lambda=0.1 
+## - Fold06: alpha=0.75, lambda=0.1 
+## + Fold06: alpha=1.00, lambda=0.1 
+## - Fold06: alpha=1.00, lambda=0.1 
+## + Fold07: alpha=0.00, lambda=0.1 
+## - Fold07: alpha=0.00, lambda=0.1 
+## + Fold07: alpha=0.25, lambda=0.1 
+## - Fold07: alpha=0.25, lambda=0.1 
+## + Fold07: alpha=0.50, lambda=0.1 
+## - Fold07: alpha=0.50, lambda=0.1 
+## + Fold07: alpha=0.75, lambda=0.1 
+## - Fold07: alpha=0.75, lambda=0.1 
+## + Fold07: alpha=1.00, lambda=0.1 
+## - Fold07: alpha=1.00, lambda=0.1 
+## + Fold08: alpha=0.00, lambda=0.1 
+## - Fold08: alpha=0.00, lambda=0.1 
+## + Fold08: alpha=0.25, lambda=0.1 
+## - Fold08: alpha=0.25, lambda=0.1 
+## + Fold08: alpha=0.50, lambda=0.1 
+## - Fold08: alpha=0.50, lambda=0.1 
+## + Fold08: alpha=0.75, lambda=0.1 
+## - Fold08: alpha=0.75, lambda=0.1 
+## + Fold08: alpha=1.00, lambda=0.1 
+## - Fold08: alpha=1.00, lambda=0.1 
+## + Fold09: alpha=0.00, lambda=0.1 
+## - Fold09: alpha=0.00, lambda=0.1 
+## + Fold09: alpha=0.25, lambda=0.1 
+## - Fold09: alpha=0.25, lambda=0.1 
+## + Fold09: alpha=0.50, lambda=0.1 
+## - Fold09: alpha=0.50, lambda=0.1 
+## + Fold09: alpha=0.75, lambda=0.1 
+## - Fold09: alpha=0.75, lambda=0.1 
+## + Fold09: alpha=1.00, lambda=0.1 
+## - Fold09: alpha=1.00, lambda=0.1 
+## + Fold10: alpha=0.00, lambda=0.1 
+## - Fold10: alpha=0.00, lambda=0.1 
+## + Fold10: alpha=0.25, lambda=0.1 
+## - Fold10: alpha=0.25, lambda=0.1 
+## + Fold10: alpha=0.50, lambda=0.1 
+## - Fold10: alpha=0.50, lambda=0.1 
+## + Fold10: alpha=0.75, lambda=0.1 
+## - Fold10: alpha=0.75, lambda=0.1 
+## + Fold10: alpha=1.00, lambda=0.1 
+## - Fold10: alpha=1.00, lambda=0.1 
+## Aggregating results
+## Selecting tuning parameters
+## Fitting alpha = 1, lambda = 0.00207 on full training set
+```
+
+???
+Print the object and note the logging of `lambda`. 
+
+
+---
+
+# Aside: Submodel Trick
+
+Our grid contained 5 values for `alpha` and 20 values of `lambda`. 
+
+Although it might seem like we are fitting 100 models _per_ resample, we are not. 
+
+For many models, including `glmnet`, there are some computational shortcuts that can be used. 
+
+In this case, for a fixed value of `alpha`, the `glmnet` model computes the results for all possible values of `lambda`. Predictions from any of these models can be obtained from the same object. 
+
+This means that we only need to fit 5 models per resample. 
+
+Trees and other models can often exploit this _submodel trick_ and `caret` automatically does this whenever possible.  
+
+
+---
+
+# Resampling Profile for `lambda` &lt;img src="images/ggplot2.png" class="title-hex"&gt;
+
+.pull-left[
+
+```r
+glmn_mod$bestTune
+```
+
+```
+##    alpha  lambda
+## 84     1 0.00207
+```
+
+```r
+ggplot(glmn_mod) + scale_x_log10() + theme(legend.position = "top")
+```
+]
+.pull-right[
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/car-glmn-rmse-plot-1.svg" width="100%" style="display: block; margin: auto;" /&gt;
+]
+
+
+???
+These points are averages of 10 resamples as before. 
+
+On the whole training set, the recipe gives us 114 predictors and this model only used 115 or 100.9%. 
+
+Estimated `lambda`=0.002 and `alpha`=1
+
+---
+
+# Model Checking Using the Assessment Set &lt;img src="images/ggplot2.png" class="title-hex"&gt;
+
+.pull-left[
+Since we used `savePredictions = "final"`, the predictions on the assessment sets are contained in the sub-object `glmn_mod$pred`. This can be used to plot the data:
+
+
+```r
+glmn_mod$pred %&gt;% head(4)
+```
+
+```
+##   alpha  lambda  obs rowIndex pred Resample
+## 1     1 0.00207 19.0     3501 17.2   Fold03
+## 2     1 0.00207 22.3     3374 22.2   Fold03
+## 3     1 0.00207 23.8     3494 27.1   Fold03
+## 4     1 0.00207 30.5     2848 34.9   Fold06
+```
+
+```r
+ggplot(glmn_mod$pred, aes(x = obs, y = pred)) +
+  geom_abline(col = "green", alpha = .5) + 
+  geom_point(alpha = .3) + 
+  geom_smooth(se = FALSE, col = "red", 
+              lty = 2, lwd = 1, alpha = .5)
+```
+]
+.pull-right[
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/car-glmn-op-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+]
+
+???
+
+Slight regression to the mean;
+
+Same outliers
+
+
+---
+
+# Better Plots &lt;img src="images/rlang.png" class="title-hex"&gt;&lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+.pull-left[
+The `caret` object `glmn_mod$pred` doesn't contain any information about the cars. Let's add some columns and also use the [`ggrepel` package](https://github.com/slowkow/ggrepel) to identify locations of poor fit.
+
+The function `add_columns()` will add columns to the `pred` data in the `train` object. 
+
+`geom_text_repel()` can be used with a subset of the data to locate large residuals.
+
+The `ggiraph` and `plotly` packages are also good options for interactivity. 
+]
+.pull-right[
+
+```r
+add_columns &lt;- function(x, dat, ...) {
+  # capture any selectors and filter the data
+  dots &lt;- quos(...)
+  if (!is_empty(dots))
+    dat &lt;- dplyr::select(dat, year, model, !!!dots)
+  
+  dat &lt;-
+    x %&gt;%
+    pluck("pred") %&gt;%
+    arrange(rowIndex) %&gt;%
+    dplyr::select(-rowIndex) %&gt;%
+    bind_cols(dat)
+  
+  # create a label column when possible
+  if (all(c("model", "year") %in% names(dat)))
+    dat &lt;-
+    dat %&gt;%
+    mutate(plot_label = paste(year, model))
+  dat
+}
+```
+]
+
+
+
+---
+
+# Convenience Functions &lt;img src="images/ggrepl.svg" class="title-hex"&gt;&lt;img src="images/ggplot2.png" class="title-hex"&gt;&lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+.pull-left[
+
+.code70[
+
+
+```r
+obs_pred_plot &lt;- function(x, dat, cutoff = 25, ...) {
+  
+  pred_dat &lt;- x %&gt;%
+    add_columns(dat, model, year) %&gt;%
+    mutate(residuals = obs - pred) 
+  
+  ggplot(pred_dat, aes(x = pred, y = obs)) +
+    
+    geom_abline(col = "green", alpha = .5) + 
+    
+    geom_point(alpha = .3) + 
+    
+    geom_smooth(
+      se = FALSE, col = "red", 
+      lty = 2, lwd = .25, alpha = .5
+    ) + 
+    
+    geom_text_repel(
+      data = dplyr::filter(pred_dat, abs(residuals) &gt; cutoff),
+      aes(label = plot_label),
+      segment.color = "grey50"
+    )
+}
+```
+
+]
+
+]
+.pull-right[
+
+.code70[
+
+
+```r
+resid_plot &lt;- function(x, dat, cutoff = 25, ...) {
+  
+  pred_dat &lt;- x %&gt;%
+    add_columns(dat, model, year) %&gt;%
+    mutate(residuals = obs - pred) 
+  
+  ggplot(pred_dat, aes(x = pred, y = residuals)) +
+    
+    geom_hline(col = "green", yintercept = 0) + 
+    
+    geom_point(alpha = .3) + 
+    
+    geom_text_repel(
+      data = dplyr::filter(
+        pred_dat, 
+        abs(residuals) &gt; cutoff
+      ),
+      aes(label = plot_label),
+      segment.color = "grey50"
+    )
+}
+```
+
+]
+
+]
+
+---
+
+# Model Checking for glmnet Models &lt;img src="images/ggrepl.svg" class="title-hex"&gt;&lt;img src="images/ggplot2.png" class="title-hex"&gt;
+
+.pull-left[
+
+
+```r
+obs_pred_plot(glmn_mod, car_train)
+```
+
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/glmn-pred-plot-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+
+]
+.pull-right[
+
+
+```r
+resid_plot(glmn_mod, car_train)
+```
+
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/glmn-resid-plot-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+
+]
+
+
+---
+
+# Variable Importance Scores &lt;img src="images/ggplot2.png" class="title-hex"&gt;
+
+.pull-left[
+For a linear model such as `glmnet`, we can directly inspect and interpret the model coefficients to understand what is going on. 
+
+A more general approach of computing "variable importance" scores can be useful for assessing which predictors are driving the model. These are model-specific. 
+
+For this model, we can plot the absolute values of the coefficients. 
+
+This is another good reason to center and scale the predictors before the model. 
+]
+.pull-right[
+
+```r
+reg_imp &lt;- varImp(glmn_mod, scale = FALSE)
+ggplot(reg_imp, top = 30) + xlab("")
+```
+
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/car-glmn-imp-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+]
+
+???
+Note that `xlab` is used because the code uses `coord_flip`. 
+
+Interpret dummy variables in terms of reference cell:
+
+
+
+---
+
+# Notes on `train()`
+
+* Setting the seed just before calling `train()` will ensure that the same resamples are used between models. There is also a [help page on reproducibility](https://topepo.github.io/caret/model-training-and-tuning.html#repro).
+
+* `train()` calls the underlying model (e.g. `glmnet`) and arguments can be passed to the lower level functions via the `...`.
+
+* You can write your own model code (or examine what `train()` uses) with  `getModelInfo()`. 
+
+* If the formula method is used, dummy variables will _always_ be generated for the model. 
+
+* If you don't like the settings that are chosen, `update()` can be used to change them without repeating all of the resampling. 
+
+---
+
+# Using the `glmnet` Object
+.pull-left[
+The `train` object saves the optimized model that was fit to the entire training set in the slot `finalModel`. 
+
+This can be used as it normally would. 
+
+The plot on the right is creating using
+
+```r
+library(glmnet)
+plot(glmn_mod$finalModel, xvar = "lambda")
+```
+
+However, **please don't predict with it**! 
+
+Use the `predict()` method on the object that is produced by `train`. 
+]
+.pull-right[
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/reg-path-1.svg" width="99%" style="display: block; margin: auto;" /&gt;
+]
+???
+Note the `library` call
+
+Coefs:
+
+```
+##    (Intercept) eng_displ_ns_1 eng_displ_ns_2 plug_in_hybrid 
+##          31.59         -31.22          -8.23           5.98
+```
+
+
+---
+
+# A better glmnet Plot &lt;img src="images/ggrepl.svg" class="title-hex"&gt;&lt;img src="images/ggplot2.png" class="title-hex"&gt;&lt;img src="images/dplyr.png" class="title-hex"&gt;&lt;img src="images/broom.png" class="title-hex"&gt;
+
+
+```r
+# Get the set of coefficients across penalty values
+tidy_coefs &lt;- broom::tidy(glmn_mod$finalModel) %&gt;%
+  dplyr::filter(term != "(Intercept)") %&gt;% 
+  dplyr::select(-step, -dev.ratio)
+
+# Get the lambda closest to caret's optimal choice 
+delta &lt;- abs(tidy_coefs$lambda - glmn_mod$bestTune$lambda)
+lambda_opt &lt;- tidy_coefs$lambda[which.min(delta)]
+
+# Keep the large values
+label_coefs &lt;- tidy_coefs %&gt;%
+  mutate(abs_estimate = abs(estimate)) %&gt;% 
+  dplyr::filter(abs_estimate &gt;= 3) %&gt;% 
+  distinct(term) %&gt;% 
+  inner_join(tidy_coefs, by = "term") %&gt;% 
+  dplyr::filter(lambda == lambda_opt)
+
+# plot the paths and highlight the large values
+tidy_coefs %&gt;%
+  ggplot(aes(x = lambda, y = estimate, group = term, col = term, label = term)) + 
+  geom_line(alpha = .4) + 
+  theme(legend.position = "none") + 
+  scale_x_log10() + 
+  geom_text_repel(data = label_coefs, aes(x = .0005)) 
+```
+
+---
+
+# A better glmnet Plot &lt;img src="images/ggrepl.svg" class="title-hex"&gt;&lt;img src="images/ggplot2.png" class="title-hex"&gt;
+
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/reg-glmnet-path-1.svg" width="80%" style="display: block; margin: auto;" /&gt;
+
+---
+layout: false
+class: inverse, middle, center
+
+# Multivariate Adaptive Regression Splines
+
+
+---
+
+# Multivariate Adaptive Regression Splines (MARS)
+
+MARS is a nonlinear machine learning model that develops sequential sets of artificial features that are used in linear models (similar to the previous spline discussion). 
+
+The features are "hinge functions" or single knot splines that use the function:
+
+
+```r
+h(x) &lt;- function(x) ifelse(x &gt; 0, x, 0)
+```
+
+The MARS model does a fast search through every predictor and every value of each predictor to find a suitable "split" point for the predictor that results in the best features. 
+
+Suppose a value `x0` is found. The MARS model creates two model terms `h(x - x0)` and `h(x0 - x)` that are added to the intercept column. This creates a type of _segmented regression_. 
+
+These terms are the same as deep learning rectified linear units ([ReLU](https://en.wikipedia.org/wiki/Rectifier_(neural_networks)). 
+
+Let's look at some example data...
+
+
+---
+
+# Simulated Data: `y = 2 * exp(-6 * (x - 0.3)^2) + e`
+
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/mars-sim-1.svg" width="50%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# MARS Feature Creation -- Iteration #1
+
+.pull-left[
+After searching through these data, the model evaluates all possible values of `x0` to find the best "cut" of the data. It finally chooses a value of -0.404. 
+
+To do this, it creates these two new predictors that isolate different regions of `x`. 
+
+If we stop there, these two terms would be added into a linear regression model, yielding:
+
+
+```
+## y =
+##   0.111
+##   - 0.262 * h(-0.404175 - x)
+##   +  2.41 * h(x - -0.404175)
+```
+]
+.pull-right[
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/mars-cuts-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+]
+
+
+---
+
+# Fitted Model with Two Features
+
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/mars-sim-fit-1.svg" width="50%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Growing and Pruning
+
+Similar to tree-based models, MARS starts off with a "growing" stage where it keeps adding new features until it reaches a pre-defined limit. 
+
+After the first pair is created, the next cut-point is found using another exhaustive search to see which split of a predictor is best _conditional on the existing features_. 
+
+Once all the features are created, a _pruning phase_ starts where model selection tools are used to eliminate terms that do not contribute meaningfully to the model. 
+
+Generalized cross-validation ([GCV](https://scholar.google.com/scholar?hl=en&amp;as_sdt=0%2C7&amp;q=%22generalized+cross+validation%22&amp;btnG=)) is used to efficiently remove model terms while still providing some protection from overfitting. 
+
+
+---
+
+#  Model Size
+
+There are two approaches:
+
+ 1. Use the internal CGV to prune the model to the best subset size. This is fast but you don't learn much and it may underselect terms. 
+ 
+ 2. Use the external resampling (10-fold CV here) to tune the model as you would any other. 
+
+I usually don't start with GCV. Instead use method #2 above to understand the trends.  
+
+
+---
+
+# The Final Model
+
+.pull-left[
+For the simulated data, the mars model only requires 4 features to model the data (via GCV).
+
+
+```
+## y =
+##   0.0599
+##   - 0.126 * h(-0.404175 - x)
+##   +  1.61 * h(x - -0.404175)
+##   +  2.08 * h(x - -0.222918)
+##   -  5.27 * h(x - 0.244406)
+```
+
+The parameters are estimated by added the MARS features into ordinary linear regression models using least squares.  
+
+]
+.pull-right[
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/mars-sim-final-1.svg" width="100%" style="display: block; margin: auto;" /&gt;
+]
+
+
+???
+
+Talk a bit about the process of creating/choosing these particular features. 
+
+Mention bagging here maybe (although it is on a future slide)
+
+Note the coefs have changed due to refitting:
+
+```
+## h(x- -0.404175) 
+##            2.41
+```
+
+```
+## h(x- -0.404175) 
+##            1.61
+```
+
+---
+
+# Aspects of MARS Models
+
+* The model also tests to see if a simple linear term is best (i.e. not split). This is also how dummy variables are evaluated. 
+
+* The model automatically conducts _feature selection_; if a predictor is never used in a split, it is functionally independent of the model. This is really good!
+
+* If an additive model is used (as in the previous example), the functional form of each predictor can be determined (and visualized) independently for each predictor. 
+
+* A _second degree_ MARS model also evaluates interactions of two hinge features (e.g. `h(x0 - x) * h(z - z0)`). This can be useful in isolating regions of bivariate predictor space since it divides two-dimensional space into four quadrants. (see next slide)
+
+
+---
+
+# Second Degree MARS Term Example
+
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/mars-2d-1.svg" width="50%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# MARS in R
+
+The [`mda`](https://cran.r-project.org/package=mda) package has a `mars` function but the [`earth`](https://cran.r-project.org/package=earth) package is far superior. 
+
+The [`earth()` function](https://www.rdocumentation.org/packages/earth/versions/4.5.1/topics/earth) has both formula and non-formula interfaces. It can also be used with generalized linear models and flexible discriminant analysis. 
+
+To use the nominal growing and GCV pruning process, the syntax is 
+
+
+```r
+earth(y ~ ., data)
+
+# or 
+
+earth(x = x, y = y)
+```
+
+The feature creation process can be controlled using the `nk`, `nprune`, and `pmethod` parameters although this can be [somewhat complex](http://www.milbo.org/doc/earth-notes.pdf). 
+
+There is a variable importance method that tracks the changes in the GCV results as features are added to the model. 
+
+
+---
+
+# MARS via `caret`
+
+There is a several ways to fit the MARS model using `train()`. 
+
+* `method = "earth"` avoids pruning using GCV and uses external resampling to choose the number of retained model terms (using the sub-model trick). The two tuning parameters are `nprune` (number of retained features) and `degree` (the amount of interaction allowed). 
+
+* `method  = "gcvEarth"` is also available and uses GCV. The `degree` parameter requires tuning. 
+
+I usually use the manual method to better understand the pruning process.
+
+For preprocessing, there is no need to remove zero-variance predictors here (beyond computational efficiency) but dummy variables are required for qualitative predictors. 
+
+Centering and scaling are not required. 
+
+
+---
+
+# Tuning the Model
+
+
+
+We can reuse much of the `glmnet` syntax to tune the model. 
+
+
+```r
+ctrl$verboseIter &lt;- FALSE
+
+mars_grid &lt;- expand.grid(degree = 1:2, nprune = seq(2, 26, by = 2))
+
+# Using the same seed to obtain the same 
+# resamples as the glmnet model.
+set.seed(92598)
+mars_mod &lt;- train(
+  basic_rec, 
+  data = car_train,
+  method = "earth",
+  tuneGrid = mars_grid,
+  trControl = ctrl
+)
+```
+
+Running the resampling models (plus the last one), this takes 4.5m on my laptop.
+
+
+---
+
+# While We Wait, Can I Interest You in Parallelism? 
+
+.pull-left[
+ 
+There is no real barrier to running these in parallel. 
+
+Can we benefit from splitting the fits up to run on multiple cores?
+
+These speed-ups can be very model- and data-dependent but this pattern generally holds. 
+
+Note that there is little incremental benefit to using more workers than physical cores on the computer. Use `parallel::detectCores(logical = FALSE)`.
+
+(A lot more details can be found in [this blog post](http://appliedpredictivemodeling.com/blog/2018/1/17/parallel-processing))
+
+]
+.pull-right[
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/par-plot-1.svg" width="75%" style="display: block; margin: auto;" /&gt;
+]
+
+
+---
+
+# Running in Parallel for `caret`
+
+.pull-left[
+To loop through the models and data sets, `caret` uses the [`foreach`](https://www.rdocumentation.org/packages/foreach) package, which can parallelize `for` loops.
+
+`foreach` has a number of _parallel backends_ which allow various technologies to be used in conjunction with the package.
+
+On CRAN, these are the "`do{X}`" packages, such as
+[`doAzureParallel`](https://github.com/Azure/doAzureParallel), 
+[`doFuture`](https://www.rdocumentation.org/packages/doFuture), [`doMC`](https://www.rdocumentation.org/packages/doMC), 
+[`doMPI`](https://www.rdocumentation.org/packages/doMPI), [`doParallel`](https://www.rdocumentation.org/packages/doParallel), [`doRedis`](https://www.rdocumentation.org/packages/doRedis), and [`doSNOW`](https://www.rdocumentation.org/packages/doSNOW).
+
+For example, `doMC` uses the `multicore` package, which forks processes to split computations (for unix and OS X). `doParallel` can be used for all operating systems.
+]
+.pull-right[
+To use parallel processing in `caret`, no changes are needed when calling `train()`. 
+
+The parallel technology must be _registered_ with `foreach` prior to calling `train()`:
+
+
+```r
+library(doParallel)
+cl &lt;- makeCluster(6)
+registerDoParallel(cl)
+
+# run `train()`...
+
+stopCluster(cl)
+```
+]
+
+
+---
+
+# Resampling Profile for MARS &lt;img src="images/ggplot2.png" class="title-hex"&gt;
+
+
+```r
+ggplot(mars_mod) + theme(legend.position = "top")
+```
+
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/car-mars-rmse-plot-1.svg" width="50%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# MARS Performance Plots &lt;img src="images/ggrepl.svg" class="title-hex"&gt;&lt;img src="images/ggplot2.png" class="title-hex"&gt;
+
+.pull-left[
+
+
+```r
+obs_pred_plot(mars_mod, car_train)
+```
+
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/mars-pred-plot-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+
+]
+.pull-right[
+
+
+```r
+resid_plot(mars_mod, car_train)
+```
+
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/mars-resid-plot-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+
+# The Underlying Model 
+
+
+```r
+library(earth)
+mars_mod$finalModel
+```
+
+```
+## Selected 24 of 31 terms, and 19 of 114 predictors
+## Termination condition: RSq changed by less than 0.001 at 31 terms
+## Importance: plug_in_hybrid, year, eng_displ, start_stop, transmission_Automatic_variable_gear_ratios, ...
+## Number of terms at each degree of interaction: 1 9 14
+## GCV 5.19    RSS 17691    GRSq 0.946    RSq 0.948
+```
+
+???
+Show `summary(mars_mod$finalModel)` results. 
+
+---
+
+# Model Terms
+
+.code70[
+
+```
+##   20.1
+##   -     7664 * plug_in_hybrid
+##   +     3.77 * make_Mazda
+##   +     2.61 * transmission_Automatic_AVS7
+##   -     1.02 * transmission_Automatic_S6
+##   +     2.46 * transmission_Automatic_variable_gear_ratios
+##   -    0.513 * h(cylinders-6)
+##   +     5.09 * h(2.8-eng_displ)
+##   -     1.35 * h(eng_displ-2.8)
+##   -  0.00982 * h(102-four_door_pass_vol)
+##   +     3.82 * year*plug_in_hybrid
+##   +     17.5 * start_stop*transmission_Automatic_AM6
+##   +     13.4 * start_stop*transmission_Automatic_AVS6
+##   +     17.4 * start_stop*transmission_Automatic_variable_gear_ratios
+##   -     15.4 * plug_in_hybrid*turbo_charged
+##   -     26.6 * plug_in_hybrid*make_Cadillac
+##   +     16.6 * plug_in_hybrid*make_Toyota
+##   +     25.2 * plug_in_hybrid*transmission_Automatic_AMS7
+##   -     15.7 * super_charged*transmission_Automatic_variable_gear_ratios
+##   +     23.9 * h(2.8-eng_displ)*plug_in_hybrid
+##   -     1.65 * h(2.8-eng_displ)*turbo_charged
+##   +     1.88 * h(2.8-eng_displ)*drive_FrontWheel_Drive
+##   +   0.0751 * h(1.6-eng_displ)*h(102-four_door_pass_vol)
+##   +     1.78 * h(10-four_door_lug_vol)*h(four_door_pass_vol-102)
+```
+]
+
+---
+
+# Variable Importance Scores &lt;img src="images/ggplot2.png" class="title-hex"&gt;
+
+.pull-left[
+Recall that as MARS adds or drops terms from the model, the change in the GCV statistic is used to determine the worth of the terms. 
+
+`earth` tracks the changes for each predictor and measures the variable importance based on how much the GCV error _decreases_ when the model term is added. 
+
+This is _cumulative_ when multiple terms involve the same predictor multiple times. 
+]
+.pull-right[
+
+```r
+mars_imp &lt;- varImp(mars_mod)
+ggplot(mars_imp, top = 20) + xlab("")
+```
+
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/car-mars-imp-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+]
+
+
+---
+
+# Use GCV to Tune the Model
+
+
+```r
+set.seed(92598)
+mars_gcv_mod &lt;- train(
+  basic_rec, 
+  data = car_train,
+  method = "gcvEarth",
+  tuneGrid = data.frame(degree = 1:2),
+  trControl = ctrl
+)
+mars_gcv_mod$finalModel
+```
+
+```
+## Selected 27 of 31 terms, and 19 of 114 predictors
+## Termination condition: RSq changed by less than 0.001 at 31 terms
+## Importance: plug_in_hybrid, year, eng_displ, start_stop, transmission_Automatic_variable_gear_ratios, ...
+## Number of terms at each degree of interaction: 1 11 15
+## GCV 5.13    RSS 17406    GRSq 0.946    RSq 0.948
+```
+
+The results are very similar to the previous model. This is not typical but it is faster (4.8-fold). We will exploit this in a moment. 
+
+
+---
+layout: false
+class: inverse, middle, center
+
+# Ensembles via Bagging
+
+
+---
+
+# Bagging Models
+
+[Bagging](https://scholar.google.com/scholar?cluster=18412826781870444603&amp;hl=en&amp;as_sdt=0,7) is a method of creating _ensembles of the model type_. 
+
+Instead of using the training set, many variations of the data are created that spawn multiple _versions_ of the same model. 
+
+When predicting a new sample, the individual predictions are generated for each model in the ensemble, and these are blended into a single value. This reduces the variation in the predictions since are averaging pseudo-replicates of the model. 
+
+Bagging creates the data sets using a _bootstrap sample_ of the training set. 
+
+Bagging is most useful when the underlying model has some _instability_. This means that slight variations in the data cause significant changes in the model fit. 
+
+For example, simple linear regression would not be a suitable candidate for ensembles but MARS has _potential_ for improvement.  It does have the effect of _smoothing_ the model predictions. 
+
+
+---
+
+# Bagging Process
+
+
+<div id="htmlwidget-b0f17b0b65df23842cde" style="width:100%;height:504px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-b0f17b0b65df23842cde">{"x":{"diagram":"\ndigraph resampling_diag {\n  \n  graph [layout = dot, bgcolor = transparent]\n  \n  node [fontname = Helvetica]\n  \n  all [shape = circle,\n       label = \"All\nData\"]\n  \n  te [shape = circle,\n      style = filled,\n      color = grey,\n      label = \"Testing\",\n      fillcolor = \"#eeeeb4\"]\n      \n  tr [shape = circle,\n      style = filled,\n      color = grey,\n      label = \"Training\",\n      fillcolor = \"#c8d8c2\"]\n  \nmod1 [shape = rectangle,\n      style = filled,\n      fillcolor = azure,\n      label = \"Model 1\"]\n  \nbt1 [shape = oval,\n     style = filled,\n     label = \"Bootstrap 1\",\n     fillcolor = \"#c8d8c2\"]\n\nmod1 [shape = rectangle,\n      style = filled,\n      fillcolor = azure,\n      label = \"Model 1\"] \n\nbt2 [shape = oval,\n     style = filled,\n     label = \"Bootstrap 2\",\n     fillcolor = \"#c8d8c2\"]\n\nmod2 [shape = rectangle,\n      style = filled,\n      fillcolor = azure,\n      label = \"Model 2\"] \n\nbt3 [shape = oval,\n     style = filled,\n     label = \"Bootstrap 3\",\n     fillcolor = \"#c8d8c2\"]\n\nmod3 [shape = rectangle,\n      style = filled,\n      fillcolor = azure,\n      label = \"Model 3\"] \n\nbt4 [shape = oval,\n     style = filled,\n     label = \"Bootstrap 4\",\n     fillcolor = \"#c8d8c2\"]\n\nmod4 [shape = rectangle,\n      style = filled,\n      fillcolor = azure,\n      label = \"Model 4\"] \n\nbt5 [shape = oval,\n     style = filled,\n     label = \"Bootstrap 5\",\n     fillcolor = \"#c8d8c2\"]\n\nmod5 [shape = rectangle,\n      style = filled,\n      fillcolor = azure,\n      label = \"Model 5\"] \n\nbt6 [shape = oval,\n     style = filled,\n     label = \"Bootstrap 6\",\n     fillcolor = \"#c8d8c2\"]\n\nmod6 [shape = rectangle,\n      style = filled,\n      fillcolor = azure,\n      label = \"Model 6\"] \n      \nens [shape = rectangle,\n     fillcolor = lightblue,\n     style = filled,\n     label = \"Ensemble Model\"]\n\n  all -> {tr te }\n  tr -> {bt1 bt2 bt3 bt4 bt5 bt6}\n  bt1 -> {mod1}\n  bt2 -> {mod2}\n  bt3 -> {mod3}\n  bt4 -> {mod4}\n  bt5 -> {mod5}\n  bt6 -> {mod6}\n  mod1 -> {ens}\n  mod2 -> {ens}\n  mod3 -> {ens}\n  mod4 -> {ens}\n  mod5 -> {ens}\n  mod6 -> {ens}\n}\n","config":{"engine":"dot","options":{"background":"transparent"}}},"evals":[],"jsHooks":[]}</script>
+
+
+---
+
+# Bagged Additive MARS Example
+
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/mars-bag-final-1.svg" width="50%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Does Bagging Help the Cars Model?
+
+
+```r
+set.seed(92598)
+mars_gcv_bag &lt;- train(
+  basic_rec, 
+  data = car_train,
+  method = "bagEarthGCV",
+  tuneGrid = data.frame(degree = 1:2),
+  trControl = ctrl,
+  # Number of bootstraps for `bagEarth` function
+  B = 50
+)
+```
+
+
+On my laptop, this will take about 39m to run without parallel processing 😵
+
+
+---
+
+# Does Bagging Help the Cars Model?
+
+
+```r
+mars_gcv_bag
+```
+
+```
+## Bagged MARS using gCV Pruning 
+## 
+## 3526 samples
+##   29 predictor
+## 
+## Recipe steps: other, other, dummy, zv 
+## Resampling: Cross-Validated (10 fold) 
+## Summary of sample sizes: 3174, 3173, 3174, 3174, 3173, 3173, ... 
+## Resampling results across tuning parameters:
+## 
+##   degree  RMSE  Rsquared  MAE 
+##   1       3.46  0.872     1.91
+##   2       2.40  0.933     1.46
+## 
+## RMSE was used to select the optimal model using the smallest value.
+## The final value used for the model was degree = 2.
+```
+
+Smaller RMSE (was 2.69 mpg) but is it real? 
+
+---
+
+# Bagged MARS Performance Plots &lt;img src="images/ggrepl.svg" class="title-hex"&gt;&lt;img src="images/ggplot2.png" class="title-hex"&gt;
+
+.pull-left[
+
+
+```r
+obs_pred_plot(mars_gcv_bag, car_train)
+```
+
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/bagged-pred-plot-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+
+]
+.pull-right[
+
+
+```r
+resid_plot(mars_gcv_bag, car_train)
+```
+
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/bagged-resid-plot-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+
+]
+
+
+---
+
+# Comparing Models
+
+`caret` has a function that can easily compute the different in RMSE between two models using a t-test:
+
+
+```r
+compare_models(mars_gcv_bag, mars_mod)
+```
+
+```
+## 
+## 	One Sample t-test
+## 
+## data:  x
+## t = -5, df = 9, p-value = 7e-04
+## alternative hypothesis: true mean is not equal to 0
+## 95 percent confidence interval:
+##  -0.438 -0.167
+## sample estimates:
+## mean of x 
+##    -0.302
+```
+
+The _decrease_ in RMSE found by bagging is statistically significant (but maybe not practically significant). 
+
+The [`tidyposterior`](https://tidymodels.github.io/tidyposterior/) package can be used to compute practical significance.  
+
+
+---
+layout: false
+class: inverse, middle, center
+
+# Test Set Results
+
+
+---
+
+# Predicting the Test Set  &lt;img src="images/yardstick.png" class="title-hex"&gt; &lt;img src="images/ggrepl.svg" class="title-hex"&gt; &lt;img src="images/ggplot2.png" class="title-hex"&gt; &lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+Making predictions on new data is pretty simple:
+
+.pull-left[
+
+.code66[
+
+
+```r
+car_test &lt;- car_test %&gt;%
+  mutate(pred = predict(mars_gcv_bag, car_test))
+
+rmse(car_test, truth = mpg, estimate = pred)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 rmse    standard        2.16
+```
+
+
+
+```r
+ggplot(car_test, aes(x = mpg, y = pred, label = model)) +
+  geom_abline(col = "green", alpha = .5) + 
+  geom_point(alpha = .3) + 
+  geom_smooth(se = FALSE, col = "red", 
+              lty = 2, lwd = .5, alpha = .5) + 
+  geom_text_repel(
+    data = car_test  %&gt;% dplyr::filter(abs(mpg - pred) &gt; 10),
+    segment.color = "grey50"
+    )
+```
+
+]
+
+]
+.pull-right[
+&lt;img src="Part_4_Regression_Modeling_files/figure-html/test-op-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+]
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightLanguage": "R",
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

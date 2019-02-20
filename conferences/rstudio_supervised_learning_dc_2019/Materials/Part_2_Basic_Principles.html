@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Applied Machine Learning - Basic Principles</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Max Kuhn (RStudio)" />
+    <script src="Part_2_Basic_Principles_files/htmlwidgets-1.3/htmlwidgets.js"></script>
+    <script src="Part_2_Basic_Principles_files/viz-0.3/viz.js"></script>
+    <link href="Part_2_Basic_Principles_files/DiagrammeR-styles-0.2/styles.css" rel="stylesheet" />
+    <script src="Part_2_Basic_Principles_files/grViz-binding-1.0.0/grViz.js"></script>
+    <script src="Part_2_Basic_Principles_files/jquery-1.12.4/jquery.min.js"></script>
+    <link href="Part_2_Basic_Principles_files/leaflet-1.3.1/leaflet.css" rel="stylesheet" />
+    <script src="Part_2_Basic_Principles_files/leaflet-1.3.1/leaflet.js"></script>
+    <link href="Part_2_Basic_Principles_files/leafletfix-1.0.0/leafletfix.css" rel="stylesheet" />
+    <script src="Part_2_Basic_Principles_files/Proj4Leaflet-1.0.1/proj4-compressed.js"></script>
+    <script src="Part_2_Basic_Principles_files/Proj4Leaflet-1.0.1/proj4leaflet.js"></script>
+    <link href="Part_2_Basic_Principles_files/rstudio_leaflet-1.3.1/rstudio_leaflet.css" rel="stylesheet" />
+    <script src="Part_2_Basic_Principles_files/leaflet-binding-2.0.2/leaflet.js"></script>
+    <script src="Part_2_Basic_Principles_files/leaflet-providers-1.1.17/leaflet-providers.js"></script>
+    <script src="Part_2_Basic_Principles_files/leaflet-providers-plugin-2.0.2/leaflet-providers-plugin.js"></script>
+    <link rel="stylesheet" href="mtheme_max.css" type="text/css" />
+    <link rel="stylesheet" href="fonts_mtheme_max.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Applied Machine Learning - Basic Principles
+### Max Kuhn (RStudio)
+
+---
+
+
+
+
+# Load Packages  &lt;img src="images/tidymodels_hex.png" class="title-hex"&gt;
+
+.code70[
+
+```r
+library(tidymodels)
+```
+
+```
+## ── Attaching packages ──────────────────────────────────────────────────────────── tidymodels 0.0.2 ──
+```
+
+```
+## ✔ broom     0.5.1     ✔ purrr     0.2.5
+## ✔ dials     0.0.2     ✔ recipes   0.1.4
+## ✔ dplyr     0.7.8     ✔ rsample   0.0.4
+## ✔ infer     0.4.0     ✔ tibble    2.0.0
+## ✔ parsnip   0.0.1     ✔ yardstick 0.0.2
+```
+
+```
+## ── Conflicts ─────────────────────────────────────────────────────────────── tidymodels_conflicts() ──
+## ✖ purrr::discard()       masks scales::discard()
+## ✖ dplyr::filter()        masks stats::filter()
+## ✖ dplyr::lag()           masks stats::lag()
+## ✖ purrr::lift()          masks caret::lift()
+## ✖ yardstick::precision() masks caret::precision()
+## ✖ yardstick::recall()    masks caret::recall()
+## ✖ recipes::step()        masks stats::step()
+```
+]
+
+---
+# Introduction
+
+In this section, we will introduce concepts that are useful for any type of machine learning model:
+
+* _modeling_ versus the model
+
+* data splitting
+
+* resampling
+
+* tuning parameters and overfitting
+
+* model tuning
+
+
+Many of these topics will be put into action in later sections.
+
+
+---
+
+# The Modeling _Process_
+
+Common steps during model building are:
+
+* estimating model parameters (i.e. training models)
+
+* determining the values of _tuning parameters_ that cannot be directly calculated from the data
+
+* model selection (within a model type) and model comparison (between types)
+
+* calculating the performance of the final model that will generalize to new data
+
+Many books and courses portray predictive modeling as a short sprint. A better analogy would be a marathon or campaign (depending on how hard the problem is). 
+
+
+---
+
+# What the Modeling Process Usually Looks Like
+
+&lt;img src="Part_2_Basic_Principles_files/figure-html/mod-process-1.svg" width="95%" style="display: block; margin: auto;" /&gt;
+
+---
+layout: false
+class: inverse, middle, center
+
+#  Data Usage
+
+---
+
+# Data Splitting and Spending
+
+How do we "spend" the data to find an optimal model? 
+
+We _typically_ split data into training and test data sets:
+
+*  ***Training Set***: these data are used to estimate model parameters and to pick the values of the complexity parameter(s) for the model.
+
+*  ***Test Set***: these data can be used to get an independent assessment of model efficacy. They should not be used during model training. 
+
+
+---
+
+# Data Splitting and Spending 
+
+The more data we spend, the better estimates we'll get (provided the data is accurate).  
+
+Given a fixed amount of data:
+
+* too much spent in training won't allow us to get a good assessment of predictive performance.  We may find a model that fits the training data very well, but is not generalizable (overfitting)
+
+* too much spent in testing won't allow us to get a good assessment of model parameters
+
+Statistically, the best course of action would be to use all the data for model building and use statistical methods to get good estimates of error.
+
+From a non-statistical perspective, many consumers of complex models emphasize the need for an untouched set of samples to evaluate performance.
+
+
+---
+
+# Large Data Sets
+
+When a large amount of data are available, it might seem like a good idea to put a large amount into the training set. _Personally_, I think that this causes more trouble than it is worth due to diminishing returns on performance and the added cost and complexity of the required infrastructure. 
+
+Alternatively, it is probably a better idea to reserve good percentages of the data for specific parts of the modeling process. For example: 
+
+* Save a large chunk of data to perform feature selection prior to model building
+* Retain data to calibrate class probabilities or determine a cutoff via an ROC curve. 
+
+Also, there may be little need for iterative resampling of the data. A single holdout (aka validation set) may be sufficient in some cases if the data are large enough and the data sampling mechanism is solid.  
+
+
+---
+
+# Mechanics of Data Splitting
+
+There are a few different ways to do the split: simple random sampling, _stratified sampling based on the outcome_, by date, or methods that focus on the distribution of the predictors.
+
+For stratification:
+
+* **classification**: this would mean sampling within the classes to preserve the distribution of the outcome in the training and test sets
+
+* **regression**: determine the quartiles of the data set and sample within those artificial groups
+
+
+---
+
+# Ames Housing Data &lt;img src="images/rsample.png" class="title-hex"&gt;
+
+Let's load the example data set and split it. We'll put 75% into training and 25% into testing. 
+
+
+```r
+library(AmesHousing)
+ames &lt;- 
+  make_ames() %&gt;% 
+  # Remove quality-related predictors
+  dplyr::select(-matches("Qu"))
+nrow(ames)
+```
+
+```
+## [1] 2930
+```
+
+```r
+# Make sure that you get the same random numbers
+set.seed(4595)
+data_split &lt;- initial_split(ames, strata = "Sale_Price")
+
+ames_train &lt;- training(data_split)
+ames_test  &lt;- testing(data_split)
+
+nrow(ames_train)/nrow(ames)
+```
+
+```
+## [1] 0.7505119
+```
+???
+
+The select statement removes subjective quality scores which, to me, seems
+like it should be an outcome and not a predictor. 
+
+---
+
+# Ames Housing Data &lt;img src="images/rsample.png" class="title-hex"&gt;
+
+What do these objects look like?
+
+
+```r
+# result of initial_split()
+# &lt;training / testing / total&gt;
+data_split
+```
+
+```
+## &lt;2199/731/2930&gt;
+```
+
+
+```r
+training(data_split)
+```
+
+
+```r
+## # A tibble: 2,199 x 81
+##    MS_SubClass MS_Zoning Lot_Frontage Lot_Area Street Alley Lot_Shape Land_Contour Utilities Lot_Config Land_Slope
+##    &lt;fct&gt;       &lt;fct&gt;            &lt;dbl&gt;    &lt;int&gt; &lt;fct&gt;  &lt;fct&gt; &lt;fct&gt;     &lt;fct&gt;        &lt;fct&gt;     &lt;fct&gt;      &lt;fct&gt;     
+##  1 One_Story_… Resident…          141    31770 Pave   No_A… Slightly… Lvl          AllPub    Corner     Gtl       
+##  2 Two_Story_… Resident…           74    13830 Pave   No_A… Slightly… Lvl          AllPub    Inside     Gtl       
+##  3 Two_Story_… Resident…           78     9978 Pave   No_A… Slightly… Lvl          AllPub    Inside     Gtl       
+##  4 One_Story_… Resident…           43     5005 Pave   No_A… Slightly… HLS          AllPub    Inside     Gtl       
+##  5 One_Story_… Resident…           39     5389 Pave   No_A… Slightly… Lvl          AllPub    Inside     Gtl       
+## # … and many more rows and columns
+## # …
+```
+
+
+---
+
+# Outcome Distributions &lt;img src="images/ggplot2.png" class="title-hex"&gt;
+
+.pull-left[
+
+
+```r
+## Do the distributions line up? 
+ggplot(ames_train, aes(x = Sale_Price)) + 
+  geom_line(stat = "density", 
+            trim = TRUE) + 
+  geom_line(data = ames_test, 
+            stat = "density", 
+            trim = TRUE, col = "red")
+```
+
+]
+
+.pull-right[
+
+&lt;img src="Part_2_Basic_Principles_files/figure-html/ames-split-dists-dist-1.svg" width="100%" style="display: block; margin: auto;" /&gt;
+
+]
+
+
+---
+layout: false
+class: inverse, middle, center
+
+#  Creating Models in R
+
+
+---
+
+# Specifying Models in R Using Formulas
+
+To fit a model to the housing data, the model terms must be specified. Historically, there are two main interfaces for doing this. 
+
+The **formula** interface using R [formula rules](https://cran.r-project.org/doc/manuals/r-release/R-intro.html#Formulae-for-statistical-models) to specify a _symbolic_ representation of the terms:
+
+Variables + interactions
+
+
+```r
+model_fn(Sale_Price ~ Neighborhood + Year_Sold + Neighborhood:Year_Sold, data = ames_train)
+```
+
+Shorthand for all predictors
+
+
+```r
+model_fn(Sale_Price ~ ., data = ames_train)
+```
+
+Inline functions / transformations
+
+
+```r
+model_fn(log10(Sale_Price) ~ ns(Longitude, df = 3) + ns(Latitude, df = 3), data = ames_train)
+```
+
+This is very convenient but it has some disadvantages.  
+
+---
+
+# Downsides to Formulas
+
+* You can't nest in-line functions such as `model_fn(y ~ pca(scale(x1), scale(x2), scale(x3)), data = dat)`.
+
+* All the model matrix calculations happen at once and can't be recycled when used in a model function. 
+
+* For very _wide_ data sets, the formula method can be [extremely inefficient](https://rviews.rstudio.com/2017/03/01/the-r-formula-method-the-bad-parts/). 
+
+* There are limited _roles_ that variables can take which has led to several re-implementations of formulas. 
+
+* Specifying multivariate outcomes is clunky and inelegant.
+
+* Not all modeling functions have a formula method (consistency!). 
+
+---
+
+# Specifying Models Without Formulas
+
+Some modeling function have a non-formula (XY) interface. This usually has arguments for the predictors and the outcome(s):
+
+
+```r
+# Usually, the variables must all be numeric
+pre_vars &lt;- c("Year_Sold", "Longitude", "Latitude")
+model_fn(x = ames_train[, pre_vars],
+         y = ames_train$Sale_Price)
+```
+
+This is inconvenient if you have transformations, factor variables, interactions, or any other operations to apply to the data prior to modeling. 
+
+Overall, it is difficult to predict if a package has one or both of these interfaces. For example, `lm` only has formulas. 
+
+There is a **third interface**, using _recipes_ that will be discussed later that solves some of these issues. 
+
+---
+
+# A Linear Regression Model &lt;img src="images/broom.png" class="title-hex"&gt;
+
+Let's start by fitting an ordinary linear regression model to the training set. You can choose the model terms for your model, but I will use a very simple model:
+
+
+```r
+simple_lm &lt;- lm(log10(Sale_Price) ~ Longitude + Latitude, data = ames_train)
+```
+
+Before looking at coefficients, we should do some model checking to see if there is anything obviously wrong with the model. 
+
+To get the statistics on the individual data points, we will use the awesome `broom` package:
+
+
+```r
+simple_lm_values &lt;- augment(simple_lm)
+names(simple_lm_values)
+```
+
+```
+##  [1] "log10.Sale_Price." "Longitude"         "Latitude"         
+##  [4] ".fitted"           ".se.fit"           ".resid"           
+##  [7] ".hat"              ".sigma"            ".cooksd"          
+## [10] ".std.resid"
+```
+
+
+---
+
+# Hands-On: Some Basic Diagnostics 
+
+From these results, let's take 10 minutes and do some visualizations: 
+
+* Plot the observed versus fitted values
+
+* Plot the residuals
+
+* Plot the predicted versus residuals
+
+Are there any _downsides_ to this approach? 
+
+---
+
+# parsnip &lt;img src="images/parsnip.png" class="title-hex"&gt;
+
+- A tidy unified _interface_ to models
+
+- `lm()` isn't the only way to perform linear regression
+  
+  - `glmnet` for regularized regression
+  
+  - `stan` for Bayesian regresion
+  
+  - `keras` for regression using tensorflow
+  
+- But...remember the consistency slide?
+
+  - Each interface has its own minutae to remember
+  
+  - `parsnip` standardizes all that!
+  
+---
+
+# parsnip in Action &lt;img src="images/parsnip.png" class="title-hex"&gt;
+
+.pull-left[
+
+1) Create specification
+
+2) Set the engine
+
+3) Fit the model
+
+
+```r
+spec_lin_reg &lt;- linear_reg()
+spec_lin_reg
+```
+
+```
+## Linear Regression Model Specification (regression)
+```
+
+```r
+spec_lm &lt;- set_engine(spec_lin_reg, "lm")
+spec_lm
+```
+
+```
+## Linear Regression Model Specification (regression)
+## 
+## Computational engine: lm
+```
+
+]
+
+.pull-right[
+
+
+```r
+fit_lm &lt;- fit(
+  spec_lm,
+  log10(Sale_Price) ~ Longitude + Latitude,
+  data = ames_train
+)
+
+fit_lm
+```
+
+```
+## parsnip model object
+## 
+## 
+## Call:
+## stats::lm(formula = formula, data = data)
+## 
+## Coefficients:
+## (Intercept)    Longitude     Latitude  
+##    -316.153       -2.079        3.014
+```
+
+]
+
+---
+
+# Different interfaces &lt;img src="images/parsnip.png" class="title-hex"&gt;
+
+`parsnip` is not picky about the interface used to specify terms. Remember, `lm()` only allowed the formula interface!
+
+
+```r
+ames_train_log &lt;- ames_train %&gt;%
+  mutate(Sale_Price_Log = log10(Sale_Price))
+
+fit_xy(
+  spec_lm,
+  y = ames_train_log$Sale_Price_Log,
+  x = ames_train_log[, c("Latitude", "Longitude")]
+)
+```
+
+```
+## parsnip model object
+## 
+## 
+## Call:
+## stats::lm(formula = formula, data = data)
+## 
+## Coefficients:
+## (Intercept)     Latitude    Longitude  
+##    -316.153        3.014       -2.079
+```
+
+
+---
+
+# Alternative Engines &lt;img src="images/parsnip.png" class="title-hex"&gt;
+
+With `parsnip`, it is easy to switch to a different engine, like Stan, to run the
+same model with alternative backends.
+
+.pull-left[
+
+
+```r
+spec_stan &lt;- 
+  spec_lin_reg %&gt;%
+  # Engine specific arguments are passed through here
+  set_engine("stan", chains = 4, iter = 1000)
+
+# Otherwise, looks exactly the same!
+fit_stan &lt;- fit(
+  spec_stan,
+  log10(Sale_Price) ~ Longitude + Latitude,
+  data = ames_train
+)
+```
+
+]
+
+.pull-right[
+
+
+```r
+coef(fit_stan$fit)
+```
+
+```
+## (Intercept)   Longitude    Latitude 
+## -316.040671   -2.079419    3.007612
+```
+
+```r
+coef(fit_lm$fit)
+```
+
+```
+## (Intercept)   Longitude    Latitude 
+## -316.152846   -2.079171    3.013530
+```
+
+]
+
+---
+layout: false
+class: inverse, middle, center
+
+#  Model Evaluation
+
+
+---
+
+# Overall Model Statistics 
+
+`parsnip` holds the actual model object in the `fit_lm$fit` slot. If you use the `summary()` method on the underlying `lm` object, the bottom shows some statistics: 
+
+
+```r
+summary(fit_lm$fit)
+```
+
+
+```
+## &lt;snip&gt;
+## Residual standard error: 0.1614 on 2196 degrees of freedom
+## Multiple R-squared:  0.1808,	Adjusted R-squared:  0.1801 
+## F-statistic: 242.3 on 2 and 2196 DF,  p-value: &lt; 2.2e-16
+```
+
+These statistics are generated from _predicting on the training data used to fit the model_. This is problematic because it can lead to optimistic results, especially for flexible models (overfitting). 
+
+--
+
+### Idea!
+
+The tests set is used for assessing performance. **Should we predict the test set** and use those results to estimate these statistics? 
+
+---
+
+&lt;img src="images/nope.png" align = "middle" height = "400px" float = "center"&gt;
+
+(Matthew Inman/Exploding Kittens)
+
+---
+
+# Assessing Models
+
+_Save the test set_ until the very end when you have one or two models that are your favorite. We need to use the training set...but how?
+
+--
+
+.pull-left[
+
+### Maybe... 
+
+1) For model A, fit on training set, predict on training set
+
+2) For model B, fit on training set, predict on training set
+
+3) Compare performance
+
+]
+
+--
+
+.pull-right[
+
+For some models, it is possible to get very "good" performance by predicting the training set (it was so flexible you overfit it). That's an issue since we will need to make "honest" comparisons between models before we finalize them and run our final choices on the test set.
+
+### If only...
+
+If only we had a method for getting honest performance estimates from the _training set_...
+
+]
+
+---
+
+# Resampling Methods
+
+.pull-left[
+These are additional data splitting schemes that are applied to the _training_ set. 
+
+They attempt to simulate slightly different versions of the training set. These versions of the original are split into two model subsets:
+
+* The _analysis set_ is used to fit the model (analogous to the training set). 
+* Performance is determined using the _assessment set_. 
+
+This process is repeated many times. 
+
+There are different flavors or resampling but we will focus on two methods. 
+
+]
+
+.pull-right[
+
+<div id="htmlwidget-bf804960aee579442536" style="width:100%;height:504px;" class="grViz html-widget"></div>
+<script type="application/json" data-for="htmlwidget-bf804960aee579442536">{"x":{"diagram":"\ndigraph resampling_diag {\n      \ngraph [layout = dot, bgcolor = transparent]\n\nnode [fontname = Helvetica]\n\nall [shape = circle,\n     label = \"All\nData\"]\n\nte [shape = circle,\n    style = filled,\n    label = \"Testing\",\n    fillcolor = \"#eeeeb4\"]\n\ntr [shape = circle,\n    style = filled,\n    label = \"Training\",\n    fillcolor = \"#c8d8c2\"]\n\nr1 [shape = rectangle,\n    label = \"Resample 1\"]\n\nan1 [shape = oval,\n     style = filled,\n     label = \"Analysis\",\n     fillcolor = honeydew]\nas1 [shape = oval,\n     style = filled,\n     label = \"Assessment\",\n     fillcolor = ivory]\n\nr2 [shape = rectangle,\n    label = \"Resample 2\"]\n      \nan2 [shape = oval,\n     style = filled,\n     label = \"Analysis\",\n     fillcolor = honeydew]\n\nas2 [shape = oval,\n     style = filled,\n     label = \"Assessment\",\n     fillcolor = ivory]\n\nr3 [shape = rectangle,\n    label = \"Resample 3\"]\n      \nan3 [shape = oval,\n     style = filled,\n     label = \"Analysis\",\n     fillcolor = honeydew]\nas3 [shape = oval,\n     style = filled,\n     label = \"Assessment\",\n     fillcolor = ivory]\n\nall -> {tr te }\ntr -> {r1 r2 r3 }\nr1 -> {as1 an1 }\nr2 -> {an2 as2 }\nr3 -> {an3 as3 }\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+
+]
+
+---
+
+# V-Fold Cross-Validation
+
+.pull-left[
+
+Here, we randomly split the training data into _V_ distinct blocks of roughly equal size.
+
+* We leave out the first block of analysis data and fit a model.
+
+* This model is used to predict the held-out block of assessment data.
+
+* We continue this process until we've predicted all _V_ assessment blocks
+
+The final performance is based on the hold-out predictions by _averaging_ the statistics from the _V_ blocks. 
+
+]
+
+.pull-right[
+
+&lt;img src="Part_2_Basic_Principles_files/figure-html/rs-diagram-1.svg" width="95%" style="display: block; margin: auto;" /&gt;
+
+&lt;br&gt;
+
+_V_ is usually taken to be 5 or 10 and leave one out cross-validation has each sample as a block. 
+
+
+]
+
+---
+
+#  10-Fold Cross-Validation with _n_ = 50
+
+&lt;img src="Part_2_Basic_Principles_files/figure-html/cv-plot-1.svg" width="60%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Bootstrapping
+
+A bootstrap sample is the _same size_ as the training set but each data point is selected _with replacement_. 
+
+* _Analysis set_
+
+  Will contain more than one replicate of a training set instance.
+  
+* _Assessment set_
+
+  Contains all samples that were never included in the corresponding bootstrap set.
+  Often called the "out-of-bag" sample and can vary in size!
+
+On average, 63.2120559% of the training set is contained _at least once_ in the bootstrap sample. 
+
+---
+
+#  Bootstrapping with _n_ = 50
+
+&lt;img src="Part_2_Basic_Principles_files/figure-html/boot-plot-1.svg" width="60%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Comparing Resampling Methods
+
+If you think of resampling in the same manner as statistical estimators (e.g. maximum likelihood), this becomes a trade-off between bias and variance:
+
+ * Variance is (mostly) driven by the number of resamples (e.g. 5-fold CV has larger variance than 10-fold). 
+ * Bias is (mostly) related to how much data is held back. The bootstrap has large bias compared to 10-fold CV. 
+
+There are lengthy blog posts about this subject [here](http://bit.ly/1yE0Ss5) and [here](http://bit.ly/1zfoFj2). 
+
+I tend to favor 5 repeats of 10-fold cross-validation unless the size of the assessment data is "large enough". 
+
+For example, 10% of the Ames training set is 219 properties and this is probably good enough to estimate the RMSE and _R_&lt;sup&gt;2&lt;/sup&gt;.  
+
+
+---
+
+# Cross-Validating Using `rsample` &lt;img src="images/rsample.png" class="title-hex"&gt;
+
+.pull-left[
+
+
+```r
+set.seed(2453)
+cv_splits &lt;- vfold_cv(
+  data = ames_train, 
+  v = 10, 
+  strata = "Sale_Price"
+)
+cv_splits %&gt;% slice(1:6)
+```
+
+```
+## #  10-fold cross-validation using stratification 
+## # A tibble: 6 x 2
+##   splits           id    
+## * &lt;list&gt;           &lt;chr&gt; 
+## 1 &lt;split [2K/222]&gt; Fold01
+## 2 &lt;split [2K/222]&gt; Fold02
+## 3 &lt;split [2K/222]&gt; Fold03
+## 4 &lt;split [2K/222]&gt; Fold04
+## 5 &lt;split [2K/222]&gt; Fold05
+## 6 &lt;split [2K/219]&gt; Fold06
+```
+
+]
+
+.pull-right[
+
+Each individual split object is similar to the 
+`initial_split()` example.
+
+
+```r
+cv_splits$splits[[1]]
+```
+
+```
+## &lt;1977/222/2199&gt;
+```
+
+```r
+cv_splits$splits[[1]] %&gt;% analysis() %&gt;% dim()
+```
+
+```
+## [1] 1977   74
+```
+
+```r
+cv_splits$splits[[1]] %&gt;% assessment() %&gt;% dim()
+```
+
+```
+## [1] 222  74
+```
+
+]
+
+???
+
+Note that `&lt;split [2K/222]&gt;` rounds to the thousandth and is the same as `&lt;1977/222/2199&gt;`
+
+
+---
+
+# Resampling the Linear Model &lt;img src="images/rsample.png" class="title-hex"&gt;&lt;img src="images/purrr.png" class="title-hex"&gt;&lt;img src="images/parsnip.png" class="title-hex"&gt;&lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+Working with resample tibbles generally involves two things:
+
+1) Small functions that perform an action on a single split.
+
+2) The `purrr` package for `map()`ping over splits.
+
+.pull-left[
+
+
+```r
+geo_form &lt;- log10(Sale_Price) ~ Latitude + Longitude
+
+# Fit on a single analysis resample
+fit_model &lt;- function(split, spec) {
+  fit(
+    object = spec, 
+    formula = geo_form,
+    data = analysis(split) # &lt;- pull out training set
+  )
+}
+
+# For each resample, call fit_model()
+cv_splits &lt;- cv_splits %&gt;% 
+  mutate(models_lm = map(splits, fit_model, spec_lm))
+
+cv_splits
+```
+
+]
+
+.pull-right[
+
+
+```
+## #  10-fold cross-validation using stratification 
+## # A tibble: 10 x 3
+##    splits           id     models_lm
+##  * &lt;list&gt;           &lt;chr&gt;  &lt;list&gt;   
+##  1 &lt;split [2K/222]&gt; Fold01 &lt;fit[+]&gt; 
+##  2 &lt;split [2K/222]&gt; Fold02 &lt;fit[+]&gt; 
+##  3 &lt;split [2K/222]&gt; Fold03 &lt;fit[+]&gt; 
+##  4 &lt;split [2K/222]&gt; Fold04 &lt;fit[+]&gt; 
+##  5 &lt;split [2K/222]&gt; Fold05 &lt;fit[+]&gt; 
+##  6 &lt;split [2K/219]&gt; Fold06 &lt;fit[+]&gt; 
+##  7 &lt;split [2K/219]&gt; Fold07 &lt;fit[+]&gt; 
+##  8 &lt;split [2K/217]&gt; Fold08 &lt;fit[+]&gt; 
+##  9 &lt;split [2K/217]&gt; Fold09 &lt;fit[+]&gt; 
+## 10 &lt;split [2K/217]&gt; Fold10 &lt;fit[+]&gt;
+```
+
+]
+
+???
+
+Note that `&lt;fit[+]&gt;` means not model fitting failures.
+
+
+---
+
+# Resampling the Linear Model &lt;img src="images/purrr.png" class="title-hex"&gt;&lt;img src="images/parsnip.png" class="title-hex"&gt;&lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+Next, we will attach the predictions for each resample:
+
+.pull-left[
+
+
+```r
+compute_pred &lt;- function(split, model) {
+  
+  # Extract the assessment set
+  assess &lt;- assessment(split) %&gt;%
+    mutate(Sale_Price_Log = log10(Sale_Price))
+  
+  # Compute predictions (a df is returned)
+  pred &lt;- predict(model, new_data = assess)
+  
+  bind_cols(assess, pred)
+}
+```
+
+]
+
+.pull-right[
+
+
+```r
+cv_splits &lt;- cv_splits %&gt;%
+  mutate(
+    pred_lm = map2(splits, models_lm, compute_pred)
+  )
+cv_splits
+```
+
+```
+## #  10-fold cross-validation using stratification 
+## # A tibble: 10 x 4
+##    splits           id     models_lm pred_lm            
+##  * &lt;list&gt;           &lt;chr&gt;  &lt;list&gt;    &lt;list&gt;             
+##  1 &lt;split [2K/222]&gt; Fold01 &lt;fit[+]&gt;  &lt;tibble [222 × 76]&gt;
+##  2 &lt;split [2K/222]&gt; Fold02 &lt;fit[+]&gt;  &lt;tibble [222 × 76]&gt;
+##  3 &lt;split [2K/222]&gt; Fold03 &lt;fit[+]&gt;  &lt;tibble [222 × 76]&gt;
+##  4 &lt;split [2K/222]&gt; Fold04 &lt;fit[+]&gt;  &lt;tibble [222 × 76]&gt;
+##  5 &lt;split [2K/222]&gt; Fold05 &lt;fit[+]&gt;  &lt;tibble [222 × 76]&gt;
+##  6 &lt;split [2K/219]&gt; Fold06 &lt;fit[+]&gt;  &lt;tibble [219 × 76]&gt;
+##  7 &lt;split [2K/219]&gt; Fold07 &lt;fit[+]&gt;  &lt;tibble [219 × 76]&gt;
+##  8 &lt;split [2K/217]&gt; Fold08 &lt;fit[+]&gt;  &lt;tibble [217 × 76]&gt;
+##  9 &lt;split [2K/217]&gt; Fold09 &lt;fit[+]&gt;  &lt;tibble [217 × 76]&gt;
+## 10 &lt;split [2K/217]&gt; Fold10 &lt;fit[+]&gt;  &lt;tibble [217 × 76]&gt;
+```
+
+]
+
+
+---
+
+# Resampling the Linear Model &lt;img src="images/purrr.png" class="title-hex"&gt;&lt;img src="images/parsnip.png" class="title-hex"&gt;&lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+Now, let's compute two performance measures:
+
+.pull-left[
+
+
+```r
+compute_perf &lt;- function(pred_df) {
+  
+  # Create a function that calculates
+  # rmse and rsq and returns a data frame
+  numeric_metrics &lt;- metric_set(rmse, rsq)
+  
+  numeric_metrics(
+    pred_df, 
+    truth = Sale_Price_Log, 
+    estimate = .pred
+  )
+  
+}
+```
+
+]
+
+.pull-right[
+
+```r
+cv_splits &lt;- cv_splits %&gt;%
+  mutate(perf_lm = map(pred_lm, compute_perf))
+
+select(cv_splits, pred_lm, perf_lm)
+```
+
+```
+## # A tibble: 10 x 2
+##    pred_lm             perf_lm         
+##    &lt;list&gt;              &lt;list&gt;          
+##  1 &lt;tibble [222 × 76]&gt; &lt;tibble [2 × 3]&gt;
+##  2 &lt;tibble [222 × 76]&gt; &lt;tibble [2 × 3]&gt;
+##  3 &lt;tibble [222 × 76]&gt; &lt;tibble [2 × 3]&gt;
+##  4 &lt;tibble [222 × 76]&gt; &lt;tibble [2 × 3]&gt;
+##  5 &lt;tibble [222 × 76]&gt; &lt;tibble [2 × 3]&gt;
+##  6 &lt;tibble [219 × 76]&gt; &lt;tibble [2 × 3]&gt;
+##  7 &lt;tibble [219 × 76]&gt; &lt;tibble [2 × 3]&gt;
+##  8 &lt;tibble [217 × 76]&gt; &lt;tibble [2 × 3]&gt;
+##  9 &lt;tibble [217 × 76]&gt; &lt;tibble [2 × 3]&gt;
+## 10 &lt;tibble [217 × 76]&gt; &lt;tibble [2 × 3]&gt;
+```
+]
+
+---
+
+# Resampling the Linear Model &lt;img src="images/purrr.png" class="title-hex"&gt;&lt;img src="images/parsnip.png" class="title-hex"&gt;&lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+And finally, let's compute the average of each metric over the resamples:
+
+.pull-left[
+
+
+```r
+cv_splits$perf_lm[[1]]
+```
+
+```
+## # A tibble: 2 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 rmse    standard       0.150
+## 2 rsq     standard       0.303
+```
+
+]
+
+.pull-right[
+
+
+```r
+cv_splits %&gt;%
+  unnest(perf_lm) %&gt;%
+  group_by(.metric) %&gt;%
+  summarise(
+    .avg = mean(.estimate),
+    .sd = sd(.estimate)
+  )
+```
+
+```
+## # A tibble: 2 x 3
+##   .metric  .avg     .sd
+##   &lt;chr&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+## 1 rmse    0.161 0.00787
+## 2 rsq     0.183 0.0569
+```
+
+]
+
+---
+
+# What Was the Ruckus?
+
+
+
+
+Previously, I mentioned that the performance metrics that were naively calculated from the training set could be optimistic. However, this approach estimates the RMSE to be 0.1614 and cross-validation produced an estimate of 0.1613. What was the big deal? 
+
+Linear regression is a _high bias model_. This means that it is fairly incapable at being able to adapt the underlying model function (unless it is linear). For this reason, linear regression is unlikely to **overfit** to the training set and our two estimates are likely to be the same. 
+
+We'll consider another model shortly that is _low bias_ since it can, theoretically, easily adapt to a wide variety of true model functions. 
+
+However, as before, there is also variance to consider. Linear regression is very stable since it leverages all of the data points to estimate parameters. Other methods, such as tree-based models, are not and can drastically change if the training set data is slightly perturbed. 
+
+**tl;dr**: the earlier concern is real but linear regression is less likely to be affected.  
+
+---
+
+# Diagnostics Again &lt;img src="images/rsample.png" class="title-hex"&gt;&lt;img src="images/purrr.png" class="title-hex"&gt;&lt;img src="images/broom.png" class="title-hex"&gt;
+
+Now let's look at diagnostics using the predictions from the assessment sets. 
+
+
+```r
+holdout_results &lt;- 
+  cv_splits %&gt;%
+  unnest(pred_lm) %&gt;%
+  mutate(.resid = Sale_Price_Log - .pred)
+
+holdout_results %&gt;% dim()
+```
+
+```
+## [1] 2199   78
+```
+
+```r
+ames_train %&gt;% dim()
+```
+
+```
+## [1] 2199   74
+```
+
+---
+
+# Hands-On: Partial Residual Plots &lt;img src="images/rsample.png" class="title-hex"&gt;&lt;img src="images/purrr.png" class="title-hex"&gt;&lt;img src="images/broom.png" class="title-hex"&gt;
+
+A partial residual plot is used to diagnose what variables _should_ have been in the model. 
+
+We can plot the hold-out residuals versus different variables to understand if they should have been in the model
+
+ * If the residuals have no pattern in the data, they are likely to be irrelevant. 
+ 
+ * If a pattern is seen, it suggests that the variable should have been in the model.
+ 
+Take 10 min and use `ggplot` to investigate the other predictors using the `holdout_results` data frame. `geom_smooth()` might come in handy. 
+
+
+---
+layout: false
+class: inverse, middle, center
+
+#  Tuning Parameters and Overfitting
+
+
+---
+
+# _K_-Nearest Neighbors Model
+
+Now let's consider a more flexible model that is _low bias_: _K_-nearest neighbors.
+
+The model stores the training set (including the outcome). 
+
+When a new sample is predicted, _K_ training set points are found that are most similar to the new sample being predicted. 
+
+The predicted value for the new sample is some summary statistic of the neighbors, usually: 
+
+* the mean for regression, or
+* the mode for classification.
+
+When _K_ is small, the model might be _too_ responsive to the underlying data. When _K_ is large, it begins to "over smooth" the neighbors and performance suffers. 
+
+Ordinarily, since we are computing a distance, we would want to center and scale the predictors. Our two predictors are already on the same scale so we can skip this step. 
+
+---
+
+# _5_-Nearest Neighbors Model
+
+<div id="htmlwidget-5ff79be086dbfb367135" style="width:80%;height:504px;" class="leaflet html-widget"></div>
+<script type="application/json" data-for="htmlwidget-5ff79be086dbfb367135">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"setView":[[42.0611331,-93.6537329],18,[]],"calls":[{"method":"addProviderTiles","args":["CartoDB.DarkMatterNoLabels",null,null,{"errorTileUrl":"","noWrap":false,"detectRetina":false}]},{"method":"addCircles","args":[[42.060766,42.0608079,42.061382,42.061437,42.060872],[-93.65369,-93.65332,-93.653152,-93.652884,-93.652713],6,null,null,{"interactive":true,"className":"","stroke":true,"color":"red","weight":5,"opacity":0.4,"fill":true,"fillColor":"red","fillOpacity":0.2},null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null,null]},{"method":"addCircles","args":[42.0611331,-93.6537329,6,null,null,{"interactive":true,"className":"","stroke":true,"color":"yellow","weight":5,"opacity":0.4,"fill":true,"fillColor":"yellow","fillOpacity":0.2},null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null,null]},{"method":"addCircles","args":[[42.054035,42.060899,42.060779,42.060728,42.06112,42.059193,42.05848,42.057268,42.059169,42.0603514,42.05885,42.056673,42.054453,42.050346,42.05027,42.049297,42.055147,42.055227,42.053395,42.055318,42.051835,42.051684,42.050683,42.049811,42.062352,42.062109,42.060879,42.059617,42.058388,42.058599,42.057102,42.058252,42.057181,42.061928,42.062303,42.061443,42.060977,42.061193,42.060936,42.057103,42.053243,42.051721,42.051674,42.052457,42.052437,42.050909,42.05306,42.051827,42.051653,42.052347,42.036255,42.036113,42.03548,42.036659,42.0347,42.036633,42.034555,42.0360754,42.036535,42.034793,42.035685,42.034856,42.03457,42.035333,42.046825,42.045773,42.048566,42.047782,42.046145,42.046145,42.046424,42.046114,42.0470316,42.04638,42.043704,42.034561,42.048606,42.046322,42.043038,42.043306,42.043821,42.046574,42.042205,42.043363,42.039085,42.038971,42.040326,42.041146,42.039211,42.038538,42.035256,42.035482,42.035943,42.036095,42.037424,42.048494,42.0459375,42.049514,42.044895,42.043984,42.042908,42.043969,42.044052,42.044176,42.0435919,42.042308,42.040396,42.04137,42.038443,42.038521,42.038249,42.0381282,42.035869,42.040085,42.041119,42.03594,42.0347571,42.034748,42.034851,42.036873,42.037093,42.033313,42.032134,42.031363,42.031381,42.0303783,42.033279,42.033644,42.03128,42.0303113,42.030383,42.030331,42.028099,42.029146,42.028145,42.03005,42.028164,42.028165,42.033642,42.030187,42.033621,42.033563,42.0336,42.033665,42.033631,42.031556,42.031337,42.032302,42.027986,42.028888,42.028875,42.024141,42.026741,42.032432,42.028256,42.026752,42.02616,42.022825,42.034451,42.033386,42.033387,42.033008,42.03237,42.029867,42.03069,42.029731,42.030519,42.03128,42.030082,42.03387,42.032164,42.026547,42.024673,42.028226,42.026533,42.024208,42.025173,42.0247497,42.024126,42.025019,42.024162,42.03374,42.032076,42.0311198,42.024614,42.024604,42.030601,42.0298532,42.024318,42.018411,42.01867,42.022186,42.022045,42.021133,42.018662,42.019069,42.018721,42.016275,42.016253,42.01404,42.014092,42.0203585,42.020635,42.021163,42.020306,42.019849,42.019629,42.020196,42.021793,42.021583,42.022674,42.022702,42.017737,42.0177987,42.0163944,42.014682,42.011005,42.010606,42.009345,42.009337,42.010797,42.021414,42.021474,42.021456,42.021327,42.02152,41.99706,41.997052,41.996065,41.994784,41.994013,41.997741,41.995278,41.994284,41.995489,41.99435,41.99321,41.990934,41.993253,41.991004,41.991861,41.992119,41.9917,41.991824,41.991558,41.988729,41.9889358,41.98766,41.986647,41.9913,41.989848,42.0530363,42.059956,42.063294,42.062956,42.060598,42.062903,42.061981,42.061633,42.058274,42.058059,42.059645,42.058194,42.05793,42.058173,42.057854,42.058201,42.058747,42.059242,42.060265,42.05184,42.052102,42.05288,42.052915,42.050345,42.049394,42.049106,42.0503771,42.049406,42.053166,42.052355,42.052448,42.05267,42.04891,42.056398,42.054626,42.055228,42.055154,42.05337,42.053306,42.053307,42.0564419,42.056461,42.052338,42.051661,42.051823,42.051822,42.050615,42.050705,42.050682,42.050213,42.050134,42.050222,42.050397,42.0488934,42.048486,42.0623099,42.063304,42.063025,42.06128,42.062992,42.062942,42.062776,42.062789,42.0623985,42.062108,42.060353,42.060575,42.061678,42.060178,42.0599123,42.0598989,42.061404,42.059241,42.058782,42.058886,42.059177,42.059179,42.059183,42.058336,42.05851,42.057164,42.057089,42.057019,42.056983,42.057277,42.057467,42.06232,42.063183,42.062058,42.062404,42.062266,42.062081,42.062086,42.061562,42.059377,42.061739,42.061149,42.061114,42.061656,42.061365,42.063283,42.058368,42.05859,42.059481,42.059068,42.059605,42.057834,42.057833,42.057098,42.057093,42.056955,42.058668,42.053749,42.053041,42.052668,42.050411,42.049701,42.05161,42.049921,42.050971,42.054282,42.055036,42.053212,42.053258,42.051804,42.051797,42.051793,42.051645,42.051648,42.051652,42.050406,42.052337,42.052346,42.052127,42.051378,42.052122,42.051247,42.051251,42.050895,42.037557,42.037611,42.037661,42.036001,42.035282,42.037923,42.038127,42.037756,42.037434,42.036852,42.036905,42.036576,42.035518,42.037607,42.035968,42.035756,42.0365385,42.035287,42.035806,42.035289,42.03466,42.034602,42.034581,42.037236,42.047669,42.048416,42.048488,42.047338,42.047101,42.046144,42.046418,42.043782,42.043553,42.043019,42.034509,42.047708,42.048009,42.048761,42.04876,42.046476,42.046476,42.045799,42.043236,42.043673,42.044693,42.048796,42.0467129,42.046635,42.044821,42.043935,42.043145,42.044774,42.040645,42.0407264,42.040011,42.039902,42.040888,42.038596,42.035489,42.035443,42.036182,42.034741,42.037452,42.036178,42.049306,42.048294,42.04806,42.04579,42.044125,42.044083,42.044914,42.04297,42.042233,42.043238,42.040931,42.040857,42.0385265,42.038356,42.038398,42.0372232,42.034918,42.034686,42.034754,42.035829,42.034746,42.037144,42.037328,42.036002,42.034668,42.034574,42.03528,42.0417879,42.04015,42.040295,42.04124,42.038509,42.038349,42.039047,42.040766,42.038811,42.037129,42.035787,42.035841,42.037233,42.03602,42.035968,42.03572,42.035706,42.037214,42.0347542,42.034858,42.038948,42.038257,42.0342224,42.033273,42.0320748,42.0323259,42.032202,42.0319053,42.031305,42.0304742,42.030327,42.0303538,42.030282,42.033381,42.033579,42.032301,42.032227,42.030523,42.0296722,42.029007,42.028957,42.029305,42.0276972,42.0282044,42.027227,42.023218,42.023222,42.033558,42.0333765,42.031542,42.033406,42.033616,42.03329,42.033474,42.031395,42.03252,42.032359,42.031292,42.03235,42.0310861,42.028948,42.027854,42.027998,42.026956,42.025306,42.023085,42.025796,42.0242487,42.022828,42.032681,42.028101,42.028098,42.0269586,42.022825,42.022978,42.033376,42.033633,42.032367,42.032388,42.030628,42.031138,42.032564,42.026548,42.023229,42.0240278,42.028468,42.027656,42.027506,42.023982,42.023916,42.026133,42.025996,42.026307,42.0247212,42.022754,42.034183,42.0318449,42.03254,42.030625,42.030623,42.03252,42.031622,42.031834,42.031623,42.031545,42.0314606,42.0312822,42.03057,42.030531,42.0310946,42.0309301,42.026482,42.025293,42.025577,42.024628,42.024596,42.024613,42.024765,42.024327,42.02322,42.02792,42.021171,42.021207,42.020817,42.019784,42.018996,42.018597,42.017569,42.016903,42.018667,42.016862,42.016399,42.021384,42.020087,42.019184,42.019697,42.019548,42.019691,42.020991,42.021788,42.020843,42.017109,42.018722,42.018847,42.01877,42.018703,42.016973,42.016978,42.0181479,42.018875,42.018866,42.018006,42.017856,42.017856,42.016819,42.016797,42.016468,42.013512,42.013392,42.020123,42.021246,42.021219,42.018988,42.0186549,42.0196717,42.018928,42.017026,42.01896,42.022478,42.019423,42.0217997,42.021496,42.019004,42.01822,42.019381,42.018592,42.022092,42.022088,42.022091,42.020123,42.019713,42.017564,42.016921,42.016182,42.018931,42.017889,42.017835,42.016943,42.016835,42.016957,42.016067,42.0191252,42.018707,42.017583,42.017574,42.016684,42.013169,42.014943,42.013753,42.0125,42.009489,42.009489,42.01141,42.009134,42.021425,42.021596,42.020184,42.020002,42.008683,42.0183,41.996888,41.996672,41.997119,41.99539,41.997067,41.995905,41.996066,42.001246,42.00138,41.995027,41.995058,41.993759,41.994727,41.994695,41.997684,41.998952,41.996093,41.992964,41.992193,41.992122,41.991786,41.992919,41.992185,41.9928219,41.99217,41.992539,41.991786,41.991365,41.988222,41.986502,41.986509,41.99095,42.051446,42.049587,42.05996,42.061231,42.060771,42.060822,42.060639,42.0623,42.062976,42.061374,42.060865,42.06076,42.059408,42.059364,42.058445,42.05701,42.061394,42.060241,42.059792,42.0586718,42.056015,42.054514,42.054562,42.054439,42.054455,42.054211,42.055432,42.050326,42.051473,42.050679,42.049449,42.049609,42.051074,42.056306,42.054328,42.0564348,42.054693,42.051479,42.051678,42.051659,42.050001,42.05068,42.050257,42.04845,42.062046,42.0632692,42.062925,42.062259,42.0624143,42.061133,42.06027,42.060427,42.060425,42.0599011,42.058683,42.058573,42.058649,42.057028,42.058694,42.057164,42.0579589,42.056766,42.0570189,42.057446,42.057179,42.0571198,42.057468,42.056616,42.062299,42.062004,42.063301,42.061316,42.059635,42.061544,42.061312,42.058377,42.057986,42.05695,42.058581,42.053879,42.053666,42.055748,42.055777,42.0522319,42.052272,42.050383,42.05162,42.049501,42.049696,42.050692,42.054236,42.055157,42.054415,42.054366,42.054319,42.055517,42.054227,42.053183,42.051646,42.05165,42.050307,42.052456,42.05138,42.052173,42.051224,42.050899,42.037836,42.035271,42.035132,42.037918,42.037806,42.03805,42.036525,42.037258,42.035875,42.035878,42.036089,42.034535,42.035666,42.036501,42.036466,42.036039,42.035179,42.034614,42.03569,42.03459,42.0375,42.034532,42.047666,42.048607,42.047467,42.048089,42.048191,42.047806,42.047571,42.047548,42.047102,42.047103,42.046381,42.046377,42.046372,42.046088,42.046085,42.046961,42.046647,42.047171,42.047171,42.047171,42.045012,42.044419,42.048726,42.047928,42.0492538,42.049141,42.048762,42.046399,42.042943,42.04378,42.0458538,42.0471033,42.047541,42.048185,42.0453551,42.044262,42.044058,42.044851,42.043845,42.044101,42.042398,42.044773,42.044773,42.04066,42.041811,42.038323,42.0418699,42.041172,42.035582,42.035571,42.034563,42.035741,42.036178,42.036102,42.03713,42.034679,42.048952,42.047782,42.0470799,42.046935,42.042373,42.0423032,42.044736,42.043988,42.044791,42.044853,42.044304,42.042187,42.0438199,42.042023,42.042304,42.040479,42.040301,42.040391,42.039445,42.03471,42.037302,42.037459,42.035893,42.035723,42.035938,42.035222,42.040021,42.040142,42.039568,42.03807,42.037125,42.037104,42.035813,42.037006,42.037291,42.034811,42.034564,42.034789,42.034686,42.034636,42.034801,42.036973,42.035724,42.0342174,42.033379,42.032611,42.0330566,42.032419,42.0304142,42.030418,42.032161,42.032272,42.030406,42.0303597,42.033571,42.033249,42.032008,42.032381,42.0311,42.0304823,42.029058,42.029253,42.029281,42.028287,42.02793,42.027073,42.027032,42.029084,42.02813,42.0288284,42.029209,42.0272517,42.02774,42.026691,42.0272664,42.0343116,42.03047,42.033568,42.033699,42.03337,42.033511,42.033473,42.033366,42.033493,42.031354,42.031493,42.032476,42.031461,42.031496,42.031467,42.030388,42.028426,42.028274,42.029556,42.029038,42.0286305,42.0255246,42.024111,42.024265,42.0242588,42.02295,42.026478,42.0262558,42.024885,42.023716,42.034391,42.034409,42.033423,42.031281,42.02393,42.033604,42.033225,42.032365,42.031571,42.031123,42.031348,42.03156,42.034428,42.033454,42.033834,42.034414,42.032495,42.032566,42.033692,42.032653,42.033559,42.029453,42.024662,42.0243033,42.028568,42.028595,42.027332,42.027555,42.028381,42.028233,42.028188,42.0280297,42.024025,42.025036,42.0236702,42.0244599,42.022902,42.022769,42.02283,42.033912,42.031077,42.030621,42.025411,42.025275,42.027368,42.027193,42.029437,42.030276,42.0249247,42.025781,42.021173,42.01915,42.018501,42.018786,42.017517,42.017766,42.015974,42.015949,42.021234,42.019769,42.02107,42.020796,42.020991,42.018735,42.018412,42.018354,42.017598,42.01727,42.017484,42.018186,42.016975,42.016207,42.016341,42.014435,42.016709,42.017866,42.016277,42.016254,42.017854,42.016262,42.014549,42.013952,42.013641,42.013622,42.013603,42.015975,42.0138316,42.015927,42.015927,42.016121,42.016122,42.01975,42.019937,42.020905,42.019996,42.02099,42.019861,42.018991,42.018852,42.01883,42.017386,42.016804,42.018898,42.020483,42.0202945,42.020394,42.019544,42.020112,42.021582,42.01797,42.017962,42.0198028,42.019959,42.02224,42.022238,42.022089,42.019986,42.017413,42.019092,42.019005,42.01791,42.017834,42.0176853,42.01789,42.0168678,42.016072,42.019833,42.019617,42.018443,42.018888,42.018766,42.01601,42.015667,42.014567,42.012638,42.009489,42.022607,42.021806,42.022797,42.022516,42.0213831,42.021276,42.0214037,42.020379,42.021389,42.018806,42.021162,42.021506,42.022458,42.022626,42.009326,42.008803,42.0091899,41.99507,41.997124,41.997062,41.997069,41.996903,41.995991,41.998543,42.00514,41.998999,41.994841,41.99373,41.995142,41.999812,41.999575,41.9976055,41.998554,41.99639,41.99423,41.99312,41.993611,41.99338,41.990054,41.993059,41.993185,41.99261,41.991372,41.990899,41.991883,41.991779,41.993249,41.988675,41.987109,41.988934,41.98811,41.988076,41.987289,42.051297,42.051357,42.049671,42.061275,42.061664,42.061242,42.059592,42.058953,42.059562,42.059517,42.059293,42.057006,42.05817,42.057022,42.059375,42.059239,42.059309,42.059304,42.060431,42.060144,42.059743,42.058893,42.058996,42.054368,42.055545,42.054941,42.055217,42.054427,42.05622,42.056211,42.052353,42.053271,42.05026,42.049832,42.050075,42.050372,42.049956,42.048765,42.055392,42.054612,42.053547,42.05346,42.053503,42.0562952,42.054789,42.055319,42.052669,42.052698,42.050397,42.05057,42.049996,42.0488205,42.062574,42.063296,42.063298,42.0632689,42.0632722,42.063141,42.061976,42.0619709,42.062259,42.0628153,42.0624082,42.062434,42.061131,42.06027,42.060269,42.061133,42.060576,42.060427,42.059561,42.06113,42.059761,42.059677,42.058634,42.059211,42.059202,42.059194,42.059175,42.059176,42.059176,42.05826,42.058284,42.056827,42.057124,42.0568529,42.057209,42.063388,42.063381,42.062483,42.062279,42.0626729,42.06208,42.062533,42.062887,42.062931,42.062974,42.063106,42.063342,42.062584,42.062581,42.062946,42.063301,42.061713,42.061483,42.061541,42.061318,42.061392,42.060021,42.058858,42.057981,42.058401,42.057836,42.058897,42.0533209,42.053364,42.055751,42.055627,42.05359,42.053436,42.053467,42.05198,42.052361,42.052247,42.051813,42.05048,42.049518,42.052416,42.054408,42.055757,42.054177,42.054417,42.054354,42.054309,42.054514,42.054154,42.054153,42.054157,42.053185,42.053186,42.053108,42.053067,42.051795,42.051657,42.050206,42.050301,42.051681,42.052269,42.051377,42.052267,42.052146,42.051054,42.037586,42.037643,42.03722,42.036028,42.035259,42.036038,42.035071,42.035678,42.0362103,42.034678,42.035871,42.035857,42.034532,42.034724,42.034652,42.034819,42.037652,42.037502,42.034673,42.047618,42.0474249,42.047406,42.047711,42.047705,42.047687,42.047104,42.047104,42.046144,42.046145,42.046145,42.046405,42.046137,42.046135,42.046411,42.044383,42.044762,42.042994,42.043754,42.042961,42.037103,42.0349702,42.048488,42.046549,42.047758,42.04849,42.047615,42.043005,42.04259,42.04389,42.0421698,42.047811,42.048292,42.043984,42.043929,42.043121,42.042124,42.04227,42.044036,42.042577,42.042485,42.044921,42.043627,42.039141,42.040143,42.039069,42.0413937,42.0417604,42.04074,42.041332,42.039212,42.036575,42.035684,42.036023,42.036223,42.034615,42.0362,42.034906,42.034755,42.048934,42.045809,42.0459325,42.046882,42.044053,42.043143,42.044735,42.0423095,42.045669,42.043952,42.043233,42.0426969,42.042728,42.0418697,42.041243,42.040773,42.040451,42.03981,42.039369,42.039482,42.03846,42.03837,42.038545,42.034789,42.0347206,42.034812,42.035932,42.03725,42.0380982,42.0357,42.035779,42.035854,42.034878,42.039983,42.038888,42.035733,42.037329,42.037203,42.035954,42.037106,42.035862,42.036002,42.037084,42.034685,42.034614,42.034564,42.036949,42.035423,42.0346,42.035034,42.034403,42.032254,42.03131,42.031369,42.0311108,42.033405,42.032343,42.033385,42.033489,42.033313,42.032276,42.032357,42.0318018,42.030311,42.03013,42.0299846,42.029218,42.029198,42.029223,42.0280396,42.02819,42.027154,42.0277574,42.026089,42.0268089,42.0272605,42.0272703,42.033311,42.034339,42.030823,42.033336,42.032399,42.031433,42.031438,42.03142,42.032505,42.032386,42.031321,42.031483,42.0314873,42.0304477,42.029451,42.026912,42.026998,42.027088,42.0299664,42.02911,42.02752,42.0275775,42.025229,42.021576,42.0249982,42.0242321,42.0227,42.022963,42.0238391,42.026723,42.025893,42.0261614,42.022951,42.033524,42.033285,42.028048,42.028004,42.033272,42.032426,42.034453,42.034429,42.033193,42.032385,42.032098,42.031533,42.029562,42.031215,42.029679,42.030591,42.032528,42.034421,42.033557,42.032638,42.033726,42.032699,42.02868,42.02384,42.026185,42.023229,42.028424,42.028236,42.024949,42.025818,42.025001,42.0205201,42.0246868,42.023874,42.023945,42.023451,42.022824,42.034453,42.032467,42.031566,42.02667,42.026642,42.025666,42.025707,42.025264,42.025281,42.025558,42.024598,42.024594,42.024614,42.025156,42.024485,42.023226,42.029694,42.029803,42.027969,42.024734,42.024305,42.021324,42.02121,42.020966,42.019032,42.019083,42.019028,42.018378,42.016896,42.016297,42.016214,42.021386,42.0218643,42.01972,42.021163,42.021056,42.020861,42.018518,42.018849,42.016973,42.0172,42.018864,42.016277,42.017753,42.015974,42.014039,42.013576,42.01343,42.013467,42.0210331,42.020703,42.021195,42.02103,42.020893,42.019926,42.01917,42.018873,42.018922,42.0164532,42.016642,42.018973,42.018965,42.020783,42.020504,42.021436,42.017962,42.01873,42.019937,42.01902,42.018761,42.017888,42.017889,42.017103,42.017106,42.0162813,42.016216,42.016217,42.016217,42.016853,42.016067,42.0199537,42.018796,42.018504,42.018941,42.017573,42.016961,42.013003,42.0145503,42.01265,42.011506,42.011836,42.011343,42.022836,42.022474,42.022658,42.022566,42.022685,42.0228,42.021547,42.021278,42.021497,42.020161,42.020077,42.0214218,42.021555,42.009401,41.994207,41.994206,41.995218,41.995973,41.995931,41.995512,41.994188,42.005692,42.001694,41.99854,42.0004101,41.994241,41.9941,41.995088,41.998023,41.997992,41.997126,41.996089,41.997299,41.995341,41.993986,41.997352,41.993288,41.993356,41.991211,41.992917,41.99284,41.992145,41.992516,41.992479,41.991709,41.991641,41.991868,41.991612,41.991098,41.989581,41.990264,41.991371,41.987606,41.98822,41.9881729,41.98651,41.986588,42.0531078,42.052519,42.050507,42.061407,42.060425,42.06048,42.060736,42.061879,42.062828,42.062802,42.062798,42.062891,42.062956,42.060625,42.0591,42.058421,42.059599,42.058136,42.060459,42.060527,42.060516,42.061478,42.061008,42.060111,42.059957,42.061096,42.0593867,42.056702,42.058563,42.055607,42.054367,42.054956,42.05327,42.0524029,42.053418,42.050514,42.050176,42.051077,42.052359,42.04977,42.049608,42.055131,42.053459,42.05446,42.052655,42.0524739,42.0527019,42.051798,42.051672,42.051673,42.051664,42.050595,42.048946,42.050705,42.050441,42.061472,42.061901,42.061284,42.062109,42.061134,42.060272,42.060271,42.060425,42.060577,42.060424,42.060357,42.061544,42.061377,42.059636,42.059825,42.058544,42.05869,42.059017,42.059184,42.057164,42.058231,42.057164,42.05758,42.063304,42.062442,42.062361,42.061915,42.061928,42.063031,42.062576,42.061984,42.061987,42.062574,42.063298,42.063329,42.063185,42.062374,42.0623,42.063301,42.063301,42.062831,42.062873,42.060239,42.060293,42.059803,42.060836,42.060074,42.05853,42.057905,42.057838,42.05696,42.058461,42.05443,42.05384,42.053801,42.053314,42.053154,42.053466,42.049687,42.049528,42.054318,42.054176,42.054175,42.053183,42.052265,42.052272,42.052346,42.051355,42.051426,42.051382,42.051245,42.051225,42.037843,42.036149,42.037915,42.037827,42.03718,42.036849,42.034595,42.03674,42.035555,42.035629,42.03748,42.036051,42.036087,42.036206,42.035302,42.035094,42.034692,42.035696,42.035536,42.03458,42.034663,42.037065,42.045763,42.048371,42.047997,42.048058,42.047592,42.04768,42.047665,42.047642,42.047618,42.046145,42.046431,42.046127,42.046107,42.046429,42.046416,42.044609,42.043779,42.042369,42.042481,42.042826,42.043351,42.037409,42.045632,42.048199,42.048997,42.048602,42.046472,42.04806,42.043548,42.046496,42.045728,42.045728,42.045878,42.04795,42.04657,42.044308,42.043214,42.040072,42.04102,42.0414084,42.041314,42.040273,42.040143,42.039195,42.039202,42.035836,42.03537,42.035379,42.035666,42.034612,42.036024,42.037463,42.0493,42.049031,42.04665,42.048528,42.042156,42.043129,42.043897,42.04498,42.044975,42.042105,42.043626,42.0427,42.042905,42.041821,42.040745,42.039447,42.038357,42.039387,42.038602,42.0383475,42.038836,42.040276,42.039351,42.034934,42.034617,42.0347269,42.0378602,42.0371796,42.037097,42.037041,42.0358,42.035857,42.035277,42.034761,42.040944,42.040811,42.040105,42.040081,42.040297,42.0385,42.038497,42.038297,42.040768,42.03902,42.036098,42.035996,42.036099,42.036053,42.034829,42.034757,42.034708,42.036792,42.03548,42.034618,42.034753,42.0345614,42.033267,42.0334994,42.033385,42.031347,42.030396,42.031196,42.0330459,42.030267,42.032267,42.031964,42.030368,42.03146,42.029142,42.029136,42.028951,42.029281,42.0281148,42.027953,42.028963,42.029025,42.027992,42.02297,42.03405,42.033369,42.032299,42.032396,42.032478,42.031415,42.031436,42.032417,42.0310818,42.030389,42.029526,42.02686,42.025459,42.0249549,42.0242578,42.022825,42.0238089,42.034411,42.034576,42.033296,42.0331453,42.028002,42.027997,42.033521,42.033388,42.032304,42.032383,42.031356,42.030611,42.032216,42.030702,42.031362,42.031347,42.030232,42.033285,42.03247,42.032478,42.029453,42.028836,42.023651,42.024705,42.02653,42.027664,42.026667,42.02821,42.028191,42.026458,42.025846,42.025524,42.025102,42.025197,42.026308,42.022824,42.032082,42.0315156,42.024635,42.024555,42.024615,42.025218,42.025194,42.02437,42.024481,42.023306,42.024376,42.023308,42.023138,42.029884,42.028168,42.025573,42.02438,42.022227,42.021209,42.0209,42.019047,42.018043,42.018123,42.0168729,42.017929,42.016217,42.016913,42.02007,42.019697,42.021811,42.021889,42.020998,42.021785,42.01834,42.018664,42.017854,42.017055,42.014494,42.016979,42.016904,42.017867,42.017858,42.017186,42.016252,42.016618,42.016092,42.015793,42.016004,42.013991,42.015765,42.013519,42.0195855,42.020995,42.020592,42.020547,42.021113,42.01899,42.021168,42.018648,42.018961,42.018959,42.018813,42.018812,42.01881,42.01881,42.018809,42.02011,42.022676,42.022659,42.021432,42.017727,42.022089,42.022088,42.02197,42.021559,42.020286,42.018282,42.019093,42.01895,42.018808,42.018857,42.0165794,42.016072,42.017609,42.01874,42.019059,42.019759,42.017131,42.016827,42.017589,42.016124,42.013296,42.013495,42.014936,42.011793,42.022786,42.022709,42.020441,42.020855,42.020207,42.02153,42.019025,42.019349,42.019099,42.022603,42.008375,41.995987,41.996907,41.995702,41.996063,42.004509,42.000966,41.99984,41.997906,41.999553,41.994229,41.993258,41.99222,41.99329,41.993173,41.990054,41.990993,41.990523,41.991574,41.992303,41.992159,41.992522,41.992497,41.9900428,41.990134,41.9887374,41.987686,41.988964,41.98651,41.990921],[-93.619754,-93.638933,-93.638925,-93.633826,-93.632852,-93.639068,-93.636947,-93.634626,-93.632913,-93.6235954,-93.628804,-93.622971,-93.636655,-93.633962,-93.636372,-93.639366,-93.626231,-93.628806,-93.627112,-93.624373,-93.627271,-93.627536,-93.625924,-93.625848,-93.653201,-93.654645,-93.652336,-93.655051,-93.650436,-93.656067,-93.654853,-93.649447,-93.651013,-93.644356,-93.642252,-93.644076,-93.641487,-93.642447,-93.641325,-93.641337,-93.652334,-93.654206,-93.653616,-93.650356,-93.650578,-93.652972,-93.642368,-93.649976,-93.650318,-93.642773,-93.692309,-93.692412,-93.686417,-93.687694,-93.686264,-93.68628,-93.685028,-93.6790694,-93.677205,-93.673669,-93.670956,-93.672096,-93.672067,-93.669688,-93.651773,-93.652773,-93.645599,-93.64489,-93.645606,-93.645585,-93.645482,-93.645478,-93.641253,-93.643556,-93.648143,-93.65921,-93.639516,-93.633351,-93.636879,-93.637531,-93.632554,-93.626137,-93.625926,-93.623383,-93.626939,-93.627536,-93.626785,-93.627809,-93.620651,-93.620504,-93.629287,-93.629313,-93.62475,-93.624601,-93.621431,-93.618221,-93.6184183,-93.614307,-93.617693,-93.617553,-93.617117,-93.616582,-93.614882,-93.613301,-93.614241,-93.613624,-93.615622,-93.617092,-93.615475,-93.611642,-93.618788,-93.6192014,-93.620341,-93.607275,-93.606905,-93.605969,-93.609218,-93.605943,-93.606742,-93.604835,-93.603705,-93.617014,-93.617135,-93.62024,-93.620241,-93.6179112,-93.614002,-93.615431,-93.608954,-93.6090761,-93.610466,-93.606789,-93.616887,-93.610588,-93.61221,-93.608246,-93.607238,-93.607088,-93.625737,-93.625825,-93.625586,-93.624566,-93.622597,-93.623523,-93.622448,-93.623483,-93.621482,-93.620409,-93.62338,-93.621674,-93.621835,-93.626876,-93.620386,-93.655538,-93.658265,-93.656924,-93.658081,-93.655849,-93.672036,-93.671021,-93.671076,-93.673401,-93.672381,-93.678141,-93.676659,-93.676654,-93.676674,-93.672523,-93.670503,-93.663619,-93.668378,-93.667904,-93.675038,-93.662762,-93.66357,-93.667708,-93.66526,-93.6658876,-93.665799,-93.663367,-93.659808,-93.685001,-93.685988,-93.6801568,-93.691269,-93.692521,-93.68329,-93.6801805,-93.682138,-93.690542,-93.688258,-93.68773,-93.687807,-93.683727,-93.687859,-93.685523,-93.680864,-93.681227,-93.6837,-93.687922,-93.684015,-93.6783313,-93.677545,-93.676372,-93.675268,-93.675175,-93.6663375,-93.66751,-93.664841,-93.660168,-93.655762,-93.655653,-93.650321,-93.6514413,-93.6507568,-93.642793,-93.639678,-93.645014,-93.645701,-93.645729,-93.641677,-93.629496,-93.626689,-93.615272,-93.608271,-93.60775,-93.604947,-93.602823,-93.603972,-93.600797,-93.602002,-93.657894,-93.649201,-93.649096,-93.647645,-93.646814,-93.60743,-93.608372,-93.607622,-93.608223,-93.60359,-93.60359,-93.601806,-93.603398,-93.601449,-93.606856,-93.6035354,-93.6030339,-93.600582,-93.599791,-93.600006,-93.6188955,-93.639388,-93.639915,-93.635838,-93.637442,-93.634265,-93.633739,-93.633547,-93.636955,-93.637046,-93.637671,-93.635824,-93.635753,-93.636822,-93.636047,-93.639325,-93.634644,-93.633245,-93.627751,-93.637774,-93.638366,-93.637043,-93.633796,-93.637289,-93.635919,-93.639516,-93.6392308,-93.639366,-93.632915,-93.632178,-93.630253,-93.631432,-93.631791,-93.625856,-93.626554,-93.628707,-93.62655,-93.627037,-93.625657,-93.625542,-93.6234986,-93.6223289,-93.628119,-93.629456,-93.629851,-93.629881,-93.627244,-93.624729,-93.625945,-93.625846,-93.62569,-93.625696,-93.625707,-93.6256036,-93.626521,-93.658877,-93.6562749,-93.652716,-93.657483,-93.654144,-93.652863,-93.658224,-93.657835,-93.657049,-93.654437,-93.656737,-93.65476,-93.652084,-93.652724,-93.6541267,-93.6547754,-93.643771,-93.65604,-93.65486,-93.6545189,-93.649779,-93.649743,-93.649723,-93.650244,-93.6552449,-93.654204,-93.654215,-93.654405,-93.6514849,-93.651014,-93.650238,-93.645752,-93.64466,-93.644457,-93.645627,-93.642597,-93.642911,-93.642914,-93.642749,-93.643312,-93.644106,-93.641772,-93.641488,-93.642626,-93.640051,-93.640065,-93.649649,-93.642813,-93.642932,-93.641919,-93.644251,-93.641313,-93.641303,-93.641367,-93.641397,-93.641312,-93.640879,-93.65429,-93.65238,-93.655555,-93.655988,-93.654048,-93.651503,-93.650529,-93.650822,-93.644121,-93.64247,-93.64236,-93.641251,-93.650321,-93.6504,-93.65044,-93.650417,-93.650377,-93.650338,-93.648275,-93.643001,-93.64287,-93.643842,-93.643752,-93.640847,-93.643131,-93.641501,-93.639832,-93.69153,-93.692017,-93.692472,-93.69143,-93.691707,-93.691868,-93.691068,-93.690159,-93.690402,-93.689136,-93.6888,-93.687843,-93.686267,-93.687804,-93.685037,-93.683957,-93.6790752,-93.680198,-93.676364,-93.675716,-93.669554,-93.669707,-93.669845,-93.660327,-93.650333,-93.646316,-93.646338,-93.647039,-93.644205,-93.64566,-93.645482,-93.645923,-93.648057,-93.645546,-93.65921,-93.635342,-93.634634,-93.631971,-93.631881,-93.633163,-93.631851,-93.632823,-93.637964,-93.632647,-93.631899,-93.628903,-93.627047,-93.624612,-93.630714,-93.627416,-93.625775,-93.622635,-93.629415,-93.6273127,-93.627836,-93.627985,-93.626979,-93.621699,-93.629499,-93.62919,-93.62568,-93.623705,-93.624612,-93.622494,-93.619673,-93.617963,-93.614619,-93.614216,-93.61864,-93.616434,-93.614059,-93.614768,-93.61588,-93.614543,-93.620016,-93.618478,-93.6190376,-93.617219,-93.6124,-93.6167912,-93.618605,-93.618607,-93.62008,-93.61719,-93.617182,-93.61239,-93.612241,-93.615465,-93.614049,-93.613899,-93.612254,-93.610355,-93.607655,-93.610588,-93.610649,-93.608196,-93.608927,-93.609226,-93.606573,-93.60552,-93.609059,-93.61061,-93.608903,-93.60891,-93.606891,-93.606889,-93.607814,-93.605968,-93.606786,-93.609945,-93.610605,-93.604047,-93.603879,-93.6179738,-93.615583,-93.619013,-93.6195025,-93.615598,-93.6195361,-93.618486,-93.6200683,-93.620216,-93.6176367,-93.615381,-93.608866,-93.607776,-93.606842,-93.606841,-93.610469,-93.618648,-93.617054,-93.613887,-93.612245,-93.6148612,-93.6076506,-93.607058,-93.605207,-93.605421,-93.628848,-93.6279815,-93.626116,-93.624564,-93.624567,-93.622513,-93.622443,-93.624689,-93.623645,-93.623643,-93.623629,-93.621351,-93.6213592,-93.621525,-93.621504,-93.621506,-93.621633,-93.628299,-93.626716,-93.621862,-93.6250433,-93.599575,-93.659205,-93.658207,-93.658173,-93.6601886,-93.657241,-93.658381,-93.669839,-93.675401,-93.672288,-93.673382,-93.671849,-93.671369,-93.659279,-93.66798,-93.671177,-93.6721573,-93.666242,-93.665996,-93.665994,-93.668212,-93.667209,-93.665271,-93.66527,-93.660147,-93.66104,-93.659855,-93.684708,-93.685986,-93.68341,-93.681063,-93.682025,-93.679789,-93.679784,-93.6791403,-93.679109,-93.679784,-93.6790969,-93.6791456,-93.679781,-93.679856,-93.6791251,-93.679181,-93.688859,-93.690971,-93.690364,-93.689072,-93.689071,-93.691433,-93.69157,-93.690111,-93.689081,-93.679297,-93.691883,-93.688372,-93.690401,-93.691355,-93.691585,-93.690548,-93.690324,-93.691667,-93.688383,-93.689431,-93.691175,-93.686916,-93.687212,-93.687219,-93.685068,-93.684887,-93.684954,-93.683159,-93.68317,-93.68351,-93.687819,-93.686218,-93.68269,-93.682623,-93.682983,-93.686744,-93.685673,-93.67915,-93.680706,-93.681109,-93.681343,-93.681411,-93.680782,-93.68218,-93.68167,-93.684115,-93.684536,-93.6843,-93.678305,-93.677407,-93.676372,-93.672234,-93.6755239,-93.6739723,-93.675248,-93.676608,-93.669952,-93.664779,-93.666315,-93.6644556,-93.659191,-93.664812,-93.6644024,-93.664336,-93.663302,-93.657963,-93.656664,-93.655674,-93.651825,-93.652027,-93.651786,-93.64857,-93.651669,-93.648414,-93.646655,-93.648429,-93.646881,-93.648419,-93.644704,-93.644636,-93.6428055,-93.642371,-93.64012,-93.640592,-93.644295,-93.642885,-93.640762,-93.641356,-93.639407,-93.645743,-93.645743,-93.643539,-93.643947,-93.626839,-93.625299,-93.616895,-93.615395,-93.6165709,-93.588227,-93.606944,-93.607252,-93.607055,-93.603717,-93.604716,-93.602356,-93.602424,-93.64978,-93.652119,-93.65315,-93.651832,-93.651867,-93.653039,-93.650453,-93.646455,-93.644884,-93.646638,-93.651703,-93.608359,-93.60821,-93.604252,-93.604218,-93.603479,-93.600636,-93.603111,-93.601975,-93.60176,-93.601127,-93.603867,-93.609453,-93.606925,-93.600191,-93.6163289,-93.617424,-93.639062,-93.637796,-93.638775,-93.638778,-93.636718,-93.636948,-93.633876,-93.633781,-93.633905,-93.633797,-93.639151,-93.639007,-93.636798,-93.637279,-93.628831,-93.627911,-93.622299,-93.6225667,-93.6391494,-93.639715,-93.637825,-93.637808,-93.635111,-93.630299,-93.633168,-93.637105,-93.63719,-93.633905,-93.635216,-93.631129,-93.630231,-93.626544,-93.630208,-93.624265,-93.624873,-93.627114,-93.62765,-93.629425,-93.627234,-93.625986,-93.625848,-93.62649,-93.658873,-93.6573126,-93.652744,-93.654642,-93.6566551,-93.657889,-93.657188,-93.656801,-93.654734,-93.654443,-93.65572,-93.652549,-93.651216,-93.655587,-93.654914,-93.654187,-93.6513669,-93.653868,-93.652769,-93.651845,-93.651163,-93.6514243,-93.649997,-93.65089,-93.640958,-93.643039,-93.642326,-93.642641,-93.643522,-93.643964,-93.640051,-93.649587,-93.641331,-93.641342,-93.640959,-93.654594,-93.65412,-93.653324,-93.650932,-93.651562,-93.655279,-93.656036,-93.653929,-93.65579,-93.653908,-93.651801,-93.644107,-93.644145,-93.642108,-93.642092,-93.643976,-93.64403,-93.644024,-93.643788,-93.650397,-93.650358,-93.648255,-93.64119,-93.643692,-93.641651,-93.644018,-93.639662,-93.692497,-93.692431,-93.691695,-93.691836,-93.690761,-93.690364,-93.691246,-93.69124,-93.689769,-93.689024,-93.688803,-93.687819,-93.687831,-93.686428,-93.686278,-93.674093,-93.675743,-93.673965,-93.670997,-93.670551,-93.66203,-93.660522,-93.653482,-93.653232,-93.647488,-93.646063,-93.646113,-93.64489,-93.644891,-93.644891,-93.644172,-93.644118,-93.646984,-93.646986,-93.646989,-93.647047,-93.647044,-93.643746,-93.643378,-93.641785,-93.64177,-93.641742,-93.647655,-93.648705,-93.6392251,-93.635095,-93.6343272,-93.634976,-93.631526,-93.631779,-93.6324549,-93.631245,-93.6264356,-93.6261431,-93.62462,-93.624632,-93.6304229,-93.629079,-93.630152,-93.630732,-93.624499,-93.625799,-93.621336,-93.622673,-93.622662,-93.629555,-93.626171,-93.626762,-93.6219226,-93.621566,-93.628205,-93.62936,-93.627578,-93.628236,-93.622644,-93.622644,-93.623556,-93.620487,-93.6167,-93.616552,-93.6169916,-93.615685,-93.617179,-93.6193303,-93.619022,-93.618634,-93.617544,-93.617543,-93.613222,-93.614856,-93.613077,-93.612394,-93.613383,-93.617238,-93.617084,-93.617086,-93.612264,-93.618457,-93.615484,-93.615484,-93.61076,-93.612269,-93.612265,-93.612253,-93.607422,-93.610663,-93.604106,-93.608219,-93.607957,-93.608909,-93.60688,-93.60597,-93.606788,-93.610604,-93.607948,-93.608765,-93.608903,-93.607799,-93.607801,-93.604986,-93.603702,-93.6195726,-93.615582,-93.62005,-93.61648,-93.616991,-93.6195822,-93.6198478,-93.613969,-93.615447,-93.615031,-93.6112887,-93.60887,-93.607771,-93.606764,-93.607724,-93.606802,-93.6077128,-93.620179,-93.618296,-93.618297,-93.617386,-93.616885,-93.616998,-93.616996,-93.612239,-93.613845,-93.6096888,-93.608752,-93.6059697,-93.606196,-93.604486,-93.6043548,-93.6267116,-93.625926,-93.625584,-93.625589,-93.623666,-93.624566,-93.621532,-93.621532,-93.622102,-93.624688,-93.623632,-93.622566,-93.622552,-93.621485,-93.620392,-93.624471,-93.625556,-93.625539,-93.625623,-93.621065,-93.6208294,-93.6259506,-93.628447,-93.627729,-93.6265884,-93.625289,-93.623738,-93.621921,-93.624819,-93.62458,-93.658159,-93.656979,-93.657958,-93.657031,-93.658395,-93.675551,-93.669806,-93.672241,-93.676873,-93.677945,-93.672718,-93.674179,-93.666912,-93.665521,-93.669465,-93.663727,-93.665355,-93.665356,-93.660673,-93.660812,-93.660521,-93.678125,-93.676219,-93.6739889,-93.666066,-93.666216,-93.666147,-93.665571,-93.663054,-93.663123,-93.660595,-93.6608625,-93.667534,-93.66526,-93.6644616,-93.6618779,-93.662924,-93.658528,-93.659949,-93.683302,-93.682032,-93.682175,-93.691284,-93.691095,-93.68698,-93.686789,-93.681199,-93.681136,-93.6826513,-93.679198,-93.692009,-93.691213,-93.690719,-93.689772,-93.690113,-93.689019,-93.689101,-93.68895,-93.686888,-93.685158,-93.6844,-93.683158,-93.683309,-93.68786,-93.687704,-93.686189,-93.684396,-93.685572,-93.685569,-93.68522,-93.686644,-93.686982,-93.688193,-93.687674,-93.683856,-93.67994,-93.681121,-93.68369,-93.679505,-93.68031,-93.687825,-93.686931,-93.684451,-93.684397,-93.684343,-93.683435,-93.6838447,-93.683127,-93.682991,-93.681436,-93.681401,-93.678303,-93.678304,-93.677551,-93.673571,-93.673137,-93.671443,-93.672408,-93.675294,-93.673251,-93.675582,-93.674898,-93.670627,-93.665043,-93.6649923,-93.6653819,-93.665562,-93.661895,-93.660115,-93.664925,-93.665829,-93.664506,-93.663479,-93.6558,-93.656681,-93.656735,-93.64856,-93.651785,-93.646748,-93.648411,-93.646438,-93.646438,-93.6447083,-93.646288,-93.6447134,-93.646735,-93.642886,-93.642821,-93.641405,-93.63962,-93.639497,-93.642597,-93.643378,-93.64293,-93.640311,-93.645743,-93.628409,-93.627459,-93.625291,-93.625288,-93.6291062,-93.628385,-93.6258429,-93.626835,-93.625143,-93.625217,-93.615426,-93.616848,-93.604195,-93.604193,-93.616242,-93.616584,-93.615921,-93.607342,-93.607121,-93.60489,-93.604549,-93.602912,-93.602429,-93.658875,-93.639793,-93.650229,-93.653025,-93.651718,-93.649198,-93.644679,-93.646054,-93.6470597,-93.64427,-93.646645,-93.647834,-93.653218,-93.647214,-93.608267,-93.610145,-93.608197,-93.606374,-93.605351,-93.604649,-93.604184,-93.603601,-93.604269,-93.601444,-93.610109,-93.6051072,-93.604761,-93.603917,-93.603916,-93.603886,-93.618504,-93.618503,-93.617273,-93.63988,-93.636146,-93.637189,-93.636345,-93.640613,-93.637865,-93.637883,-93.637848,-93.637299,-93.637917,-93.633329,-93.634513,-93.632917,-93.631622,-93.631633,-93.629016,-93.629075,-93.629538,-93.630074,-93.628723,-93.637875,-93.637876,-93.634665,-93.633973,-93.631528,-93.632669,-93.631795,-93.638554,-93.635411,-93.63724,-93.634714,-93.634581,-93.636497,-93.633898,-93.632191,-93.627736,-93.626722,-93.627112,-93.628047,-93.62805,-93.6247461,-93.624798,-93.624431,-93.629747,-93.628656,-93.627238,-93.624575,-93.625672,-93.6257971,-93.6588809,-93.658015,-93.657679,-93.6569765,-93.6566403,-93.654243,-93.6566568,-93.6562702,-93.654774,-93.6570542,-93.6562861,-93.657444,-93.657524,-93.657211,-93.657235,-93.6554248,-93.654689,-93.654617,-93.650917,-93.657492,-93.656249,-93.6565389,-93.65699,-93.650597,-93.650499,-93.650406,-93.649828,-93.649808,-93.649798,-93.649397,-93.649291,-93.653414,-93.652565,-93.6514105,-93.650608,-93.646937,-93.646429,-93.645875,-93.64573,-93.644788,-93.644415,-93.645732,-93.644377,-93.644376,-93.644375,-93.644447,-93.644366,-93.641795,-93.641716,-93.640513,-93.642177,-93.644256,-93.643062,-93.643961,-93.641781,-93.639977,-93.64021,-93.642288,-93.641279,-93.642836,-93.641323,-93.640658,-93.6575919,-93.655711,-93.652894,-93.651096,-93.652641,-93.652777,-93.649901,-93.657271,-93.655159,-93.655905,-93.653708,-93.653712,-93.65334,-93.653864,-93.644118,-93.643769,-93.64176,-93.642261,-93.642243,-93.642234,-93.64396,-93.644086,-93.643836,-93.642344,-93.643544,-93.643449,-93.641251,-93.642275,-93.65042,-93.650279,-93.647584,-93.647933,-93.648742,-93.643974,-93.643792,-93.642046,-93.641233,-93.639574,-93.69179,-93.68912,-93.691244,-93.689026,-93.689767,-93.688804,-93.689449,-93.685185,-93.6791142,-93.677007,-93.673987,-93.673889,-93.669559,-93.669552,-93.673518,-93.671941,-93.661846,-93.661848,-93.662134,-93.647974,-93.64733,-93.647166,-93.646653,-93.646637,-93.646576,-93.644107,-93.644096,-93.645671,-93.645639,-93.645595,-93.645482,-93.639931,-93.639878,-93.643456,-93.648204,-93.645798,-93.64577,-93.648172,-93.645544,-93.658232,-93.6574973,-93.639515,-93.634545,-93.635094,-93.635899,-93.631554,-93.63687,-93.631673,-93.631302,-93.6299222,-93.62919,-93.626518,-93.624592,-93.624541,-93.624745,-93.623636,-93.624606,-93.623104,-93.621352,-93.621344,-93.622834,-93.62144,-93.626945,-93.630023,-93.626864,-93.6276375,-93.6249615,-93.624484,-93.621368,-93.622804,-93.629661,-93.629545,-93.628654,-93.628582,-93.625632,-93.623704,-93.620497,-93.620491,-93.61706,-93.616099,-93.618143,-93.615535,-93.618786,-93.618404,-93.619352,-93.6168658,-93.611697,-93.612347,-93.613457,-93.613983,-93.610875,-93.6192677,-93.617242,-93.61848,-93.615622,-93.618428,-93.617075,-93.612414,-93.612401,-93.61245,-93.612252,-93.618606,-93.6197518,-93.620343,-93.617191,-93.615485,-93.6133009,-93.615536,-93.612418,-93.6139,-93.613899,-93.609148,-93.605388,-93.610609,-93.610623,-93.607957,-93.607963,-93.606932,-93.605968,-93.60674,-93.606782,-93.605942,-93.606746,-93.606746,-93.604836,-93.603701,-93.603703,-93.604562,-93.618969,-93.616988,-93.62024,-93.617135,-93.6176729,-93.615432,-93.615446,-93.60861,-93.608868,-93.606857,-93.606842,-93.607723,-93.6082631,-93.606789,-93.618662,-93.6190848,-93.617061,-93.618294,-93.616911,-93.6188503,-93.612061,-93.612191,-93.6094532,-93.608678,-93.6047622,-93.6041765,-93.6051157,-93.6281873,-93.6262716,-93.627487,-93.621501,-93.623643,-93.623631,-93.624539,-93.622551,-93.621504,-93.621502,-93.6224,-93.622402,-93.6212119,-93.6209132,-93.62576,-93.625435,-93.625285,-93.625284,-93.6241649,-93.62033,-93.622147,-93.6220032,-93.628447,-93.629496,-93.6277573,-93.6275137,-93.629501,-93.628263,-93.6263765,-93.622793,-93.622025,-93.62188,-93.623814,-93.655699,-93.656124,-93.657089,-93.655924,-93.675549,-93.675559,-93.672207,-93.669741,-93.674417,-93.67369,-93.677504,-93.676953,-93.678149,-93.675714,-93.677997,-93.672119,-93.664037,-93.662239,-93.660671,-93.660691,-93.661983,-93.659355,-93.676272,-93.673958,-93.669606,-93.671221,-93.66504,-93.663415,-93.66712,-93.66061,-93.663517,-93.6644275,-93.6643138,-93.658545,-93.66057,-93.659659,-93.658537,-93.693153,-93.683309,-93.683226,-93.686828,-93.686941,-93.690342,-93.69067,-93.691213,-93.691015,-93.690234,-93.689071,-93.689071,-93.69135,-93.688923,-93.688917,-93.688931,-93.685142,-93.684944,-93.679216,-93.6825099,-93.683612,-93.692069,-93.688862,-93.690402,-93.692286,-93.692696,-93.692415,-93.690633,-93.689344,-93.691469,-93.692052,-93.686678,-93.6874333,-93.684837,-93.684993,-93.683235,-93.683158,-93.687856,-93.682805,-93.686795,-93.683813,-93.681196,-93.681085,-93.679505,-93.687684,-93.684118,-93.684714,-93.684285,-93.684271,-93.6783521,-93.677545,-93.671455,-93.671454,-93.671453,-93.673197,-93.674327,-93.673253,-93.67318,-93.6762195,-93.676241,-93.670587,-93.665737,-93.663509,-93.664686,-93.660303,-93.665875,-93.663455,-93.663329,-93.650162,-93.65181,-93.646817,-93.64672,-93.644544,-93.644669,-93.6447083,-93.644511,-93.644698,-93.64476,-93.646289,-93.646416,-93.6435257,-93.64281,-93.641322,-93.642359,-93.640497,-93.641156,-93.642883,-93.6440062,-93.639393,-93.641849,-93.644923,-93.643548,-93.628412,-93.6295,-93.597005,-93.626875,-93.62826,-93.625313,-93.629496,-93.628236,-93.626689,-93.628222,-93.616969,-93.6150637,-93.613886,-93.615697,-93.606672,-93.607597,-93.607551,-93.606933,-93.602505,-93.60104,-93.601779,-93.63966,-93.647403,-93.649757,-93.6494462,-93.650588,-93.650561,-93.650417,-93.646617,-93.644366,-93.646791,-93.646788,-93.646634,-93.647585,-93.647199,-93.662162,-93.653109,-93.608192,-93.607395,-93.605355,-93.605354,-93.603546,-93.601862,-93.601827,-93.601507,-93.602094,-93.603422,-93.604923,-93.604644,-93.604521,-93.60678,-93.6015199,-93.604858,-93.604146,-93.6030815,-93.606641,-93.604858,-93.6192621,-93.616439,-93.617432,-93.637871,-93.637482,-93.637566,-93.636378,-93.636373,-93.636052,-93.635935,-93.635837,-93.635798,-93.635932,-93.631604,-93.635716,-93.636949,-93.634231,-93.632571,-93.629601,-93.629337,-93.629174,-93.628607,-93.62877,-93.627767,-93.626337,-93.626477,-93.6220148,-93.625169,-93.63007,-93.638026,-93.637874,-93.631515,-93.635486,-93.6353259,-93.636044,-93.637387,-93.637191,-93.639516,-93.632355,-93.630289,-93.631162,-93.62626,-93.625373,-93.627981,-93.629906,-93.6292319,-93.627932,-93.627103,-93.629877,-93.629846,-93.629516,-93.627169,-93.62895,-93.624767,-93.625709,-93.658864,-93.658226,-93.657991,-93.654774,-93.657984,-93.657118,-93.657149,-93.656864,-93.654642,-93.654831,-93.653452,-93.643412,-93.643862,-93.654997,-93.655461,-93.657883,-93.653084,-93.6534099,-93.649714,-93.654138,-93.649553,-93.654124,-93.650617,-93.646459,-93.645841,-93.645774,-93.644411,-93.644366,-93.644627,-93.645755,-93.644213,-93.644306,-93.641662,-93.641946,-93.640287,-93.640227,-93.641321,-93.6419,-93.642241,-93.642116,-93.641518,-93.641522,-93.64458,-93.642588,-93.6436049,-93.641467,-93.640211,-93.642913,-93.641281,-93.64136,-93.641283,-93.641053,-93.655739,-93.654519,-93.654444,-93.657851,-93.65227,-93.650059,-93.653608,-93.653479,-93.642082,-93.64178,-93.641793,-93.643635,-93.64407,-93.643898,-93.642862,-93.642309,-93.642374,-93.64357,-93.643173,-93.643859,-93.692575,-93.691403,-93.691787,-93.690959,-93.691247,-93.689021,-93.68782,-93.687695,-93.686267,-93.686267,-93.68665,-93.674167,-93.675963,-93.677123,-93.675723,-93.677012,-93.669553,-93.671037,-93.670998,-93.669757,-93.671926,-93.660643,-93.653876,-93.652348,-93.650474,-93.650057,-93.647832,-93.646526,-93.644891,-93.644891,-93.644891,-93.645617,-93.645482,-93.645479,-93.645478,-93.643373,-93.64114,-93.648931,-93.646065,-93.649329,-93.649439,-93.649352,-93.649329,-93.658237,-93.633752,-93.6346,-93.634738,-93.635873,-93.633466,-93.630258,-93.632472,-93.627935,-93.626097,-93.626161,-93.628069,-93.6269,-93.626345,-93.629155,-93.623414,-93.630156,-93.627065,-93.6282949,-93.621621,-93.621362,-93.622017,-93.62357,-93.621399,-93.628568,-93.629185,-93.629256,-93.628176,-93.624738,-93.623704,-93.622645,-93.619673,-93.616852,-93.616012,-93.615629,-93.620355,-93.618389,-93.617499,-93.618625,-93.612886,-93.615882,-93.613296,-93.614251,-93.612462,-93.618319,-93.618481,-93.617225,-93.617069,-93.612464,-93.613491,-93.6136767,-93.615474,-93.61547,-93.612263,-93.620354,-93.617182,-93.6168701,-93.6143498,-93.6133726,-93.610772,-93.612239,-93.6139,-93.612266,-93.612404,-93.613899,-93.608909,-93.608984,-93.607582,-93.60942,-93.610278,-93.607257,-93.608422,-93.609073,-93.60674,-93.605727,-93.609054,-93.608903,-93.608904,-93.606743,-93.606892,-93.606893,-93.606744,-93.603704,-93.605839,-93.604687,-93.604568,-93.6050674,-93.618539,-93.6195519,-93.617164,-93.615681,-93.618335,-93.615638,-93.6145858,-93.613905,-93.608833,-93.610354,-93.608938,-93.607744,-93.618293,-93.613889,-93.615361,-93.615365,-93.6127958,-93.613763,-93.608901,-93.610438,-93.609665,-93.606869,-93.628478,-93.620433,-93.623642,-93.624553,-93.624553,-93.623481,-93.621484,-93.620411,-93.6243778,-93.622386,-93.62577,-93.622773,-93.626631,-93.6275675,-93.6255067,-93.629501,-93.6265888,-93.657017,-93.65565,-93.65815,-93.6578344,-93.655885,-93.655786,-93.67555,-93.671213,-93.674517,-93.675408,-93.675606,-93.676455,-93.672278,-93.674385,-93.673601,-93.672645,-93.670514,-93.665569,-93.665505,-93.66412,-93.678165,-93.676352,-93.674402,-93.676681,-93.666035,-93.665153,-93.662765,-93.661562,-93.660664,-93.660227,-93.666255,-93.667188,-93.666095,-93.666096,-93.660187,-93.658506,-93.685537,-93.6801515,-93.689816,-93.690366,-93.691234,-93.688925,-93.688924,-93.689485,-93.689067,-93.689084,-93.688786,-93.688934,-93.688929,-93.68216,-93.681349,-93.682095,-93.683877,-93.691896,-93.688302,-93.690363,-93.692005,-93.692606,-93.692221,-93.691931,-93.689083,-93.691243,-93.688577,-93.687158,-93.684982,-93.683468,-93.683246,-93.682979,-93.681378,-93.687703,-93.686288,-93.684421,-93.685504,-93.687675,-93.685571,-93.683718,-93.679803,-93.682686,-93.681895,-93.683728,-93.683777,-93.687685,-93.684116,-93.684116,-93.685872,-93.683435,-93.684332,-93.678267,-93.676369,-93.675297,-93.675548,-93.671454,-93.672379,-93.671304,-93.671612,-93.670025,-93.669927,-93.670063,-93.670039,-93.669985,-93.66996,-93.669924,-93.661951,-93.659182,-93.659222,-93.660119,-93.661995,-93.656753,-93.6567,-93.65564,-93.659043,-93.648562,-93.651285,-93.646619,-93.646438,-93.648417,-93.648416,-93.6447118,-93.647027,-93.644307,-93.644258,-93.642431,-93.64048,-93.643443,-93.641155,-93.641002,-93.640612,-93.642884,-93.644203,-93.639622,-93.643489,-93.628467,-93.62841,-93.628298,-93.629496,-93.626683,-93.625147,-93.615307,-93.61385,-93.615012,-93.604344,-93.616242,-93.603671,-93.603173,-93.601191,-93.603854,-93.644527,-93.645586,-93.651077,-93.649773,-93.646099,-93.64789,-93.64898,-93.610268,-93.608343,-93.608195,-93.607142,-93.604391,-93.603922,-93.601089,-93.603181,-93.603524,-93.6019,-93.601844,-93.6044746,-93.603534,-93.6086884,-93.606842,-93.604776,-93.606847,-93.60019],3,null,null,{"interactive":true,"className":"","stroke":true,"color":"white","weight":5,"opacity":0.4,"fill":true,"fillColor":"white","fillOpacity":0.2},null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null,null]},{"method":"addPolylines","args":[[[[{"lng":[-93.6537329,-93.65369],"lat":[42.0611331,42.060766]}]]],null,null,{"interactive":true,"className":"","stroke":true,"color":"yellow","weight":1,"opacity":0.5,"fill":false,"fillColor":"yellow","fillOpacity":0.2,"smoothFactor":1,"noClip":false},null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addPolylines","args":[[[[{"lng":[-93.6537329,-93.65332],"lat":[42.0611331,42.0608079]}]]],null,null,{"interactive":true,"className":"","stroke":true,"color":"yellow","weight":1,"opacity":0.5,"fill":false,"fillColor":"yellow","fillOpacity":0.2,"smoothFactor":1,"noClip":false},null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addPolylines","args":[[[[{"lng":[-93.6537329,-93.653152],"lat":[42.0611331,42.061382]}]]],null,null,{"interactive":true,"className":"","stroke":true,"color":"yellow","weight":1,"opacity":0.5,"fill":false,"fillColor":"yellow","fillOpacity":0.2,"smoothFactor":1,"noClip":false},null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addPolylines","args":[[[[{"lng":[-93.6537329,-93.652884],"lat":[42.0611331,42.061437]}]]],null,null,{"interactive":true,"className":"","stroke":true,"color":"yellow","weight":1,"opacity":0.5,"fill":false,"fillColor":"yellow","fillOpacity":0.2,"smoothFactor":1,"noClip":false},null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addPolylines","args":[[[[{"lng":[-93.6537329,-93.652713],"lat":[42.0611331,42.060872]}]]],null,null,{"interactive":true,"className":"","stroke":true,"color":"yellow","weight":1,"opacity":0.5,"fill":false,"fillColor":"yellow","fillOpacity":0.2,"smoothFactor":1,"noClip":false},null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]}],"limits":{"lat":[41.986502,42.063388],"lng":[-93.693153,-93.588227]}},"evals":[],"jsHooks":[]}</script>
+
+
+---
+
+# _K_-Nearest Neighbors Model &lt;img src="images/parsnip.png" class="title-hex"&gt;&lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+Consider the 2-nearest neighbor model. Would there be a difference in the estimated model performance between re-prediction and cross-validation? 
+
+`parsnip` has a `nearest_neighbors()` specification that uses the `kknn` package. `K` is standardized to the name `neighbors` and we will use that going forward.
+
+.pull-left[
+
+
+```r
+spec_knn &lt;- nearest_neighbor(neighbors = 2) %&gt;%
+  set_engine("kknn")
+
+spec_knn
+```
+
+```
+## K-Nearest Neighbor Model Specification (unknown)
+## 
+## Main Arguments:
+##   neighbors = 2
+## 
+## Computational engine: kknn
+```
+
+```r
+fit_knn &lt;- fit(spec_knn, geo_form, ames_train_log)
+```
+
+]
+
+.pull-right[
+
+
+```r
+fit_knn
+```
+
+```
+## parsnip model object
+## 
+## 
+## Call:
+## kknn::train.kknn(formula = formula, data = data, ks = ~2)
+## 
+## Type of response variable: continuous
+## minimal mean absolute error: 0.07461737
+## Minimal mean squared error: 0.01127977
+## Best kernel: optimal
+## Best k: 2
+```
+
+]
+
+
+---
+
+# _K_-Nearest Neighbors Model &lt;img src="images/parsnip.png" class="title-hex"&gt;&lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+.pull-left[
+
+
+```r
+# Predict on the same data you train with
+repredicted &lt;- fit_knn %&gt;%
+  predict(new_data = ames_train_log) %&gt;%
+  bind_cols(ames_train_log) %&gt;%
+  dplyr::select(.pred, Sale_Price_Log)
+
+repredicted
+```
+
+```
+## # A tibble: 2,199 x 2
+##    .pred Sale_Price_Log
+##    &lt;dbl&gt;          &lt;dbl&gt;
+##  1  5.31           5.33
+##  2  5.28           5.28
+##  3  5.29           5.29
+##  4  5.28           5.28
+##  5  5.38           5.37
+##  6  5.27           5.28
+##  7  5.24           5.25
+##  8  5.22           5.23
+##  9  5.32           5.33
+## 10  5.18           5.21
+## # … with 2,189 more rows
+```
+
+]
+
+.pull-right[
+
+
+```r
+# The ruckus is here!
+repredicted %&gt;% 
+  rsq(
+    truth = Sale_Price_Log, 
+    estimate = .pred
+  )
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 rsq     standard       0.974
+```
+
+]
+
+
+---
+# Resampling a 2-Nearest Neighbor Model &lt;img src="images/rsample.png" class="title-hex"&gt;&lt;img src="images/purrr.png" class="title-hex"&gt;&lt;img src="images/parsnip.png" class="title-hex"&gt;&lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+That's pretty good but are we tricking ourselves? One of those two neighbors is always itself...
+
+Let's follow the same resampling process as before, reusing some of our other
+functions for generating the models, predictions, and performance metrics:
+
+.pull-left[
+
+
+```r
+cv_splits &lt;- cv_splits %&gt;%
+  mutate(
+    # Fit a knn model for each split
+    models_knn = map(splits, fit_model, spec_knn),
+    
+    # Generate predictions on the assessment set
+    pred_knn = map2(splits, models_knn, compute_pred),
+    
+    # Calculation performance
+    perf_knn = map(pred_knn, compute_perf)
+  )
+```
+
+]
+
+.pull-right[
+
+
+```r
+# Unnest &amp; compute resampled performance estimates
+cv_splits %&gt;%
+  unnest(perf_knn) %&gt;%
+  group_by(.metric) %&gt;%
+  summarise(
+    .estimate_mean = mean(.estimate),
+    .estimate_sd = sd(.estimate)
+  )
+```
+
+```
+## # A tibble: 2 x 3
+##   .metric .estimate_mean .estimate_sd
+##   &lt;chr&gt;            &lt;dbl&gt;        &lt;dbl&gt;
+## 1 rmse             0.107      0.00922
+## 2 rsq              0.658      0.0421
+```
+
+]
+
+---
+
+# Making Formal Comparisons
+
+
+
+
+The model appears to be a drastic improvement over simple linear regression but we are definitely getting highly optimistic results by re-predicting the training set. 
+
+We can try to make a more formal assessment of the two current models. 
+
+Both models used the _same_ resamples, so we have 10 estimates of performance that are matched.
+
+Does the matching mean anything? 
+
+Most likely **yes**. It is very common to see that there is a resample effect. Similar to repeated measures designs, we can expect a relationship between models and resamples. For example, some resamples will have the worst performance over different models and so on. 
+
+In other words, there is usually a within-resample correlation. For the two models, the estimated correlation in RMSE values is 0.671. 
+
+
+---
+
+# The Resample Effect
+
+&lt;img src="Part_2_Basic_Principles_files/figure-html/cv-corr-1.svg" width="60%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Model Comparison Accounting for Resampling
+
+With only two models, a paired _t_-test can be used to estimate the difference in RMSE between the models: 
+
+
+```r
+t.test(rmse_lm, rmse_knn, paired = TRUE)
+```
+
+```
+## 
+## 	Paired t-test
+## 
+## data:  rmse_lm and rmse_knn
+## t = 24.531, df = 9, p-value = 1.49e-09
+## alternative hypothesis: true difference in means is not equal to 0
+## 95 percent confidence interval:
+##  0.0495699 0.0596409
+## sample estimates:
+## mean of the differences 
+##               0.0546054
+```
+
+
+Hothorn _et al_ (2012) is the [original paper](https://scholar.google.com/scholar?hl=en&amp;q=analysis+of+benchmark+experiments&amp;btnG=&amp;as_sdt=1%2C7&amp;as_sdtp=) on comparing models using resampling. 
+
+We'll do more extensive analyses with `tidyposterior` soon. 
+
+
+---
+
+# Overfitting
+
+Overfitting occurs when a model inappropriately picks up on trends in the training set that do not generalize to new samples. 
+
+When this occurs, assessments of the model based on the training set can show good performance that does not reproduce in future samples.   
+  
+Some models have specific "knobs" to control over-fitting
+
+* neighborhood size in nearest neighbor models is an example
+
+* the number of splits in a tree model
+
+Often, poor choices for these parameters can result in overfitting
+
+For example, the next slide shows a data set with two predictors. We want to be able to produce a line (i.e. decision boundary) that differentiates two classes of data.
+
+---
+
+# Two Class Example
+
+.pull-left[
+&lt;img src="Part_2_Basic_Principles_files/figure-html/two-class-2panel-1.svg" width="90%" style="display: block; margin: auto;" /&gt;
+
+]
+
+.pull-right[
+
+On the next slide, two classification boundaries are shown for a different model type not yet discussed.
+
+The difference in the two panels is solely due to different choices in tuning parameters. 
+
+One overfits the training data.
+
+]
+
+
+---
+
+# Two Model Fits
+
+&lt;img src="Part_2_Basic_Principles_files/figure-html/two-class-overfit-1.svg" width="70%" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# Grid Search to Tune Models
+
+We usually don't have two-dimensional data so a quantitative method for under measuring overfitting is needed.  _Resampling_ fits that description. A simple method for tuning a model is to used _grid search_:
+
+&lt;pre&gt;
+├── Create a set of candidate tuning parameter values
+└── For each resample
+│   ├── Split the data into analysis and assessment sets
+│   ├── [preprocess data]
+│   ├── For each tuning parameter value
+│   │   ├── Fit the model using the analysis set
+│   │   └── Compute the performance on the assessment set and save 
+├── For each tuning parameter value, average the performance over resamples
+├── Determine the best tuning parameter value
+└── Create the final model with the optimal parameter(s) on the training set
+&lt;/pre&gt;
+
+_Random search_ is a similar technique where the candidate set of parameter values are simulated at random across a wide range. Also, an example of _nested resampling_ can be found [here](http://appliedpredictivemodeling.com/blog/2017/9/2/njdc83d01pzysvvlgik02t5qnaljnd). 
+
+---
+
+# Grid Search Computations
+
+* **The bad news**
+
+  All of the models (except the final model) are discarded. 
+
+* **The good news** 
+  
+  All of the models (except the final model) can be run in parallel. 
+
+Let's look at the Ames K-NN model and evaluate _neighbors_ = 1, 2, ..., 20 using the same 10-fold cross-validation as before. 
+
+---
+
+# dials
+
+To tune `parsnip` models, two concepts are important to understand:
+
+1) `varying()` parameters are those that you want to tune over.
+
+2) `dials` is a package for filling in those varying parameters with a tuning grid.
+
+.pull-left[
+
+
+```r
+# Parameter object for `neighbors`
+neighbors
+```
+
+```
+## # Nearest Neighbors  (quantitative)
+## Range: [1, ?]
+```
+
+```r
+# Number of neighbors varies from 1-20
+param_grid &lt;- 
+  neighbors %&gt;% 
+  range_set(c(1, 20)) %&gt;%
+  grid_regular(levels = 20)
+```
+
+]
+
+.pull-right[
+
+
+```r
+glimpse(param_grid)
+```
+
+```
+## Observations: 20
+## Variables: 1
+## $ neighbors &lt;int&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,…
+```
+
+```r
+# Declare `neighbors` as varying
+spec_knn_varying &lt;- nearest_neighbor(
+    neighbors = varying()
+  ) %&gt;%
+  set_engine("kknn") %&gt;% 
+  set_mode("regression")  # not required
+```
+
+]
+
+???
+
+Note that we don't have to set the mode but it prevents the specifications 
+from printing in the tibble as `&lt;spec[?]&gt;` instead of `&lt;spec[+]&gt;`
+
+---
+
+# dials
+
+`merge()` can be used join a parameter grid to a specification. This fills in
+the `neighbors` field of the specification with the 20 different values.
+
+.pull-left[
+
+
+```r
+param_grid &lt;- 
+  param_grid %&gt;%
+  mutate(
+    specs = merge(., spec_knn_varying)
+  )
+
+print(param_grid, n = 4)
+```
+
+```
+## # A tibble: 20 x 2
+##   neighbors specs    
+## *     &lt;int&gt; &lt;list&gt;   
+## 1         1 &lt;spec[+]&gt;
+## 2         2 &lt;spec[+]&gt;
+## 3         3 &lt;spec[+]&gt;
+## 4         4 &lt;spec[+]&gt;
+## # … with 16 more rows
+```
+
+]
+
+.pull-right[
+
+
+```r
+param_grid$specs[[20]]
+```
+
+```
+## K-Nearest Neighbor Model Specification (regression)
+## 
+## Main Arguments:
+##   neighbors = 20
+## 
+## Computational engine: kknn
+```
+
+Now that we have the specification grid, we will start coding this algorithm from the inside out...
+
+]
+
+???
+``&lt;spec[+]&gt;` means that the mode is set and all parameters are known. 
+
+
+---
+
+# A One Split + One Spec Combo &lt;img src="images/rsample.png" class="title-hex"&gt;&lt;img src="images/parsnip.png" class="title-hex"&gt;&lt;img src="images/dplyr.png" class="title-hex"&gt;  
+
+These steps are:
+
+&lt;pre&gt;
+   ├── Fit the model using the analysis set
+   └── Compute the performance on the assessment set and save 
+&lt;/pre&gt;
+
+In the code below, `split` will be one of the elements of `cv_splits$splits` and
+`spec` is one of `param_grid$specs`. We can reuse many of the functions we've
+already created.
+
+.pull-left[
+
+
+```r
+fit_one_spec_one_split &lt;- function(spec, split) {
+  mod &lt;- fit_model(split, spec)
+  pred_df &lt;- compute_pred(split, mod)
+  perf_df &lt;- compute_perf(pred_df)
+  
+  # pull out only rmse
+  perf_df %&gt;%
+    filter(.metric == "rmse") %&gt;%
+    pull(.estimate)
+}
+```
+
+]
+
+.pull-right[
+
+
+```r
+fit_one_spec_one_split(
+  param_grid$specs[[6]],  # Six neighbors
+  cv_splits$splits[[9]]  # Ninth Fold
+)
+```
+
+```
+## [1] 0.105599
+```
+
+]
+
+---
+
+# One Split + All Specs &lt;img src="images/purrr.png" class="title-hex"&gt;&lt;img src="images/parsnip.png" class="title-hex"&gt;
+
+Now we apply `fit_one_spec_one_split()` to every parameter combination.
+
+&lt;pre&gt;
+│   ├── For each tuning parameter value
+│   │   └── Run `fit_one_spec_one_split()`
+&lt;/pre&gt;
+
+.pull-left[
+
+
+```r
+fit_all_specs_one_split &lt;- function(split, param_df) {
+  param_df %&gt;%
+    mutate(
+      rmse = map_dbl(
+        specs, 
+        fit_one_spec_one_split, 
+        split = split
+      )
+    )
+}
+```
+
+]
+
+.pull-right[
+
+
+```r
+fit_all_specs_one_split(
+  cv_splits$splits[[1]], 
+  param_grid
+) %&gt;%
+  print(n = 5)
+```
+
+```
+## # A tibble: 20 x 3
+##   neighbors specs       rmse
+## *     &lt;int&gt; &lt;list&gt;     &lt;dbl&gt;
+## 1         1 &lt;spec[+]&gt; 0.106 
+## 2         2 &lt;spec[+]&gt; 0.0955
+## 3         3 &lt;spec[+]&gt; 0.0912
+## 4         4 &lt;spec[+]&gt; 0.0898
+## 5         5 &lt;spec[+]&gt; 0.0887
+## # … with 15 more rows
+```
+
+]
+
+---
+
+# All Splits + All Specs &lt;img src="images/purrr.png" class="title-hex"&gt;&lt;img src="images/parsnip.png" class="title-hex"&gt;
+
+&lt;pre&gt;
+└── For each resample
+│   └── Run `fit_all_specs_one_split()`
+&lt;/pre&gt;
+
+Here, `split_df` is the resample object `cv_splits` and `param_df` is `param_grid`.
+
+
+```r
+fit_all_specs_all_splits &lt;- function(split_df, param_df) {
+  split_df %&gt;%
+    mutate(
+      spec_perf = map(
+        splits, 
+        fit_all_specs_one_split, 
+        param_df = param_df
+      )
+    ) %&gt;%
+    dplyr::select(splits, id, spec_perf)
+}
+```
+
+This outputs a tibble with columns for the resample, the resample id (`"Fold01"`), and a
+list column of the performance of each tuning parameter combination for that resample.
+
+---
+
+# Running the Code
+
+.pull-left[
+
+
+```r
+resampled_grid &lt;- fit_all_specs_all_splits(
+  split_df = cv_splits, 
+  param_df = param_grid
+)
+
+resampled_grid %&gt;% slice(1:6)
+```
+
+```
+## #  10-fold cross-validation using stratification 
+## # A tibble: 6 x 3
+##   splits           id     spec_perf        
+## * &lt;list&gt;           &lt;chr&gt;  &lt;list&gt;           
+## 1 &lt;split [2K/222]&gt; Fold01 &lt;tibble [20 × 3]&gt;
+## 2 &lt;split [2K/222]&gt; Fold02 &lt;tibble [20 × 3]&gt;
+## 3 &lt;split [2K/222]&gt; Fold03 &lt;tibble [20 × 3]&gt;
+## 4 &lt;split [2K/222]&gt; Fold04 &lt;tibble [20 × 3]&gt;
+## 5 &lt;split [2K/222]&gt; Fold05 &lt;tibble [20 × 3]&gt;
+## 6 &lt;split [2K/219]&gt; Fold06 &lt;tibble [20 × 3]&gt;
+```
+
+]
+
+.pull-right[
+
+
+```r
+# Keep the unnested version
+unnested_grid &lt;- 
+  resampled_grid %&gt;%
+  unnest(spec_perf) %&gt;%
+  dplyr::select(-specs)
+
+unnested_grid %&gt;% slice(1:6)
+```
+
+```
+## # A tibble: 6 x 3
+##   id     neighbors   rmse
+##   &lt;chr&gt;      &lt;int&gt;  &lt;dbl&gt;
+## 1 Fold01         1 0.106 
+## 2 Fold01         2 0.0955
+## 3 Fold01         3 0.0912
+## 4 Fold01         4 0.0898
+## 5 Fold01         5 0.0887
+## 6 Fold01         6 0.0882
+```
+
+]
+
+---
+
+# The Performance Profile &lt;img src="images/ggplot2.png" class="title-hex"&gt;&lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+.pull-left[
+
+To summarize the results for each value of `neighbors`: 
+
+
+```r
+rmse_by_neighbors &lt;- 
+  unnested_grid %&gt;%
+  group_by(neighbors) %&gt;%
+  summarize(rmse = mean(rmse))
+
+ggplot(
+    rmse_by_neighbors, 
+    aes(x = neighbors, y = rmse)
+  ) + 
+  geom_point() + 
+  geom_line()
+```
+]
+
+.pull-right[
+&lt;img src="Part_2_Basic_Principles_files/figure-html/ames-knn-1.svg" width="100%" style="display: block; margin: auto;" /&gt;
+
+Although it is numerically optimal, we are not required to use a value of 6 neighbors for the final model.
+
+]
+
+---
+
+# Resampling Variation &lt;img src="images/ggplot2.png" class="title-hex"&gt;&lt;img src="images/dplyr.png" class="title-hex"&gt;
+
+
+.pull-left[
+
+How stable is this? We can also plot the individual curves and their minimums.
+
+
+```r
+best_neighbors &lt;- 
+  unnested_grid %&gt;%
+  group_by(id) %&gt;%
+  summarize(neighbors = neighbors[which.min(rmse)],
+            rmse      = rmse[which.min(rmse)])
+
+ggplot(rmse_by_neighbors, 
+       aes(x = neighbors, y = rmse)) + 
+  geom_point() + 
+  geom_line() + 
+  geom_line(data = unnested_grid, 
+            aes(group = id, col = id),
+            alpha = .2, lwd = 1) + 
+  geom_point(data = best_neighbors, 
+             aes(col = id),
+             alpha = .5, cex = 2) +
+  theme(legend.position = "none")
+```
+]
+.pull-right[
+&lt;img src="Part_2_Basic_Principles_files/figure-html/ames-knn-indiv-1.svg" width="100%" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+
+# Next Steps &lt;img src="images/parsnip.png" class="title-hex"&gt;
+
+At this point, we would decide on a good value for _neighbors_, fit that model, and use it going forward:
+
+.pull-left[
+
+
+```r
+best_neighbor_value &lt;- 
+  rmse_by_neighbors %&gt;%
+  filter(rmse == min(rmse)) %&gt;%
+  pull(neighbors)
+
+best_spec &lt;- 
+  param_grid %&gt;%
+  filter(neighbors == best_neighbor_value) %&gt;%
+  pull(specs) %&gt;%
+  .[[1]]
+```
+
+]
+
+.pull-right[
+
+
+```r
+fit(
+  best_spec,
+  geo_form,
+  ames_train
+)
+```
+
+]
+
+
+To reiterate: the previous 10 models created during the grid search are not used once _neighbors_ is set. 
+
+Later, we will look at a high-level API in `caret` that streamlines almost all of this process for many different models. A similar process is being created for the modular tidy packages you see here. We'll talk about this later.
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightLanguage": "R",
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

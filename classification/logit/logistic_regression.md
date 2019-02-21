@@ -668,6 +668,7 @@ For a more piecemeal approach to learning about ridge regression methods--and la
 -   [Stanford slides on ridge regression and lasso](http://statweb.stanford.edu/~tibs/sta305files/Rudyregularization.pdf)
 -   [Helpful explanation with difference between ridge and lasso](https://codingstartups.com/practical-machine-learning-ridge-regression-vs-lasso/)
 -   [Short and sweet tl;dr of lasso's utility](https://stats.stackexchange.com/questions/17251/what-is-the-lasso-in-regression-analysis)
+-   [My personal favorite vignette by the authors of the glmnet package](https://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html#log)
 
 Notes and Warning on Model Matrix Construction and Dummy Variables
 ------------------------------------------------------------------

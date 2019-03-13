@@ -5,7 +5,7 @@ Welcome! The purpose of this repository is to serve as stockpile of statistical 
 ## Table of Contents
 
 1. Playground and Basics
-    1. [Rough Notes from ISLR Exercises -- R](https://github.com/pmaji/data-science-toolkit/blob/master/playground/r_basic_data_science.md)
+    1. [Rough Notes from ISLR Exercises -- R](https://github.com/pmaji/data-science-toolkit/blob/master/playground-and-basics/r_basic_data_science.md)
     2. [Rough Notes from Python Data Scientist Track -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/playground-and-basics/python_basic_data_science.ipynb)
 2. Exploratory Data Analysis (EDA) and Visualization
     1. [EDA and Basic Visualization -- R](https://github.com/pmaji/stats-and-modeling/blob/master/eda-and-visualization/eda_and_visualization.md)

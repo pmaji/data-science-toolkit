@@ -1,8 +1,9 @@
 from matplotlib import pyplot as plt
+import matplotlib.dates as mdates
 
 def dt_restricted_prophet_plt(
     m, fcst, visible_window_start_dt=None, visible_window_end_dt=None, ax=None,
-    uncertainty=True, plot_cap=True, xlabel='ds', ylabel='y', figsize=(10,6)
+    uncertainty=True, plot_cap=True, xlabel='ds', ylabel='y', figsize=(10,6), x_axis_date_format = '%Y-%m'
 ):
     """
     Plot the Prophet forecast, restricting the plot using optional start and end dates.
@@ -63,6 +64,16 @@ def dt_restricted_prophet_plt(
     ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.2)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+    # interpret the x-axis values as dates
+    # Set the locator
+    locator = mdates.MonthLocator()  # every month
+    ax.xaxis.set_major_locator(locator)
+    # Specify the format - %b gives us Jan, Feb...
+    fmt = mdates.DateFormatter(x_axis_date_format)
+    # Specify formatter
+    ax.xaxis.set_major_formatter(fmt)
+    # make space for and rotate the x-axis tick labels
+    fig.autofmt_xdate() 
     fig.tight_layout()
     
     return fig

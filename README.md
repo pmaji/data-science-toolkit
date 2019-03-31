@@ -1,6 +1,6 @@
 ## Introduction
 
-Welcome! The purpose of this repository is to serve as stockpile of statistical methods, modeling techniques, and data science tools. The content itself includes everything from educational vignettes on specific topics, to tailored functions and modeling pipelines built to enhance and optimize analyses, to notes and code from various data science conferences, to general data science utilities. This is and will remain a work in progress, and I welcome all contributions and constructive criticism. If you have a suggestion or request, please [make use of the "Issues" tab](https://github.com/pmaji/data-science-toolkit/issues) and I will respond expeditiously! 
+Welcome! The purpose of this repository is to serve as stockpile of statistical methods, modeling techniques, and data science tools. The content itself includes everything from educational vignettes on specific topics, to tailored functions and modeling pipelines built to enhance and optimize analyses, to notes and code from various data science conferences, to general data science utilities. This will remain a work in progress, and I welcome all contributions and constructive criticism. If you have a suggestion or request, please [use the "Issues" tab](https://github.com/pmaji/data-science-toolkit/issues) and I will respond expeditiously! 
 
 ## Table of Contents
 

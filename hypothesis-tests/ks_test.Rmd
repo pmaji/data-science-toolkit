@@ -1,6 +1,6 @@
 ---
 title: "2-Sample KS Test Vignette in R"
-author: Paul Jeffries
+author: "[Paul Jeffries](https://twitter.com/ByPaulJ)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   github_document:
@@ -26,7 +26,7 @@ This vignette will follow the progression below:
 
 ```{r setup, echo = F}
 # setting the appropriate working directory
-knitr::opts_knit$set(root.dir = '~/Desktop/Personal/personal_code/data_science_toolkit/')
+knitr::opts_knit$set(root.dir = '~/Desktop/Personal/personal_code/data-science-toolkit/')
 ```
 
 ```{r results='hide', warning=FALSE, message=FALSE}
@@ -51,7 +51,7 @@ The data used in this document come from a [Kaggle post](https://www.kaggle.com/
 
 ```{r}
 # importing the dataset from the CSV
-base_2018_df <- read.csv("hypothesis_tests/data/ks-projects-201801.csv")
+base_2018_df <- read.csv("hypothesis-tests/data/ks-projects-201801.csv")
 ```
 
 ```{r}

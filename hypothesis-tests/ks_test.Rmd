@@ -49,9 +49,12 @@ library(broom) # for tidy modeling and displaying of model / test results
 
 The data used in this document come from a [Kaggle post](https://www.kaggle.com/kemical/kickstarter-projects/home) focused on Kickstarter campaigns. If unfamiliar with the notion of a Kickstarter campaign (henceforth just campaign), I would recommend reading [this FAQ here](https://help.kickstarter.com/hc/en-us/categories/115000499013-Kickstarter-basics). Finally, it is worthwhile noting that while I will conduct [some basic EDA](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/eda_and_visualization.md) prior to delving into the KS test-specfic code, I will not spend a great deal of time explaining the data, so for more information on the data specifically, I recommend reading the detailed exploration on the [data page for this Kaggle](https://www.kaggle.com/kemical/kickstarter-projects).
 
+More specifically, because this dataset is pretty massive is pretty big (> 50 mb when I first pulled it), I took a 50% random sample of the df using sample_frac(), not shown here, so that it would be under GitHub's recommended size of 50mb. if you want to replicate the full dataset, just follow the steps to repull all the data on your own using the info in the paragraph above.
+
+
 ```{r}
 # importing the dataset from the CSV
-base_2018_df <- read.csv("hypothesis-tests/data/ks-projects-201801.csv")
+base_2018_df <- read.csv("hypothesis-tests/data/ks-projects-201801-sampled.csv")
 ```
 
 ```{r}

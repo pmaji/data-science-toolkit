@@ -58,9 +58,11 @@ Importing the Data
 
 The data used in this document come from a [Kaggle post](https://www.kaggle.com/kemical/kickstarter-projects/home) focused on Kickstarter campaigns. If unfamiliar with the notion of a Kickstarter campaign (henceforth just campaign), I would recommend reading [this FAQ here](https://help.kickstarter.com/hc/en-us/categories/115000499013-Kickstarter-basics). Finally, it is worthwhile noting that while I will conduct [some basic EDA](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/eda_and_visualization.md) prior to delving into the KS test-specfic code, I will not spend a great deal of time explaining the data, so for more information on the data specifically, I recommend reading the detailed exploration on the [data page for this Kaggle](https://www.kaggle.com/kemical/kickstarter-projects).
 
+More specifically, because this dataset is pretty massive is pretty big (&gt; 50 mb when I first pulled it), I took a 50% random sample of the df using sample\_frac(), not shown here, so that it would be under GitHub's recommended size of 50mb. if you want to replicate the full dataset, just follow the steps to repull all the data on your own using the info in the paragraph above.
+
 ``` r
 # importing the dataset from the CSV
-base_2018_df <- read.csv("hypothesis-tests/data/ks-projects-201801.csv")
+base_2018_df <- read.csv("hypothesis-tests/data/ks-projects-201801-sampled.csv")
 ```
 
 ``` r
@@ -68,23 +70,24 @@ base_2018_df <- read.csv("hypothesis-tests/data/ks-projects-201801.csv")
 glimpse(base_2018_df)
 ```
 
-    ## Observations: 378,661
-    ## Variables: 15
-    ## $ ID               <int> 1000002330, 1000003930, 1000004038, 1000007540,…
-    ## $ name             <fct> The Songs of Adelaide & Abullah, Greeting From …
-    ## $ category         <fct> Poetry, Narrative Film, Narrative Film, Music, …
-    ## $ main_category    <fct> Publishing, Film & Video, Film & Video, Music, …
-    ## $ currency         <fct> GBP, USD, USD, USD, USD, USD, USD, USD, USD, US…
-    ## $ deadline         <fct> 2015-10-09, 2017-11-01, 2013-02-26, 2012-04-16,…
-    ## $ goal             <dbl> 1000, 30000, 45000, 5000, 19500, 50000, 1000, 2…
-    ## $ launched         <fct> 2015-08-11 12:12:28, 2017-09-02 04:43:57, 2013-…
-    ## $ pledged          <dbl> 0.00, 2421.00, 220.00, 1.00, 1283.00, 52375.00,…
-    ## $ state            <fct> failed, failed, failed, failed, canceled, succe…
-    ## $ backers          <int> 0, 15, 3, 1, 14, 224, 16, 40, 58, 43, 0, 100, 0…
-    ## $ country          <fct> GB, US, US, US, US, US, US, US, US, US, CA, US,…
-    ## $ usd.pledged      <dbl> 0.00, 100.00, 220.00, 1.00, 1283.00, 52375.00, …
-    ## $ usd_pledged_real <dbl> 0.00, 2421.00, 220.00, 1.00, 1283.00, 52375.00,…
-    ## $ usd_goal_real    <dbl> 1533.95, 30000.00, 45000.00, 5000.00, 19500.00,…
+    ## Observations: 189,330
+    ## Variables: 16
+    ## $ X                <int> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, …
+    ## $ ID               <int> 136458340, 381995336, 1425707545, 960476049, 96…
+    ## $ name             <fct> "Squid Packs: a personalized twist on the class…
+    ## $ category         <fct> Product Design, Tabletop Games, Software, Food,…
+    ## $ main_category    <fct> Design, Games, Technology, Food, Technology, Pu…
+    ## $ currency         <fct> USD, USD, USD, EUR, AUD, USD, USD, USD, USD, US…
+    ## $ deadline         <fct> 2012-11-19, 2013-09-30, 2014-09-12, 2015-03-07,…
+    ## $ goal             <dbl> 5000, 8000, 525, 5000, 15000, 1000, 10000, 6000…
+    ## $ launched         <fct> 2012-10-18 19:27:07, 2013-08-23 15:00:56, 2014-…
+    ## $ pledged          <dbl> 7458.00, 52693.00, 100.00, 0.00, 6527.00, 2845.…
+    ## $ state            <fct> successful, successful, failed, canceled, cance…
+    ## $ backers          <int> 78, 566, 1, 0, 83, 96, 494, 179, 1, 551, 18, 28…
+    ## $ country          <fct> US, US, US, IE, AU, US, US, US, US, US, GB, US,…
+    ## $ usd.pledged      <dbl> 7458.00, 52693.00, 100.00, 0.00, 181.86, 2845.0…
+    ## $ usd_pledged_real <dbl> 7458.00, 52693.00, 100.00, 0.00, 4873.81, 2845.…
+    ## $ usd_goal_real    <dbl> 5000.00, 8000.00, 525.00, 5286.03, 11200.72, 10…
 
 Exploring and Cleaning the Data
 -------------------------------
@@ -147,8 +150,8 @@ When we get to the section on distributional exploration later in the document, 
 summary(base_2018_df$backers)
 ```
 
-    ##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-    ##      0.0      2.0     12.0    106.7     57.0 219382.0
+    ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    ##     0.0     2.0    12.0   106.2    57.0 91585.0
 
 As can be seen above, there is massive skew in this variable. Its mean is `{r} mean(base_2018_df$backers)` while its median is substantially lower, at `{r} median(base_2018_df$backers)`, which hints at the large skew. We can see as well there are obviously some massive outliers pulling up the mean, as that max number of backers is `{r} max(base_2018_df$backers)`.
 
@@ -162,10 +165,10 @@ DataExplorer::plot_bar(data = base_2018_df, order_bar = FALSE, title = "Categori
 ```
 
     ## 4 columns ignored with more than 50 categories.
-    ## name: 372069 categories
+    ## name: 186643 categories
     ## category: 159 categories
-    ## deadline: 3164 categories
-    ## launched: 374302 categories
+    ## deadline: 3130 categories
+    ## launched: 187322 categories
 
 ![](ks_test_files/figure-markdown_github/unnamed-chunk-10-1.png)
 
@@ -194,11 +197,11 @@ janitor::tabyl(base_2018_df$country) %>%
 ```
 
     ##   base_2018_df$country      n percent
-    ## 1                   US 292627   78.1%
-    ## 2                   GB  33672    9.0%
-    ## 3                   CA  14756    3.9%
-    ## 4                   AU   7839    2.1%
-    ## 5                   DE   4171    1.1%
+    ## 1                   US 146484   78.1%
+    ## 2                   GB  16707    8.9%
+    ## 3                   CA   7387    3.9%
+    ## 4                   AU   3919    2.1%
+    ## 5                   DE   2073    1.1%
 
 ``` r
 # displaying the exact number of unique categories depending on the variable used
@@ -223,21 +226,21 @@ janitor::tabyl(base_2018_df$main_category) %>%
 ```
 
     ##    base_2018_df$main_category     n percent
-    ## 1                Film & Video 62697   16.7%
-    ## 2                       Music 49530   13.2%
-    ## 3                  Publishing 39379   10.5%
-    ## 4                       Games 35226    9.4%
-    ## 5                  Technology 32562    8.7%
-    ## 6                      Design 30067    8.0%
-    ## 7                         Art 28153    7.5%
-    ## 8                        Food 24599    6.6%
-    ## 9                     Fashion 22812    6.1%
-    ## 10                    Theater 10912    2.9%
-    ## 11                     Comics 10819    2.9%
-    ## 12                Photography 10778    2.9%
-    ## 13                     Crafts  8809    2.3%
-    ## 14                 Journalism  4754    1.3%
-    ## 15                      Dance  3767    1.0%
+    ## 1                Film & Video 31164   16.6%
+    ## 2                       Music 24794   13.2%
+    ## 3                  Publishing 19786   10.6%
+    ## 4                       Games 17598    9.4%
+    ## 5                  Technology 16254    8.7%
+    ## 6                      Design 15167    8.1%
+    ## 7                         Art 13989    7.5%
+    ## 8                        Food 12342    6.6%
+    ## 9                     Fashion 11429    6.1%
+    ## 10                    Theater  5417    2.9%
+    ## 11                Photography  5406    2.9%
+    ## 12                     Comics  5353    2.9%
+    ## 13                     Crafts  4408    2.4%
+    ## 14                 Journalism  2446    1.3%
+    ## 15                      Dance  1907    1.0%
 
 In light of the above information, we'll perform one last step and trim down to only the variables we absolutely need for this distributional analysis. Below is a quick explanation for each variable dropped
 
@@ -503,9 +506,9 @@ ks.test(
 ```
 
     ## # A tibble: 1 x 4
-    ##   statistic      p.value method                             alternative
-    ##       <dbl>        <dbl> <chr>                              <chr>      
-    ## 1    0.0840 0.0000000164 Two-sample Kolmogorov-Smirnov test two-sided
+    ##   statistic  p.value method                             alternative
+    ##       <dbl>    <dbl> <chr>                              <chr>      
+    ## 1    0.0798 0.000512 Two-sample Kolmogorov-Smirnov test two-sided
 
 ### Interpreting the KS Test Results
 
@@ -577,21 +580,21 @@ janitor::tabyl(final_us_df$main_category) %>%
 ```
 
     ##    final_us_df$main_category     n percent
-    ## 1               Film & Video 51922   17.7%
-    ## 2                      Music 43238   14.8%
-    ## 3                 Publishing 31726   10.8%
-    ## 4                      Games 24636    8.4%
-    ## 5                        Art 22311    7.6%
-    ## 6                     Design 21690    7.4%
-    ## 7                 Technology 21556    7.4%
-    ## 8                       Food 19941    6.8%
-    ## 9                    Fashion 16584    5.7%
-    ## 10                    Comics  8910    3.0%
-    ## 11                   Theater  8709    3.0%
-    ## 12               Photography  7988    2.7%
-    ## 13                    Crafts  6648    2.3%
-    ## 14                Journalism  3540    1.2%
-    ## 15                     Dance  3228    1.1%
+    ## 1               Film & Video 25841   17.6%
+    ## 2                      Music 21627   14.8%
+    ## 3                 Publishing 15987   10.9%
+    ## 4                      Games 12393    8.5%
+    ## 5                        Art 11042    7.5%
+    ## 6                     Design 10948    7.5%
+    ## 7                 Technology 10815    7.4%
+    ## 8                       Food  9969    6.8%
+    ## 9                    Fashion  8329    5.7%
+    ## 10                    Comics  4396    3.0%
+    ## 11                   Theater  4308    2.9%
+    ## 12               Photography  4022    2.7%
+    ## 13                    Crafts  3320    2.3%
+    ## 14                Journalism  1841    1.3%
+    ## 15                     Dance  1646    1.1%
 
 ``` r
 janitor::tabyl(final_gb_df$main_category) %>%
@@ -602,21 +605,21 @@ janitor::tabyl(final_gb_df$main_category) %>%
 ```
 
     ##    final_gb_df$main_category    n percent
-    ## 1               Film & Video 5782   17.2%
-    ## 2                      Games 4012   11.9%
-    ## 3                 Publishing 3271    9.7%
-    ## 4                 Technology 3068    9.1%
-    ## 5                      Music 2772    8.2%
-    ## 6                     Design 2706    8.0%
-    ## 7                        Art 2667    7.9%
-    ## 8                    Fashion 2372    7.0%
-    ## 9                       Food 1649    4.9%
-    ## 10                   Theater 1641    4.9%
-    ## 11               Photography 1230    3.7%
-    ## 12                    Crafts  904    2.7%
-    ## 13                    Comics  867    2.6%
-    ## 14                Journalism  451    1.3%
-    ## 15                     Dance  280    0.8%
+    ## 1               Film & Video 2830   16.9%
+    ## 2                      Games 1990   11.9%
+    ## 3                 Publishing 1621    9.7%
+    ## 4                 Technology 1545    9.2%
+    ## 5                      Music 1372    8.2%
+    ## 6                     Design 1359    8.1%
+    ## 7                        Art 1347    8.1%
+    ## 8                    Fashion 1162    7.0%
+    ## 9                       Food  819    4.9%
+    ## 10                   Theater  810    4.8%
+    ## 11               Photography  584    3.5%
+    ## 12                    Crafts  448    2.7%
+    ## 13                    Comics  447    2.7%
+    ## 14                Journalism  231    1.4%
+    ## 15                     Dance  142    0.8%
 
 As can be seen from above, **we appear to be perfectly fine on sample size**, given that the smallest bucket--GB's Dance category--stil has 280 observations (well over our minimum of 30). As such, we can proceed to constructing the scalable KS test.
 
@@ -695,10 +698,10 @@ get_tidy_ks_test_results()
     ## [1] "Theater"
     ## 
     ## [[2]]
-    ## [1] 0.08396408
+    ## [1] 0.07975486
     ## 
     ## [[3]]
-    ## [1] 0.00000001638526
+    ## [1] 0.0005115424
 
 ### Looping Over All Categories and Performing the KS Test
 
@@ -751,16 +754,15 @@ ks_test_results_for_all_cats <- build_ks_table_for_all(p_value_cutoff = 0.05)
 ks_test_results_for_all_cats
 ```
 
-    ##       category ks_test_stat        ks_test_pval
-    ## 1        Dance   0.22428212 0.00000000003271072
-    ## 2        Music   0.14744361 0.00000000000000000
-    ## 3         Food   0.13005356 0.00000000000000000
-    ## 4          Art   0.09216067 0.00000000000000000
-    ## 5      Theater   0.08396408 0.00000001638526370
-    ## 6 Film & Video   0.07714238 0.00000000000000000
-    ## 7   Technology   0.07248634 0.00000000007058931
-    ## 8  Photography   0.06260837 0.00083743958408267
-    ## 9        Games   0.06196038 0.00000000041862680
+    ##       category ks_test_stat       ks_test_pval
+    ## 1        Dance   0.23450096 0.0000019699705439
+    ## 2        Music   0.15096475 0.0000000000000000
+    ## 3         Food   0.12537142 0.0000000006025473
+    ## 4          Art   0.09755186 0.0000000006644207
+    ## 5   Technology   0.09752995 0.0000000004859307
+    ## 6      Theater   0.07975486 0.0005115423874362
+    ## 7 Film & Video   0.06432801 0.0000000085735847
+    ## 8        Games   0.05171016 0.0008345524474186
 
 ### Visualizing the Result of the Many KS Tests
 

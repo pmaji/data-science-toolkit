@@ -1,7 +1,7 @@
-Exploratory Data Analysis (EDA) and Visualization in R
+Exploratory Data Analysis (EDA) and Visualization
 ================
-Paul Jeffries
-13 September, 2018
+[Paul Jeffries](https://twitter.com/ByPaulJ)
+31 March, 2019
 
 -   [Introduction](#introduction)
     -   [Setup](#setup)
@@ -15,12 +15,10 @@ Paul Jeffries
     -   [Histograms](#histograms)
     -   [Density Plots](#density-plots)
 
-**NOTE: this is an early work in progress. Check back shortly for new additions**
-
 Introduction
 ============
 
-The purpose of this document is to serve as a smorgasbord of EDA techniques and visualization tools.
+The purpose of this document is to serve as a smorgasbord of EDA techniques and visualization tools. It is a work in progress, so check back occasionally for new additions.
 
 Setup
 -----
@@ -51,7 +49,7 @@ The data used in this document come from a [Kaggle post](https://www.kaggle.com/
 
 ``` r
 # importing the dataset from the CSV
-base_df <- read.csv("./hypothesis_tests/data/ks-projects-201801.csv")
+base_df <- read.csv("./hypothesis-tests/data/ks-projects-201801-sampled.csv")
 ```
 
 ``` r
@@ -59,23 +57,24 @@ base_df <- read.csv("./hypothesis_tests/data/ks-projects-201801.csv")
 glimpse(base_df)
 ```
 
-    ## Observations: 378,661
-    ## Variables: 15
-    ## $ ID               <int> 1000002330, 1000003930, 1000004038, 100000754...
-    ## $ name             <fct> The Songs of Adelaide & Abullah, Greeting Fro...
-    ## $ category         <fct> Poetry, Narrative Film, Narrative Film, Music...
-    ## $ main_category    <fct> Publishing, Film & Video, Film & Video, Music...
-    ## $ currency         <fct> GBP, USD, USD, USD, USD, USD, USD, USD, USD, ...
-    ## $ deadline         <fct> 2015-10-09, 2017-11-01, 2013-02-26, 2012-04-1...
-    ## $ goal             <dbl> 1000, 30000, 45000, 5000, 19500, 50000, 1000,...
-    ## $ launched         <fct> 2015-08-11 12:12:28, 2017-09-02 04:43:57, 201...
-    ## $ pledged          <dbl> 0.00, 2421.00, 220.00, 1.00, 1283.00, 52375.0...
-    ## $ state            <fct> failed, failed, failed, failed, canceled, suc...
-    ## $ backers          <int> 0, 15, 3, 1, 14, 224, 16, 40, 58, 43, 0, 100,...
-    ## $ country          <fct> GB, US, US, US, US, US, US, US, US, US, CA, U...
-    ## $ usd.pledged      <dbl> 0.00, 100.00, 220.00, 1.00, 1283.00, 52375.00...
-    ## $ usd_pledged_real <dbl> 0.00, 2421.00, 220.00, 1.00, 1283.00, 52375.0...
-    ## $ usd_goal_real    <dbl> 1533.95, 30000.00, 45000.00, 5000.00, 19500.0...
+    ## Observations: 189,330
+    ## Variables: 16
+    ## $ X                <int> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, …
+    ## $ ID               <int> 136458340, 381995336, 1425707545, 960476049, 96…
+    ## $ name             <fct> "Squid Packs: a personalized twist on the class…
+    ## $ category         <fct> Product Design, Tabletop Games, Software, Food,…
+    ## $ main_category    <fct> Design, Games, Technology, Food, Technology, Pu…
+    ## $ currency         <fct> USD, USD, USD, EUR, AUD, USD, USD, USD, USD, US…
+    ## $ deadline         <fct> 2012-11-19, 2013-09-30, 2014-09-12, 2015-03-07,…
+    ## $ goal             <dbl> 5000, 8000, 525, 5000, 15000, 1000, 10000, 6000…
+    ## $ launched         <fct> 2012-10-18 19:27:07, 2013-08-23 15:00:56, 2014-…
+    ## $ pledged          <dbl> 7458.00, 52693.00, 100.00, 0.00, 6527.00, 2845.…
+    ## $ state            <fct> successful, successful, failed, canceled, cance…
+    ## $ backers          <int> 78, 566, 1, 0, 83, 96, 494, 179, 1, 551, 18, 28…
+    ## $ country          <fct> US, US, US, IE, AU, US, US, US, US, US, GB, US,…
+    ## $ usd.pledged      <dbl> 7458.00, 52693.00, 100.00, 0.00, 181.86, 2845.0…
+    ## $ usd_pledged_real <dbl> 7458.00, 52693.00, 100.00, 0.00, 4873.81, 2845.…
+    ## $ usd_goal_real    <dbl> 5000.00, 8000.00, 525.00, 5286.03, 11200.72, 10…
 
 Exploring and Cleaning the Data
 -------------------------------
@@ -130,29 +129,32 @@ psych::describe(x = base_df, IQR = TRUE, omit = TRUE)
 ```
 
     ##                  vars      n          mean           sd        median
-    ## id                  1 374864 1074651369.45 619135733.97 1075277164.00
-    ## goal                7 374864      49523.10   1189355.29       5500.00
-    ## pledged             9 374864       9750.44     96010.43        620.00
-    ## backers            11 374864        106.69       911.71         12.00
-    ## usd_pledged        13 374864       7036.73     78639.75        394.72
-    ## usd_pledged_real   14 374864       9120.80     91319.21        624.41
-    ## usd_goal_real      15 374864      45863.18   1158761.22       5500.00
+    ## x                   1 187460      94682.24     54647.10      94699.50
+    ## id                  2 187460 1076291115.07 619545515.03 1075335076.50
+    ## goal                8 187460      47842.61   1142096.55       5500.00
+    ## pledged            10 187460       9555.46     85814.15        616.00
+    ## backers            12 187460        106.16       832.66         12.00
+    ## usd_pledged        14 187460       6997.59     73034.81        392.00
+    ## usd_pledged_real   15 187460       9016.19     82883.26        619.73
+    ## usd_goal_real      16 187460      45097.62   1167570.74       5500.00
     ##                        trimmed          mad     min        max      range
-    ## id               1074796426.08 794703948.08 5971.00 2147476221 2147470250
-    ## goal                   9772.49      6671.70    0.01  100000000  100000000
-    ## pledged                2118.77       919.21    0.00   20338986   20338986
-    ## backers                  29.34        17.79    0.00     219382     219382
-    ## usd_pledged            1564.03       585.21    0.00   20338986   20338986
-    ## usd_pledged_real       2092.57       925.75    0.00   20338986   20338986
-    ## usd_goal_real          9500.39      6671.70    0.01  166361391  166361391
-    ##                    skew kurtosis         se           IQR
-    ## id                 0.00    -1.20 1011227.81 1072066572.25
-    ## goal              70.44  5519.08    1942.56      14500.00
-    ## pledged           74.96  9952.63     156.81       4049.00
-    ## backers           86.34 13818.11       1.49         55.00
-    ## usd_pledged      105.90 18960.57     128.44       3017.11
-    ## usd_pledged_real  82.00 11733.81     149.15       4019.82
-    ## usd_goal_real     77.83  7011.92    1892.59      14000.00
+    ## x                     94685.82     70160.34    1.00     189330     189329
+    ## id               1076642343.93 795532896.43 5971.00 2147455254 2147449283
+    ## goal                   9749.60      6671.70    0.15  100000000  100000000
+    ## pledged                2110.63       913.28    0.00   12779843   12779843
+    ## backers                  29.30        17.79    0.00      91585      91585
+    ## usd_pledged            1557.43       581.18    0.00   12779843   12779843
+    ## usd_pledged_real       2087.01       918.81    0.00   12779843   12779843
+    ## usd_goal_real          9484.33      6671.70    0.15  166361391  166361391
+    ##                   skew kurtosis         se           IQR
+    ## x                 0.00    -1.20     126.22      94644.50
+    ## id                0.00    -1.20 1430931.72 1073182647.50
+    ## goal             72.55  5883.53    2637.84      14152.50
+    ## pledged          55.76  5318.01     198.20       4048.00
+    ## backers          54.10  4380.39       1.92         55.00
+    ## usd_pledged      77.71  9564.40     168.68       3007.77
+    ## usd_pledged_real 60.32  6075.24     191.43       4015.00
+    ## usd_goal_real    83.11  8127.30    2696.68      13982.01
 
 Bespoke Visualizations
 ======================
@@ -241,7 +243,7 @@ base_df %>%
       viridis::scale_fill_viridis(discrete=TRUE, option="plasma") +
       ggthemes::theme_economist() +
       # custom axis limits; for this kind of chart I prefer to set these manually
-      scale_y_continuous(limits = c(0, 1250)) +
+      scale_y_continuous(limits = c(0, 700)) +
       # setting legend and axis aesthetic details
       theme(
         legend.position = "top",
@@ -284,8 +286,8 @@ base_df %>%
   ) %>%
   dplyr::group_by(country, custom_buckets) %>%
   # gets teh grouped by within-category percent
-  summarise(n = n()) %>%
-  mutate(freq = n / sum(n)) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(freq = n / sum(n)) %>%
     # base ggplot call
     ggplot(., aes(custom_buckets, freq)) +
       geom_bar(aes(fill = country), color = "black", position = "dodge", stat="identity") +

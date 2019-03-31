@@ -1,6 +1,6 @@
 ---
 title: "Logistic Regression in R"
-author: Paul Jeffries
+author: "[Paul Jeffries](https://twitter.com/ByPaulJ)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   github_document:
@@ -18,21 +18,23 @@ While the code is extensively commented, with additional explanatory notes along
 
 ## Setup
 
-```{r setup, results='hide', warning=FALSE, message=FALSE}
-# first a few general set-up items / housekeeping items
-
+```{r setup, echo = F}
 # setting the appropriate working directory
-knitr::opts_knit$set(root.dir = '/Users/pauljeffries/Desktop/personal/personal_code/data-science-toolkit-master/classification')
+knitr::opts_knit$set(root.dir = '~/Desktop/personal/personal_code/data-science-toolkit/classification/')
+```
+
+
+```{r results='hide', warning=FALSE, message=FALSE}
+# first a few general set-up items / housekeeping items
 
 # setting scipen options to kill all use of scientific notation
 options(scipen = 999)
 
 # basic packages needed throughout
-library(dplyr) # for piping
+library(tidyverse) # for all things tidy 
 library(ggplot2) # for visualization
 library(ggthemes) # for custom visualization
 library(broom) # needing for tidying model summary output into a df
-
 ```
 
 # Importing, Exploring, Cleaning, Normalizing / Centering, and Prepping the Data

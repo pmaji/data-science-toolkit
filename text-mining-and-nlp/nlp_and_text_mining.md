@@ -1,7 +1,7 @@
 NLP & Text-Mining in R
 ================
-Paul Jeffries
-16 September, 2018
+[Paul Jeffries](https://twitter.com/ByPaulJ)
+31 March, 2019
 
 -   [Introduction](#introduction)
     -   [How to Access the Raw Data](#how-to-access-the-raw-data)
@@ -251,7 +251,7 @@ head(docs[[3]])
     ## 
     ## $meta
     ##   author       : character(0)
-    ##   datetimestamp: 2018-09-16 23:11:42
+    ##   datetimestamp: 2019-03-31 20:46:05
     ##   description  : character(0)
     ##   heading      : character(0)
     ##   id           : 3
@@ -473,4 +473,4 @@ word_association_hunter(term="god", maxprint = 10)
 Conclusion and Further Improvements
 ===================================
 
-There is clearly a massive amount of further analysis that could be performed on this data, and I look forward to exploring this more! I have essentially no experience working with text data, so this is some of the simplest stuff that can be done. That said, this is just meant to be a start, and hopefully others will be able to use these techniques and functions themselves, build/improve on them, etc. Please feel free to suggest further improvements to this work, as always, [by opening an "Issue".](https://github.com/pmaji/data-science-toolkit/issues)
+There is clearly a massive amount of further analysis that could be performed on this data, and I look forward to exploring this more! I have essentially no experience working with text data, so this is some of the simplest stuff that can be done. That said, this is just meant to be a start, and hopefully others will be able to use these techniques and functions themselves, build/improve on them, etc. One other package for visualizing word clouds that I'd like to explore in the future beyond what you've seen here is [the ggwordcloud package](https://cran.r-project.org/web/packages/ggwordcloud/vignettes/ggwordcloud.html) which I first heard about [via Twitter thanks](https://twitter.com/harrocyranka/status/1110681476897689600?s=20) to Harro Cyranka. His code example of ggwordcloud that inspired this thought [can be found here](https://github.com/Cyranka/rviz/blob/master/tidy_tuesday_2019_week_13/first_pas.R).

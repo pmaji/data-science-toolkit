@@ -1,6 +1,6 @@
 ---
 title: "Exploratory Data Analysis (EDA) and Visualization"
-author: Paul Jeffries
+author: "[Paul Jeffries](https://twitter.com/ByPaulJ)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   github_document:
@@ -8,17 +8,15 @@ output:
     toc_depth: 2
 ---
 
-**NOTE: this is an early work in progress. Check back shortly for new additions**
-
 # Introduction
 
-The purpose of this document is to serve as a smorgasbord of EDA techniques and visualization tools. 
+The purpose of this document is to serve as a smorgasbord of EDA techniques and visualization tools. It is a work in progress, so check back occasionally for new additions. 
 
 ## Setup
 
 ```{r setup, echo = F}
 # setting the appropriate working directory
-knitr::opts_knit$set(root.dir = '~/Desktop/Personal/personal_code/data_science_toolkit/')
+knitr::opts_knit$set(root.dir = '~/Desktop/personal/personal_code/data-science-toolkit/')
 ```
 
 ```{r results='hide', warning=FALSE, message=FALSE}
@@ -45,7 +43,7 @@ The data used in this document come from a [Kaggle post](https://www.kaggle.com/
 
 ```{r}
 # importing the dataset from the CSV
-base_df <- read.csv("./hypothesis_tests/data/ks-projects-201801.csv")
+base_df <- read.csv("./hypothesis-tests/data/ks-projects-201801-sampled.csv")
 ```
 
 ```{r}
@@ -182,7 +180,7 @@ base_df %>%
       viridis::scale_fill_viridis(discrete=TRUE, option="plasma") +
       ggthemes::theme_economist() +
       # custom axis limits; for this kind of chart I prefer to set these manually
-      scale_y_continuous(limits = c(0, 1250)) +
+      scale_y_continuous(limits = c(0, 700)) +
       # setting legend and axis aesthetic details
       theme(
         legend.position = "top",
@@ -223,8 +221,8 @@ base_df %>%
   ) %>%
   dplyr::group_by(country, custom_buckets) %>%
   # gets teh grouped by within-category percent
-  summarise(n = n()) %>%
-  mutate(freq = n / sum(n)) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(freq = n / sum(n)) %>%
     # base ggplot call
     ggplot(., aes(custom_buckets, freq)) +
       geom_bar(aes(fill = country), color = "black", position = "dodge", stat="identity") +

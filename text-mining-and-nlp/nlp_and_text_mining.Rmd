@@ -1,6 +1,6 @@
 ---
 title: "NLP & Text-Mining in R"
-author: Paul Jeffries
+author: "[Paul Jeffries](https://twitter.com/ByPaulJ)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   github_document:
@@ -20,7 +20,7 @@ This is a project I had been hoping to do for quite some time, but one of the ma
 
 ```{r setup, echo = F}
 # setting the appropriate working directory
-knitr::opts_knit$set(root.dir = '/Users/pauljeffries/Desktop/personal/personal_code/text_analysis_r/')
+knitr::opts_knit$set(root.dir = '/Users/pauljeffries/Desktop/personal/personal_code/private_projects/text_analysis_r/')
 ```
 
 ```{r results='hide', warning=FALSE, message=FALSE}
@@ -338,7 +338,7 @@ word_association_hunter(term="god", maxprint = 10)
 
 # Conclusion and Further Improvements
 
-There is clearly a massive amount of further analysis that could be performed on this data, and I look forward to exploring this more! I have essentially no experience working with text data, so this is some of the simplest stuff that can be done. That said, this is just meant to be a start, and hopefully others will be able to use these techniques and functions themselves, build/improve on them, etc. Please feel free to suggest further improvements to this work, as always, [by opening an "Issue".](https://github.com/pmaji/data-science-toolkit/issues) 
+There is clearly a massive amount of further analysis that could be performed on this data, and I look forward to exploring this more! I have essentially no experience working with text data, so this is some of the simplest stuff that can be done. That said, this is just meant to be a start, and hopefully others will be able to use these techniques and functions themselves, build/improve on them, etc. One other package for visualizing word clouds that I'd like to explore in the future beyond what you've seen here is [the ggwordcloud package](https://cran.r-project.org/web/packages/ggwordcloud/vignettes/ggwordcloud.html) which I first heard about [via Twitter thanks](https://twitter.com/harrocyranka/status/1110681476897689600?s=20) to Harro Cyranka. His code example of ggwordcloud that inspired this thought [can be found here](https://github.com/Cyranka/rviz/blob/master/tidy_tuesday_2019_week_13/first_pas.R). 
 
 ```{r}
 

@@ -1,7 +1,7 @@
 Logistic Regression in R
 ================
-Paul Jeffries
-07 February, 2019
+[Paul Jeffries](https://twitter.com/ByPaulJ)
+31 March, 2019
 
 -   [Introduction](#introduction)
     -   [Setup](#setup)
@@ -49,14 +49,11 @@ Setup
 ``` r
 # first a few general set-up items / housekeeping items
 
-# setting the appropriate working directory
-knitr::opts_knit$set(root.dir = '/Users/pauljeffries/Desktop/personal/personal_code/data-science-toolkit-master/classification')
-
 # setting scipen options to kill all use of scientific notation
 options(scipen = 999)
 
 # basic packages needed throughout
-library(dplyr) # for piping
+library(tidyverse) # for all things tidy 
 library(ggplot2) # for visualization
 library(ggthemes) # for custom visualization
 library(broom) # needing for tidying model summary output into a df
@@ -206,7 +203,7 @@ library(DataExplorer) # allows for creation of missing values map
 DataExplorer::plot_missing(white_main_df) # shows % of NAs within each variable
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-5-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-6-1.png)
 
 Good news at this point is this dataset looks perfectly clean of nulls! If there were any problems with nulls, I would solve it using complete.cases() or something similar.
 
@@ -220,14 +217,14 @@ Below I'll demonstrate the DataExplorer function for both histogram and density 
 DataExplorer::plot_histogram(data = white_main_df, title = "Continuous Variables Explored (Histograms)")
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-6-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-7-1.png)
 
 ``` r
 # then a density chart of all continous variables in the dataset
 DataExplorer::plot_density(data = white_main_df, title = "Continuous Variables Explored (Density Plots)")
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-7-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-8-1.png)
 
 ### Categorical Variable Exploration
 
@@ -238,7 +235,7 @@ DataExplorer::plot_density(data = white_main_df, title = "Continuous Variables E
 plot_bar(data = white_main_df, order_bar = FALSE, title = "Categorical Variables Explored")
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-8-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-9-1.png)
 
 Here we can see that the quality of these wines are rougly normally distirbuted, with the most common quality score being 6, and very few scores coming in &lt;= 4 or &gt;= 8.
 
@@ -355,7 +352,7 @@ corrplot(corr_matrix, p.mat = res1$p, method = "color", type = "upper",
          insig = "label_sig", pch.col = "black", order = "AOE", na.label = "NA")
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-14-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-15-1.png)
 
 ``` r
 # and finally I'll build a simpler corrplot to get the strength of correlation numbers visualized
@@ -363,7 +360,7 @@ corrplot(corr_matrix, method = "number", type = "upper", pch.cex = .9,
          order = "AOE", number.cex = .7, na.label = "NA")
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-14-2.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-15-2.png)
 
 Takeways from these types of exploratory techniques can help us to create a more informed model. We may, depending on the circumstances, treat variables differently in our model-building process as a result of these types of charts. For example, we might discover a great degree of cross-correlation that allows us to delete duplicative variables, etc. We can notice a few interesting trends from our results above in this case:
 
@@ -476,7 +473,7 @@ scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) +
 theme_economist()
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-18-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-19-1.png)
 
 ``` r
 # distribution of the prediction score grouped by known outcome (for testing set only)
@@ -487,7 +484,7 @@ scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) +
 theme_economist()
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-18-2.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-19-2.png)
 
 Determining What Classification Cutoff is Appropriate (Simple Logit)
 --------------------------------------------------------------------
@@ -528,7 +525,7 @@ accuracy_info <- AccuracyCutoffInfo(train = predictions_train_full,
 accuracy_info$plot
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-21-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-22-1.png)
 
 From the chart above we can begin to see where the optimal cutoff may be. That said, the metric we are using above is overall model accuracy. Next, we'll dive into some methods that make more sense when we are targetting a particular type of accuracy. For example, maybe we care more about catching every possible bad white wine, even at the risk of misclassifying a massive number of good wines. With the functions below, these model optimization tradeoffs become easier to control and visualize. They will vary according to the question at hand.
 
@@ -575,7 +572,7 @@ cm_info <- ConfusionMatrixInfo(data = predictions_test_full,
 cm_info$plot
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-23-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-24-1.png)
 
 Lastly, we'll use the cutoff we have arrived at from the work above to test the model's predictions; think of this section as the cross-tab version of the confusion matrix plot shown above.
 
@@ -668,7 +665,6 @@ For a more piecemeal approach to learning about ridge regression methods--and la
 -   [Stanford slides on ridge regression and lasso](http://statweb.stanford.edu/~tibs/sta305files/Rudyregularization.pdf)
 -   [Helpful explanation with difference between ridge and lasso](https://codingstartups.com/practical-machine-learning-ridge-regression-vs-lasso/)
 -   [Short and sweet tl;dr of lasso's utility](https://stats.stackexchange.com/questions/17251/what-is-the-lasso-in-regression-analysis)
--   [My personal favorite vignette by the authors of the glmnet package](https://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html#log)
 
 Notes and Warning on Model Matrix Construction and Dummy Variables
 ------------------------------------------------------------------
@@ -807,7 +803,7 @@ The ultimate goal with this hyperparameter-tuning exercise is to pick a lambda t
 plot(cv.lasso)
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-30-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-31-1.png)
 
 The two common choices are shown visually with dotted lines, in turn: - Lambda Min (the value that minimizes the prediction error) - Lambda LSE (gives the simplest model but also lies within one SE of the optimal value of lambda)
 
@@ -1190,7 +1186,7 @@ cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
 plot(cv.lasso)
 ```
 
-![](logistic_regression_files/figure-markdown_github/unnamed-chunk-44-1.png)
+![](logistic_regression_files/figure-markdown_github/unnamed-chunk-45-1.png)
 
 ### First the Coefficients for the Lambda min DBSMOTE Lasso
 

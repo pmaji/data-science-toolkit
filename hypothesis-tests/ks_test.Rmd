@@ -224,34 +224,40 @@ base_2018_df_forviz %>%
 As can be seen above, these distributions are very heavily skewed, even when we filter to a category type and look only at GP and US-based campaigns. That is to be expected given the nature of the project; that said, we want our visuals to be helfpul (which the above honestly is not). As such, for the purpose of this analysis **let's focus on projects that raised at most $10,000** (although this value is easy to parameterize and is largely an arbitrary judgement call).
 
 ```{r}
-full_base_pdf <- base_2018_df_forviz %>%
-  # build in the volume constraint
-  dplyr::filter(usd_pledged <= 10000) %>%
-  # now we need to get mean and median by group for the viz 
-  dplyr::group_by(country) %>%
-  dplyr::mutate(
-    mean_pledged = mean(usd_pledged),
-    median_pledged = median(usd_pledged)
+# define our function
+compMeansPlot <- function(data, group, var) {
+  quo_group <- enquo(group)
+  quo_var <- enquo(var)
+  data %>%
+    dplyr::select(!!quo_group, !!quo_var) %>%
+    dplyr::group_by(!!quo_group) %>%
+    dplyr::mutate(
+      mean_pledged = mean(usd_pledged),
+      median_pledged = median(usd_pledged)
     ) %>%
-  # ungroup prior to the viz code
-  ungroup() %>%
+    # ungroup prior to the viz code
+    ungroup() %>%
     # begin creation of the GGPLOT here
     # put continuous variable on the X, Y will be density by default
-    ggplot(data = ., aes(x=usd_pledged)) +
+    ggplot(data = ., aes_string(x = quo_name(quo_var), fill = quo_name(quo_group))) + 
     # color needs to always be a factor, although this is redundant here
     # alpha moderates the opacity of the color
-    geom_density(aes(fill=factor(country)),alpha = 0.4) +
+    geom_density(alpha = 0.4) +
     # adding reference lines for the mean and the median
-    geom_vline(aes(xintercept=mean_pledged, colour=factor(country)),
-             linetype="dashed", size=0.75) +
-    geom_vline(aes(xintercept=median_pledged, colour=factor(country)),
-             linetype="dotted", size=0.75) +
+    geom_vline(
+      aes_string(xintercept = 'mean_pledged', colour = quo_name(quo_group)),
+      linetype="dashed", size = 0.75
+    ) +
+    geom_vline(
+      aes_string(xintercept = 'median_pledged', colour = quo_name(quo_group)),
+      linetype="dashed", size = 0.75
+    ) +
     # puts the legend on top of the view
-     theme(
+    theme(
       legend.position = "top",
       legend.title = element_text(size=12),
       legend.text = element_text(size=12)
-      ) +
+    ) +
     # takes care of all labeling
     labs(
       title = paste0("PDF of $ Pledged (Category: Theater)"),
@@ -264,9 +270,14 @@ full_base_pdf <- base_2018_df_forviz %>%
       # ensures the country of origin is listed first in legends
       fill = guide_legend(order=1),
       color = guide_legend(order=2)
-      )
+    )
+}
 
-full_base_pdf
+base_2018_df_forviz %>%
+  # build in the volume constraint
+  dplyr::filter(usd_pledged <= 10000) %>%
+  compMeansPlot(country, usd_pledged)
+
 ```
 
 ## Empirical Cumulative Distribution  (ECDF)

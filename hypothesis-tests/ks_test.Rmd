@@ -223,6 +223,8 @@ base_2018_df_forviz %>%
 
 As can be seen above, these distributions are very heavily skewed, even when we filter to a category type and look only at GP and US-based campaigns. That is to be expected given the nature of the project; that said, we want our visuals to be helfpul (which the above honestly is not). As such, for the purpose of this analysis **let's focus on projects that raised at most $10,000** (although this value is easy to parameterize and is largely an arbitrary judgement call).
 
+### Custom Function for Making PDF Charts
+
 ```{r}
 # define our function
 compMeansPlot <- function(data, group, var) {

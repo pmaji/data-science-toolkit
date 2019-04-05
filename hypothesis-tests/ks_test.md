@@ -16,7 +16,7 @@
     -   [Basic KS Test](#basic-ks-test)
     -   [Visualizing the KS Test Results](#visualizing-the-ks-test-results)
     -   [Scaling KS Test to Many Samples](#scaling-ks-test-to-many-samples)
-    -   [Conclusionss and Other Extensions of KS Test](#conclusionss-and-other-extensions-of-ks-test)
+    -   [Conclusions and Other Extensions of KS Test](#conclusions-and-other-extensions-of-ks-test)
 
 Introduction
 ============
@@ -308,8 +308,8 @@ compMeansPlot <- function(data, group, var) {
     dplyr::select(!!quo_group, !!quo_var) %>%
     dplyr::group_by(!!quo_group) %>%
     dplyr::mutate(
-      mean_pledged = mean(usd_pledged),
-      median_pledged = median(usd_pledged)
+      mean_pledged = mean(!!quo_var),
+      median_pledged = median(!!quo_var)
     ) %>%
     # ungroup prior to the viz code
     ungroup() %>%
@@ -352,7 +352,7 @@ compMeansPlot <- function(data, group, var) {
 base_2018_df_forviz %>%
   # build in the volume constraint
   dplyr::filter(usd_pledged <= 10000) %>%
-  compMeansPlot(country, usd_pledged)
+  compMeansPlot(., country, usd_pledged)
 ```
 
 ![](ks_test_files/figure-markdown_github/unnamed-chunk-17-1.png)
@@ -864,8 +864,8 @@ dance_pdf
 
 ![](ks_test_files/figure-markdown_github/unnamed-chunk-28-1.png)
 
-Conclusionss and Other Extensions of KS Test
---------------------------------------------
+Conclusions and Other Extensions of KS Test
+-------------------------------------------
 
 One next step to potentially consider--which I may build out in the future if I have the time--is to include an element of temporality in our testing. What we have done here is a purely cross-sectional analysis of the distributional differences between two countries' kick starter campaigns, including sub-cuts by category. One could presumable incorporate the date fiels as well, stratify based on month or quarter, and then ask questions such as: **"how has the distributional difference between US and GB dance campaign pledged amounts varied over time?"** This would allow us to see whether or not the large distributional difference seen in the chart above--with GB Dance campaigns having a lot more low-amount-pledged campaigns than US Dance campaigns--is a consistent trend, or driven more by an outlier month(s), for example.
 

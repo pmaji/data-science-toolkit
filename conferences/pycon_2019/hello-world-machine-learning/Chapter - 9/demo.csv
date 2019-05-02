@@ -1,0 +1,8 @@
+name,age,gender,designation
+a,20.0,Male,VP
+b,27.0,Female,CEO
+c,35.0,Male,
+d,,Female,VP
+e,18.0,Male,VP
+f,,Female,CEO
+,35.0,Male,MD

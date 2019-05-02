@@ -1,0 +1,10 @@
+numpy==1.16.1
+pandas==0.24.2
+shap==0.28.5
+lime==0.1.1.33
+scikit-image==0.15
+eli5==0.8.1
+scikit-learn==0.20.3
+lightgbm==2.2.2
+keras==2.2.4
+matplotlib==3.0.2

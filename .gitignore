@@ -1,4 +1,5 @@
-.Rproj*
+.Rproj.user
+data-science-toolkit.Rproj
 .Rhistory
 .RData
 .Ruserdata

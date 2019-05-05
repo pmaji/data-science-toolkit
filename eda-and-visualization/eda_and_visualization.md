@@ -1,7 +1,7 @@
 Exploratory Data Analysis (EDA) and Visualization
 ================
 [Paul Jeffries](https://twitter.com/ByPaulJ)
-31 March, 2019
+05 May, 2019
 
 -   [Introduction](#introduction)
     -   [Setup](#setup)
@@ -36,6 +36,8 @@ library(DataExplorer) # allows for creation of missing values map
 library(RCurl) # Provides functions to allow one to compose general HTTP requests, etc. in R
 library(broom) # for tidy modeling and displaying of model / test results 
 library(ggthemes) # for more custom ggplot themes
+library(inspectdf) # for df and column EDA convenience functions
+library(xaringan) # for imr Rmd preview while editing
 # if I reference functions that are more niche, I will call them explicitly in-line as well
 ```
 
@@ -79,6 +81,104 @@ glimpse(base_df)
 Exploring and Cleaning the Data
 -------------------------------
 
+### Exploring Your DFs w/ the [Inspectdf Package](https://github.com/alastairrushworth/inspectdf)
+
+``` r
+# exploring the memory utilization of a single df
+inspectdf::inspect_mem(base_df, show_plot = TRUE)
+```
+
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-4-1.png)
+
+    ## # A tibble: 16 x 3
+    ##    col_name         size       pcnt
+    ##    <chr>            <chr>     <dbl>
+    ##  1 name             18.56 Mb  37.8 
+    ##  2 launched         16.6 Mb   33.8 
+    ##  3 goal             1.44 Mb    2.94
+    ##  4 pledged          1.44 Mb    2.94
+    ##  5 usd.pledged      1.44 Mb    2.94
+    ##  6 usd_pledged_real 1.44 Mb    2.94
+    ##  7 usd_goal_real    1.44 Mb    2.94
+    ##  8 deadline         960.07 Kb  1.91
+    ##  9 category         750.82 Kb  1.49
+    ## 10 country          741.43 Kb  1.47
+    ## 11 main_category    740.98 Kb  1.47
+    ## 12 currency         740.88 Kb  1.47
+    ## 13 state            740.4 Kb   1.47
+    ## 14 X                739.62 Kb  1.47
+    ## 15 ID               739.62 Kb  1.47
+    ## 16 backers          739.62 Kb  1.47
+
+``` r
+# looking into where the NULLs are in the df
+# note: this works for multiple DFs as well
+inspectdf::inspect_na(base_df, show_plot = TRUE)
+```
+
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-5-1.png)
+
+    ## # A tibble: 16 x 3
+    ##    col_name           cnt  pcnt
+    ##    <chr>            <int> <dbl>
+    ##  1 usd.pledged       1870 0.988
+    ##  2 X                    0 0    
+    ##  3 ID                   0 0    
+    ##  4 name                 0 0    
+    ##  5 category             0 0    
+    ##  6 main_category        0 0    
+    ##  7 currency             0 0    
+    ##  8 deadline             0 0    
+    ##  9 goal                 0 0    
+    ## 10 launched             0 0    
+    ## 11 pledged              0 0    
+    ## 12 state                0 0    
+    ## 13 backers              0 0    
+    ## 14 country              0 0    
+    ## 15 usd_pledged_real     0 0    
+    ## 16 usd_goal_real        0 0
+
+``` r
+# inspecting the categorical levels in the df
+inspectdf::inspect_cat(base_df, show_plot = TRUE)
+```
+
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-6-1.png)
+
+    ## # A tibble: 8 x 5
+    ##   col_name         cnt common               common_pcnt levels             
+    ##   <chr>          <int> <chr>                      <dbl> <list>             
+    ## 1 category         159 Product Design           5.94    <tibble [159 × 2]> 
+    ## 2 country           23 US                      77.4     <tibble [23 × 2]>  
+    ## 3 currency          14 USD                     78.1     <tibble [14 × 2]>  
+    ## 4 deadline        3130 2014-08-08               0.194   <tibble [3,130 × 2…
+    ## 5 launched      189190 2009-09-15 05:56:28      0.00106 <tibble [189,190 ×…
+    ## 6 main_category     15 Film & Video            16.7     <tibble [15 × 2]>  
+    ## 7 name          188471 New EP/Music Develo…     0.0116  <tibble [188,471 ×…
+    ## 8 state              6 failed                  52.3     <tibble [6 × 2]>
+
+``` r
+# inspecting the correlations in our df
+inspectdf::inspect_cor(base_df, show_plot = TRUE)
+```
+
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-7-1.png)
+
+    ## # A tibble: 28 x 6
+    ##    col_1            col_2          corr  p_value   lower  upper
+    ##    <chr>            <chr>         <dbl>    <dbl>   <dbl>  <dbl>
+    ##  1 usd_pledged_real pledged     0.957   0        0.956   0.957 
+    ##  2 usd_goal_real    goal        0.943   0        0.943   0.944 
+    ##  3 usd_pledged_real usd.pledged 0.914   0        0.913   0.915 
+    ##  4 usd.pledged      pledged     0.869   0        0.868   0.871 
+    ##  5 usd_pledged_real backers     0.799   0        0.797   0.801 
+    ##  6 backers          pledged     0.764   0        0.762   0.766 
+    ##  7 usd.pledged      backers     0.753   0        0.750   0.755 
+    ##  8 pledged          goal        0.00822 0.000345 0.00307 0.0134
+    ##  9 usd_goal_real    usd.pledged 0.00738 0.00139  0.00220 0.0126
+    ## 10 usd.pledged      goal        0.00712 0.00206  0.00194 0.0123
+    ## # … with 18 more rows
+
 ### Dealing with NULLs
 
 First, we'll conduct some broad cleaning. Using the [janitor package](https://github.com/sfirke/janitor) I will clean up the variable names (in this case not necssarily because the CSV is pristinely formatted), and drop any rows or columns where all observations all null.
@@ -98,7 +198,7 @@ Next, we'll move on to dealing with the trickier instances of NULLs: cases where
 DataExplorer::plot_missing(base_df) # shows % of NAs within each variable
 ```
 
-![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-5-1.png)
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-9-1.png)
 
 From the chart above, we can see that there is only one variable--"usd\_pledged"--that has missing data. It has a missing rate of 1%, which isn't terrible, but given that we have a large amount of data (as shown via the row count returned by the previous glimpse() call), **we'll drop any instances of nulls entirely** to ensure we have the cleanest of data. This is by no means necessary in all cases, and the treatment of nulls should be decided on a case-by-case basis pursuant to the requirements of the project and quality / size of the data at hand.
 
@@ -108,7 +208,7 @@ base_df <- base_df[complete.cases(base_df),]
 DataExplorer::plot_missing(base_df) # shows % of NAs within each variable
 ```
 
-![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-6-1.png)
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-10-1.png)
 
 Summary Statistics
 ==================
@@ -207,7 +307,7 @@ base_df %>%
     )
 ```
 
-![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-8-1.png)
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-12-1.png)
 
 ### Multi-Category Histogram with Custom-Delimited-Buckets (Count-Based)
 
@@ -260,7 +360,7 @@ base_df %>%
       )
 ```
 
-![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-9-1.png)
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-13-1.png)
 
 ### Multi-Category Histogram with Custom-Delimited-Buckets (Percent-Based)
 
@@ -314,7 +414,7 @@ base_df %>%
       )
 ```
 
-![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-10-1.png)
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-14-1.png)
 
 Density Plots
 -------------
@@ -355,7 +455,7 @@ base_df %>%
     )
 ```
 
-![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-11-1.png)
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-15-1.png)
 
 ### 3 PDFs Compared w/ Facets
 
@@ -394,4 +494,4 @@ base_df %>%
     )
 ```
 
-![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-12-1.png)
+![](eda_and_visualization_files/figure-markdown_github/unnamed-chunk-16-1.png)

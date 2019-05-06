@@ -1,3 +1,5 @@
+**Paul's Notes:** Throughout the code, be on the lookout for my commentary / additional code, which will almost always be preceded by "Paul's Notes:". The link to the recording of the session at PyCon2019 at which this material was presented [can be found here on YouTube](https://www.youtube.com/watch?v=bCDcI8SdjD8). 
+
 ### #PyCon2019 : Hello World of Machine Learning Using Scikit Learn
 
 This tutorial will be presented at PyCon2019 on May 2nd, 2019

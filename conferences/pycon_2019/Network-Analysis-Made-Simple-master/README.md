@@ -1,3 +1,5 @@
+**Paul's Notes:** Throughout the code, be on the lookout for my commentary / additional code, which will almost always be preceded by "Paul's Notes:". The link to the recording of the session at PyCon2019 at which this material was presented [can be found here on YouTube](https://www.youtube.com/watch?v=eZs4MECCuYY). 
+
 # Network Analysis Made Simple
 
 ![](./images/custom-logo.png)

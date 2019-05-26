@@ -1,6 +1,8 @@
 ## Introduction
 
-Welcome! The purpose of this repository is to serve as stockpile of statistical methods, modeling techniques, and data science tools. The content itself includes everything from educational vignettes on specific topics, to tailored functions and modeling pipelines built to enhance and optimize analyses, to notes and code from various data science conferences, to general data science utilities. This will remain a work in progress, and I welcome all contributions and constructive criticism. If you have a suggestion or request, please [use the "Issues" tab](https://github.com/pmaji/data-science-toolkit/issues) and I will respond expeditiously! 
+Welcome! The purpose of this repository is to serve as stockpile of statistical methods, modeling techniques, and data science tools. The content itself includes everything from educational vignettes on specific topics, to tailored functions and modeling pipelines built to enhance and optimize analyses, to notes and code from various data science conferences, to general data science utilities. This will remain a work in progress, and I welcome all contributions and constructive criticism. If you have a suggestion or request, please [use the "Issues" tab](https://github.com/pmaji/data-science-toolkit/issues) and/or reach out to me [via Twitter](https://twitter.com/ByPaulJ), and I will respond expeditiously! 
+
+Note: GitHub often has trouble rendering larger .ipynb files in particular. If you find that you are unable to view one of the jupyter notebooks below, I recommend copy and pasting the result into [jupyter's nbviewer](https://nbviewer.jupyter.org/), which will take you to a viewable link like [this one here for my "Visualization with Plotly" notebook](https://nbviewer.jupyter.org/github/pmaji/data-science-toolkit/blob/master/eda-and-visualization/viz_with_plotly.ipynb).
 
 ## Table of Contents
 
@@ -8,10 +10,11 @@ Welcome! The purpose of this repository is to serve as stockpile of statistical 
     1. [Rough Notes from ISLR Exercises -- R](https://github.com/pmaji/data-science-toolkit/blob/master/playground-and-basics/r_basic_data_science.md)
     2. [Rough Notes from Python Data Scientist Track -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/playground-and-basics/python_basic_data_science.ipynb)
 2. Exploratory Data Analysis (EDA) and Visualization
-    1. [EDA and Basic Visualization -- R](https://github.com/pmaji/stats-and-modeling/blob/master/eda-and-visualization/eda_and_visualization.md)
-    2. [EDA and Basic Visualization -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/eda_and_visualization.ipynb)
-    3. [Visualizing Geographic Data -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/geo_mapping_viz.ipynb)
-    4. [Radar Charts -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/radar_charts.ipynb)
+    1. [Visualization with Plotly](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/viz_with_plotly.ipynb)
+    2. [EDA and Basic Viz. -- R](https://github.com/pmaji/stats-and-modeling/blob/master/eda-and-visualization/eda_and_visualization.md)
+    3. [EDA and Basic Viz. -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/eda_and_visualization.ipynb)
+    4. [Visualizing Geographic Data -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/geo_mapping_viz.ipynb)
+    5. [Radar Charts -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/radar_charts.ipynb)
 3. Hypothesis Testing
     1. [Kolmogorov-Smirnov Test (KS Test) -- R](https://github.com/pmaji/stats-and-modeling/blob/master/hypothesis-tests/ks_test.md)
     2. [Useful Hypothesis Testing Functions -- R](https://github.com/pmaji/stats-and-modeling/blob/master/hypothesis-tests/useful_hyp_test_functions.R)

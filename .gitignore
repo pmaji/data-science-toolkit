@@ -3,3 +3,5 @@ data-science-toolkit.Rproj
 .Rhistory
 .RData
 .Ruserdata
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*

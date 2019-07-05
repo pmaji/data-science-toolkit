@@ -11,7 +11,7 @@ Note: GitHub often has trouble rendering larger .ipynb files in particular. If y
     2. [Rough Notes from Python Data Scientist Track -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/playground-and-basics/python_basic_data_science.ipynb)
 2. Exploratory Data Analysis (EDA) and Visualization
     1. [Why Visualization Matters](https://nbviewer.jupyter.org/github/pmaji/data-science-toolkit/blob/master/eda-and-visualization/why_dataviz_matters.ipynb?flush_cache=true)
-    2. [Visualization with Plotly](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/viz_with_plotly.ipynb)
+    2. [Practical Data Visualization with Python](https://github.com/pmaji/practical-python-data-viz-guide)
     3. [EDA and Basic Viz. -- R](https://github.com/pmaji/stats-and-modeling/blob/master/eda-and-visualization/eda_and_visualization.md)
     4. [EDA and Basic Viz. -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/eda_and_visualization.ipynb)
     5. [Visualizing Geographic Data -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/geo_mapping_viz.ipynb)

@@ -10,12 +10,10 @@ Note: GitHub often has trouble rendering larger .ipynb files in particular. If y
     1. [Rough Notes from ISLR Exercises -- R](https://github.com/pmaji/data-science-toolkit/blob/master/playground-and-basics/r_basic_data_science.md)
     2. [Rough Notes from Python Data Scientist Track -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/playground-and-basics/python_basic_data_science.ipynb)
 2. Exploratory Data Analysis (EDA) and Visualization
-    1. [Why Visualization Matters](https://nbviewer.jupyter.org/github/pmaji/data-science-toolkit/blob/master/eda-and-visualization/why_dataviz_matters.ipynb?flush_cache=true)
-    2. [Practical Data Visualization with Python](https://github.com/pmaji/practical-python-data-viz-guide)
-    3. [EDA and Basic Viz. -- R](https://github.com/pmaji/stats-and-modeling/blob/master/eda-and-visualization/eda_and_visualization.md)
-    4. [EDA and Basic Viz. -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/eda_and_visualization.ipynb)
-    5. [Visualizing Geographic Data -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/geo_mapping_viz.ipynb)
-    6. [Radar Charts -- Python](https://nbviewer.jupyter.org/github/pmaji/data-science-toolkit/blob/master/eda-and-visualization/radar_charts.ipynb?flush_cache=true)
+    1. [Practical Data Visualization with Python (Full Course) -- Python](https://github.com/pmaji/practical-python-data-viz-guide)
+    2. [EDA and Basic Viz. -- R](https://github.com/pmaji/stats-and-modeling/blob/master/eda-and-visualization/eda_and_visualization.md)
+    3. [Visualizing Geographic Data -- Python](https://github.com/pmaji/data-science-toolkit/blob/master/eda-and-visualization/geo_mapping_viz.ipynb)
+    4. [Radar Charts -- Python](https://nbviewer.jupyter.org/github/pmaji/data-science-toolkit/blob/master/eda-and-visualization/radar_charts.ipynb?flush_cache=true)
 3. Hypothesis Testing
     1. [Kolmogorov-Smirnov Test (KS Test) -- R](https://github.com/pmaji/stats-and-modeling/blob/master/hypothesis-tests/ks_test.md)
     2. [Useful Hypothesis Testing Functions -- R](https://github.com/pmaji/stats-and-modeling/blob/master/hypothesis-tests/useful_hyp_test_functions.R)

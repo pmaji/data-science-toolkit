@@ -6,6 +6,6 @@ scikit-image==0.15
 eli5==0.8.1
 scikit-learn==0.20.3
 lightgbm==2.2.2
-keras==2.2.4
+keras==3.8.0
 matplotlib==2.1.0
 jupyter
